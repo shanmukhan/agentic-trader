@@ -11,8 +11,11 @@ IST = ZoneInfo(IST_NAME)
 
 
 class SessionCalendar:
-    def __init__(self, sessions: dict[date, tuple[time, time]]):
+    def __init__(
+        self, sessions: dict[date, tuple[time, time]], sources: dict[date, str] | None = None
+    ):
         self.sessions = dict(sessions)
+        self.sources = dict(sources or {})
         for opened, closed in self.sessions.values():
             if not time(9, 0) <= opened < closed <= time(16, 0):
                 raise ValueError("invalid exchange session")
@@ -20,13 +23,15 @@ class SessionCalendar:
     @classmethod
     def load(cls, path: Path) -> "SessionCalendar":
         sessions = {}
+        sources = {}
         with path.open(newline="") as file:
             for row in csv.DictReader(file):
                 day = date.fromisoformat(row["date"])
                 if day in sessions or not row["source"].strip():
                     raise ValueError("duplicate or unreviewed session")
                 sessions[day] = (time.fromisoformat(row["open"]), time.fromisoformat(row["close"]))
-        return cls(sessions)
+                sources[day] = row["source"].strip()
+        return cls(sessions, sources)
 
     def bounds(self, now: datetime) -> tuple[datetime, datetime] | None:
         local = utc(now).astimezone(IST)

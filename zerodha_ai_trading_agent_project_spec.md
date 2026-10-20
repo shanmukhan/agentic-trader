@@ -1,12 +1,12 @@
 # Zerodha AI Intraday Equity Trading Agent
 
-**Project specification:** v1.1
+**Project specification:** v1.2
 
 **Prepared:** 20 October 2026
 
-**Status:** Phase 1 implementation delivered; external broker/device acceptance pending
+**Status:** Phase 1 and Phase 2 research implemented; empirical broker/device/strategy acceptance pending
 
-**Safety:** No live trading, no real orders, no transfer of funds in Phase 1.
+**Safety:** Paper only. No live trading, real orders or funds transfers in the implemented phases.
 
 ### Implementation record — 20 October 2026
 
@@ -26,8 +26,15 @@ cancelled after restart reconciliation, with required paper exits requeued.
 failed the vulnerability audit. It was removed and replaced with restricted clients
 for the official read-only HTTP and quote protocols; see
 [the dependency decision](docs/threat-model.md). There is still no live order path.
-The roadmap below remains the future strategy/ML/live plan; Phase 1 completion does
-not imply those later stages or real-world broker/hardware acceptance are complete.
+Phase 2 now adds predeclared ORB/VWAP hypotheses, a causal quote-driven backtester,
+source-preserving market-data export and reproducible net-cost research reports.
+See [the research guide](docs/backtesting.md). Both completed candles and observed
+quotes are required; candle-only simulated executions and forced end-of-data closes
+are prohibited. Synthetic demonstrations are labelled and include winning/losing
+outcomes. Research uses separate virtual accounts and cannot override risk controls.
+
+ML, automatic rule use on the connected feed and live phases remain future work.
+Implementation does not imply real-market profitability or broker/device readiness.
 
 ## 1. Project charter
 

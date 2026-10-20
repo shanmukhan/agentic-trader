@@ -12,6 +12,7 @@ uv sync --frozen --all-extras
 uv run trading-agent environment
 uv run trading-agent init-db
 uv run trading-agent demo --directory data/demo-first
+uv run trading-agent research-demo --directory data/research-first
 uv run trading-agent serve
 ```
 
@@ -25,18 +26,24 @@ See [implementation status](docs/implementation-plan.md), [risk policy](docs/ris
 [operator runbook](docs/runbook.md), [threat model](docs/threat-model.md),
 [test plan](docs/test-plan.md), and [change log](docs/CHANGELOG.md).
 
-Local validation: **108 tests passed, 90% coverage**, lint/type checks and dependency
-audit passed. Real Kite credentials and Raspberry Pi deployment remain unverified.
+See the [strategy/backtesting guide](docs/backtesting.md) for Phase 2 hypotheses,
+data exports, research runs and report interpretation.
+
+Local validation: **159 tests passed; 91% coverage**, with lint/type checks, dependency
+audit and builds passing. Details are in the change log. Real Kite credentials and
+Raspberry Pi deployment remain unverified.
 
 ```sh
 uv run pytest --cov=trading_agent
 uv run ruff check .
 uv run mypy src/trading_agent
 uv run python scripts/benchmark.py
+uv run python scripts/benchmark_strategy.py
 uv run pip-audit
 ```
 
-Phase 1 provides infrastructure and paper execution. Automatic strategy selection,
-historical strategy backtesting, trained ML, and future live execution remain later
+Phase 1 provides infrastructure and paper execution. Phase 2 adds predeclared rule
+hypotheses and quote-driven historical research in isolated accounts. Trained ML,
+automatic strategy use on the connected feed, and live execution remain later
 milestones in the [original specification](zerodha_ai_trading_agent_project_spec.md).
-Engineering tests and a synthetic profitable demo provide no evidence of trading profitability.
+Engineering tests and synthetic demonstrations provide no evidence of trading profitability.

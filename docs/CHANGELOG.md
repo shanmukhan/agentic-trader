@@ -1,5 +1,54 @@
 # Change log
 
+## 2026-10-20 — Phase 2 strategy research (0.2.0)
+
+Added immutable, versioned ORB and VWAP-continuation rule settings and independent
+per-symbol/session state. Signals use completed contiguous 5m candles, session VWAP,
+rising EMA, Wilder ATR, prior-only relative volume, turnover/price/spread/freshness
+filters, ATR stops/targets and a per-session candidate cap. Candidates still pass
+the existing cost-aware risk engine; connected-feed strategy automation is deferred.
+
+Added streaming typed raw-price dataset bundles with reviewed sessions, provenance,
+availability/chronology checks, restricted paths, bounded reads, synthetic labels,
+input hashes and post-run mutation checks. Added a source-preserving exporter that
+retains calendar references, accepts verified candle overrides and never runs source
+order recovery. Failed exports leave no loadable manifest.
+
+Added isolated quote-driven backtesting and `backtest`, `research-demo`,
+`export-research` commands. No OHLC tick path or signal-close fill is invented.
+Even zero latency requires a strictly later exchange quote. Research accounts retain
+unfinished positions/orders and report gaps/stale valuations as incomplete. Outputs
+include decision explanations, equity CSV, completed net-trade statistics, observed
+drawdown, fill/accounting journals, reproducibility hashes and runtime versions.
+
+The synthetic two-session fixture contains a winner and loser: final cash ₹24,974.03,
+estimated fees ₹20.27 and net P&L −₹25.97 under defaults. It does not establish
+profitability. Historical fee matching, queue/impact effects, sparse observations
+and incomplete connection history remain disclosed research limitations.
+
+Added leakage, metric, provenance, failed-input/export and source-order isolation
+tests, CLI functional checks, a constant-work strategy benchmark, CI coverage of that
+benchmark and detailed corresponding architecture/API/risk/security/runbook/usage
+documentation. Updated the specification/implementation plan and package to 0.2.0.
+No runtime dependency or schema migration was introduced.
+
+### Phase 2 validation
+
+- **159 tests passed**, including the entire Phase 1 regression suite and 51 added
+  strategy/data/export/metrics/CLI/causality cases. Reported coverage is **91% overall**,
+  **95% rule strategies**, **94% dataset validation**, **95% export**, and **99% metrics/reporting**.
+- Ruff lint/format, mypy, working-tree secret-pattern check and local Markdown links
+  passed. Wheel and source distribution builds for **0.2.0** succeeded offline.
+- Final installed dependency audit found **no known vulnerabilities**; no advisories
+  were suppressed and runtime dependencies did not change.
+- The functional research demo completed both net-positive and net-negative trades.
+  The service paper account remained flat at **₹25,000.00** and passed integrity and
+  accounting verification.
+
+The 2,000-evaluation benchmark measured p99 ORB **0.0177 ms**, VWAP **0.0168 ms** on
+this Mac. It excludes input construction/decoding, disk, network and execution.
+Real-market performance, actual Kite access, Pi deployment and ML remain unverified.
+
 ## 2026-10-20 — Initial paper platform
 
 Initialized Git on `main` and implemented the Phase 1 paper-only plan from the supplied

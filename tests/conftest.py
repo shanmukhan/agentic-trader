@@ -92,3 +92,22 @@ def engine_factory(tmp_path):
 @pytest.fixture
 def engine(engine_factory):
     return engine_factory()
+
+
+@pytest.fixture
+def research_dataset(tmp_path):
+    from trading_agent.backtesting.dataset import Dataset
+    from trading_agent.backtesting.demo import create_demo_dataset
+    from trading_agent.strategy.rules import StrategySettings
+
+    path = tmp_path / "dataset"
+    create_demo_dataset(path, StrategySettings())
+    return Dataset(path)
+
+
+def changed_dataset(dataset, directory, transform):
+    from trading_agent.backtesting.dataset import Dataset, write_bundle
+
+    events = list(dataset.events())
+    write_bundle(directory, dataset.manifest, iter(transform(events)))
+    return Dataset(directory)

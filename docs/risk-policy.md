@@ -52,7 +52,9 @@ new entries; missing marks never make a position disappear.
 Bid crossing a stop or target queues an exit; a later quote supplies the actual
 simulated fill, which can be worse than the trigger. Bid liquidity bounds each
 partial sell. The total available side depth is consumed at most once per accepted
-quote event. Kill and session exits never manufacture cash from stale prices. With
+quote event. Even configured zero latency requires a strictly later exchange quote
+than creation, preventing same-time or same-candle-close executions.
+Kill and session exits never manufacture cash from stale prices. With
 no fresh data or reviewed open session the exit remains pending; overnight exposure
 blocks entries persistently. The one-second watchdog can request exits without ticks
 but cannot fill them. Shutdown preserves open positions for reconciliation.
@@ -74,3 +76,18 @@ corporate-action adjustment, live order rejection model or profitability gate.
 Unfillable/cancelled/rejected paper instructions exercise engineering behavior.
 Calibrate against actual data before using the simulator for research conclusions.
 Schedule upgrades require a reviewed version and a new research account/replay.
+
+## Phase 2 research boundary
+
+Rule hypotheses generate entry proposals only in isolated backtest accounts. The
+same cash, risk, exposure, freshness, kill and session gates apply; there is no
+strategy bypass or client-supplied quantity. Missing/flagged candle history disables
+the symbol for the session. A historical candle's high/low cannot trigger a fill;
+only supplied quote events can establish observed stop/target order and liquidity.
+
+Dataset exhaustion never closes a holding at a convenient last price. Reports retain
+unresolved orders/positions, label stale/gapped results incomplete, and distinguish
+completed-trade P&L from estimated liquidation equity. Historical fee matching is
+not verified: the current observed charge snapshot is an explicit approximation
+across dataset dates. Synthetic provenance and minimum sample gates cannot authorize
+live trading. See [backtesting.md](backtesting.md) for research assumptions.

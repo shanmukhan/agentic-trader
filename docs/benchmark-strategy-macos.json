@@ -1,0 +1,21 @@
+{
+  "python": "3.13.16",
+  "platform": "macOS-27.0-arm64-arm-64bit-Mach-O",
+  "rules": {
+    "opening_range_breakout": {
+      "samples": 2000,
+      "candidates": 27,
+      "p50_ms": 0.010916,
+      "p95_ms": 0.01175,
+      "p99_ms": 0.017708
+    },
+    "vwap_continuation": {
+      "samples": 2000,
+      "candidates": 27,
+      "p50_ms": 0.010459,
+      "p95_ms": 0.011084,
+      "p99_ms": 0.016833
+    }
+  },
+  "limitations": "Synthetic single-symbol completed-candle evaluation; excludes Pydantic input construction, input decoding, disk, risk execution and network"
+}

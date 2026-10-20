@@ -72,6 +72,24 @@ def parser() -> argparse.ArgumentParser:
     replay.add_argument(
         "--instruments", type=Path, required=True, help="JSON array of reviewed Instrument records"
     )
+    research = commands.add_parser("backtest")
+    research.add_argument(
+        "dataset", type=Path, help="directory with manifest.json and events.jsonl"
+    )
+    research.add_argument("--strategy", type=Path, default=Path("config/strategy.toml"))
+    research.add_argument(
+        "--output", type=Path, required=True, help="new isolated output directory"
+    )
+    research_demo = commands.add_parser("research-demo")
+    research_demo.add_argument("--directory", type=Path, default=Path("data/research-demo"))
+    research_demo.add_argument("--strategy", type=Path, default=Path("config/strategy.toml"))
+    export = commands.add_parser("export-research")
+    export.add_argument("--start", required=True, type=datetime.fromisoformat)
+    export.add_argument("--end", required=True, type=datetime.fromisoformat)
+    export.add_argument("--symbols", required=True, nargs="+")
+    export.add_argument("--source", required=True, help="reviewed provenance, without credentials")
+    export.add_argument("--candles", type=Path, help="optional verified 5m Candle JSONL override")
+    export.add_argument("--output", required=True, type=Path)
     return root
 
 
@@ -89,6 +107,48 @@ def execute(args: argparse.Namespace) -> Any:
         }
     # Validate mode even for demonstrations and broker-only commands.
     settings = Settings.load(args.config)
+    if args.command in ("backtest", "research-demo"):
+        from trading_agent.backtesting.dataset import Dataset
+        from trading_agent.backtesting.demo import create_demo_dataset
+        from trading_agent.backtesting.runner import run_backtest
+        from trading_agent.strategy.rules import StrategySettings
+
+        strategy = StrategySettings.load(args.strategy)
+        if args.command == "research-demo":
+            args.directory.mkdir(parents=True, exist_ok=False, mode=0o700)
+            dataset_path, output = args.directory / "dataset", args.directory / "run"
+            create_demo_dataset(dataset_path, strategy)
+        else:
+            dataset_path, output = args.dataset, args.output
+        report = run_backtest(
+            Dataset(dataset_path), strategy=strategy, policy=settings, output=output
+        )
+        return {
+            "output": str(output),
+            "status": report["status"],
+            "metrics": report["metrics"],
+            "research_gates": report["research_gates"],
+            "ready_for_live": False,
+        }
+    if args.command == "export-research":
+        from trading_agent.backtesting.export import export_dataset
+
+        if not settings.database.is_file():
+            raise ValueError("export requires an existing source database")
+        source = Database(settings.database, settings.starting_cash)
+        try:
+            return export_dataset(
+                source,
+                SessionCalendar.load(settings.calendar),
+                start=args.start,
+                end=args.end,
+                symbols=tuple(args.symbols),
+                output=args.output,
+                source=args.source,
+                candle_file=args.candles,
+            )
+        finally:
+            source.close()
     if args.command == "demo":
         return demo(args.directory)
     if args.command == "login-url":

@@ -123,3 +123,13 @@ def test_kill_blocks_entries_and_waits_for_liquidity_to_flatten(engine):
     engine.ingest(quote(4), NOW + timedelta(seconds=4))
     engine.reset_kill(NOW + timedelta(seconds=4))
     assert not engine.snapshot(NOW + timedelta(seconds=4))["kill"]
+
+
+def test_zero_latency_still_requires_a_strictly_later_exchange_quote(engine_factory):
+    engine = engine_factory(latency_ms=0)
+    decision = NOW + timedelta(seconds=1)
+    engine.submit(candidate(now=decision), decision)
+    engine.ingest(quote(1), decision)
+    assert not engine.snapshot(decision)["positions"]
+    engine.ingest(quote(2), NOW + timedelta(seconds=2))
+    assert engine.snapshot(NOW + timedelta(seconds=2))["positions"]

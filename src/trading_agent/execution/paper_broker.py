@@ -556,7 +556,9 @@ class PaperBroker:
         ).fetchall()
         for order in orders:
             created = datetime.fromisoformat(order["created"])
-            if quote.exchange_time < created + timedelta(milliseconds=self.settings.latency_ms):
+            if quote.exchange_time <= created or quote.exchange_time < created + timedelta(
+                milliseconds=self.settings.latency_ms
+            ):
                 continue
             side = order["side"]
             if side == "BUY":

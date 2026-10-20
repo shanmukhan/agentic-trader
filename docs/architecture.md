@@ -4,8 +4,8 @@ The application is a Python 3.13 modular monolith. `main.py` owns startup, CLI a
 shutdown. HTTP/WebSocket market data flows through `broker/readonly_kite.py`, typed
 models, the paper risk/execution boundary and SQLite. Stream candles are persisted
 separately after quote processing. Candle-write failure latches a fault and disconnects
-the feed. The phase-one strategy is operator supplied; ML explicitly raises
-`ModelUnavailable`. Indicators are available for the later completed-candle strategy.
+the feed. The connected service's strategy is operator supplied; ML explicitly raises
+`ModelUnavailable`. Phase 2 rules use these indicators in offline research.
 
 ```mermaid
 flowchart LR
@@ -83,3 +83,35 @@ on the execution path in this release.
 Journal growth is linear in accepted quote events. Current records have indexed
 lookups and at most ten streaming instruments and two held positions by default.
 Reconciliation scans fills on startup, not on each tick. See [performance.md](performance.md).
+
+## Phase 2 isolated research
+
+`strategy/rules.py` maintains one bounded state per symbol: completed-candle
+indicators, a prior-volume deque/sum, fixed opening range and per-session candidate
+count. Hypothesis settings are immutable and hashed. Rule code has no broker client
+or execution reference; it returns a candidate and explanatory feature/filter record.
+All accepted candidates still pass the same independent transactional risk engine.
+
+`backtesting/dataset.py` validates a raw-price manifest and bounded chronological
+JSONL stream. Candle availability cannot precede its close; quote availability
+cannot precede exchange/receipt time. Source files are hashed before processing and
+verified afterward. Candidate injection, unknown symbols/tokens/dates and external
+bundle paths are rejected. The input reader does not create an OHLC execution path.
+
+`backtesting/runner.py` injects event time into an isolated paper account, journals
+strategy evaluations, submits candidates and writes observations incrementally.
+No service-account engine, broker API or wall-clock strategy timing is used. The
+report records runtime, rule/config/policy/code/input/journal identities. Net trade
+statistics derive from the fill ledger and combine partial exits until a position
+is flat. Open positions are preserved and make results incomplete.
+
+`backtesting/export.py` opens source storage without invoking `PaperBroker`, avoiding
+restart cancellation. It merges quote journal and completed candles into a new
+bundle, retains calendar provenance and labels replay/mixed origins synthetic.
+An external verified candle file can replace research candle inputs without changing
+the source ledger. Manifests are written last, so failed exports are not loadable.
+The offline exporter may sort/scan substantial data; it is not run on the feed path.
+
+`main.py` exposes separate research commands. The connected service still requires
+operator intents; automatic rule execution on the feed is deferred to paper-feed
+validation. No schema migration or existing policy-hash change was needed.

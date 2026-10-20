@@ -47,3 +47,21 @@ review `git diff`, ignored files and deployment environment. Never commit real t
 No external alerts are sent. Kill/data-quality events are in the durable journal;
 the dashboard and generic local error log provide local visibility. Integrating
 paging/notifications is a later operational task requiring an explicitly chosen service.
+
+## Phase 2 inputs and account isolation
+
+Research accepts bounded JSON/JSONL, not executable models or arbitrary URLs. The
+manifest fixes the local event filename. Symlinks, oversized records, unknown fields,
+manual candidates and catalog/session mismatches fail. Availability clocks enforce
+completed candles and observed quotes. No OHLC path or favorable fill is inferred.
+Hash checks detect ordinary input changes, not a malicious local administrator.
+
+Backtests use new private output accounts and never open the service account. Export
+reads source data without an execution engine, preserving orders and balances. Its
+manifest is written last so partial bundles are not loadable. Replay/mixed origins
+retain synthetic labels; `synthetic: false` is not authenticated provenance proof.
+
+Invalid runs retain sanitized failure state and partial research ledgers without a
+success report. Policy/config/code/input/journal identities are recorded. Reports
+contain market/research data, not credentials or profiles. No upload, notification
+service or new runtime dependency was introduced for Phase 2.

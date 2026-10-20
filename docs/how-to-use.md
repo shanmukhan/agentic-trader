@@ -2,10 +2,11 @@
 
 ## 1. Scope and prerequisites
 
-This release implements the specification's Phase 1, with a complete virtual execution
-and risk engine so failure behavior can be exercised now. It does not choose stocks,
-train a model, produce investment recommendations, or execute live trades. The sample
-trade is synthetic. Read [risk-policy.md](risk-policy.md) before submitting paper intents.
+This release implements Phase 1 and Phase 2 research: virtual execution/risk controls,
+predeclared rule hypotheses and an isolated quote-driven backtester. It does not choose
+an investment universe for you, train a model, produce investment recommendations,
+or execute live trades. Sample trades are synthetic. Read
+[risk-policy.md](risk-policy.md) before submitting paper intents.
 
 Use macOS or 64-bit Raspberry Pi OS, a patched Python **3.13.16**, local disk with
 room for an expanding quote journal, and an accurate system clock. Python's supported
@@ -281,3 +282,17 @@ There is no high-frequency or network-latency guarantee. The indicator path uses
 constant work per candle; durable writes stay synchronous. Keep ML training and
 large backtests off the feed process. See the runbook for readiness failures,
 database ownership, stale data, expired sessions, disk-full faults and service setup.
+
+## 14. Phase 2 strategy research
+
+```sh
+trading-agent research-demo --directory data/research-first
+trading-agent backtest data/research-first/dataset \
+  --strategy config/strategy.toml --output data/research-second
+```
+
+Read [backtesting.md](backtesting.md) for rule definitions, data bundles, export,
+metrics and limitations. Both commands create independent accounts beneath the
+requested output directories. `serve --stream` does not automatically submit these
+rules. Completed candles and observed bid/ask quotes are required; candle-only
+history is refused instead of being converted into assumed fills. ML is unavailable.

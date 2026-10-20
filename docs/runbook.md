@@ -2,6 +2,11 @@
 
 ## Start and stop
 
+Use the separate [research guide](backtesting.md) for Phase 2 commands. Backtests and
+research demos own independent accounts and can run beside a service if disk/CPU
+headroom permits. Export requires the source service stopped to acquire its lock;
+it does not run engine recovery or cancel source orders.
+
 Work from the repository root as an unprivileged user. Load your private environment,
 review the calendar and instrument tokens, and start `.venv/bin/trading-agent serve`
 or `serve --stream`. Only one owner can open an account. Stop with Ctrl-C or the
@@ -9,6 +14,12 @@ service manager; allow up to thirty seconds for cleanup. Stopping does not decla
 positions closed. Read [how-to-use.md](how-to-use.md) for token exchange and setup.
 
 ## Incident response
+
+For research failures inspect `run.json` and the partial isolated ledger; do not
+treat the run as a successful experiment. Fix the input and choose a new output
+directory. Export folders without `manifest.json` are incomplete. Finished reports
+with open exposure, stale valuations or data gaps remain incomplete; retain that
+limitation instead of manufacturing a close or editing account rows.
 
 | Symptom | Action and expected safe behavior |
 |---|---|

@@ -5,11 +5,11 @@ Prepared 20 October 2026. This is the execution record for the original
 
 ## Implemented scope
 
-The repository delivers Phase 1 infrastructure plus the virtual broker/risk mechanics
-needed to test it meaningfully. This is deliberately paper only. No live adapter,
-automatic strategy, trained model, profitability claim or compliance readiness is
-implied. External account creation, entitlement verification and installation of OS
-services require the actual environment and credentials and are not fabricated.
+The repository delivers Phase 1 infrastructure and Phase 2 strategy research using
+the same virtual broker/risk mechanics. Rules run in isolated offline accounts.
+No live adapter, trained model, automatic connected-feed strategy, profitability
+or compliance readiness is implied. External account creation, entitlement checks
+and OS service installation require real credentials/hardware and are not fabricated.
 
 | Original work item | Implementation / evidence |
 |---|---|
@@ -63,13 +63,43 @@ services require the actual environment and credentials and are not fabricated.
     plans were silently provisioned. Templates and instructions make these concrete
     for the operator while preserving this workspace's permissions and credentials.
 
+## Phase 2 delivered — version 0.2.0
+
+| Work item | Implementation / evidence |
+|---|---|
+| Predeclared rules | ORB and VWAP-continuation, completed 5m data, prior-volume reference, independent symbol/session state |
+| Causal features | No active/future candles; missing opening/history disables that session; future-quote prefix-invariance test |
+| Execution boundary | Existing fee/slippage/latency/depth risk broker; no candle-close fills or invented OHLC paths |
+| Isolated research | New output account; backtests never open the service account; export never runs restart cancellation |
+| Provenance | Raw-price manifest, reviewed sessions/sources, chronological typed JSONL, source/config/code hashes and unchanged-input checks |
+| Reports | Net metrics, observed drawdown, partial-trade accounting, decisions, equity CSV, journal and incomplete-exposure gates |
+| Commands | `research-demo`, `backtest`, `export-research`, and configurable strategy TOML |
+| Performance | Constant per-candle work; measured p99 below 0.018 ms on this Mac, excluding input parsing/execution/network |
+| Verification | Unit, integration, functional CLI, deterministic/leakage/failure tests; detailed research guide |
+
+Enhancements to the Phase 2 plan:
+
+- Require completed candles and observed quotes; OHLCV alone cannot reconstruct
+  executable depth or stop/target ordering, so candle-only runs are refused.
+- Even zero-latency experiments require a strictly later exchange quote to fill.
+- Preserve positions at dataset exhaustion; disclose pending orders, stale valuations,
+  held-position quote gaps and incomplete results instead of fabricating liquidation.
+- Label synthetic/mixed/replay provenance explicitly, with one positive and one
+  negative synthetic session rather than a profitability demonstration.
+- Bound manifest/line reads, reject external/symlinked bundle paths and manual
+  candidate events, and leave no loadable manifest after failed exports.
+- Preserve source orders during export; disclose historical candle availability,
+  fee matching and unavailable connection history as research assumptions.
+
+See [backtesting.md](backtesting.md) for input construction, rules, reports and sample gates.
+
 ## Remaining milestones and acceptance gates
 
 | Milestone | Required next evidence |
 |---|---|
 | Real read-only session | Actual manual login, profile, history entitlement, full quote feed; tests currently mock Kite |
 | Target-device operations | ARM64 Pi dependency installation, reboot/launchd/systemd/power-loss drill, disk monitoring |
-| Strategy/backtest (Phase 2) | Predeclared rule hypotheses, contiguous adjusted research data, realistic event replay, leakage review |
+| Empirical strategy validation | Actual matching raw candle/quote data, point-in-time universe/corporate-action review, calibrated fees/depth and retained unfavorable experiments |
 | ML (Phase 3) | Chronological purged walk-forward data, calibration, untouched OOS, versioned schema/model/report |
 | Extended paper validation (Phase 4) | Sustained actual feed, calibrated fill/cost assumptions, outage drills and latency distribution with positions |
 | Future live (Phases 5–6) | Separate explicit approval, current compliance and broker rules, separate reviewed adapter/reconciliation |

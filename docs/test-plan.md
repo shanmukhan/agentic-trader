@@ -3,9 +3,8 @@
 All automated tests use virtual capital and synthetic or mocked market data.
 No broker credentials, real orders or funds are used. Run from the repository root:
 
-Latest local result (20 October 2026): **108 passed; 90% reported coverage**. Financial
-cost/sizing modules have 100% coverage and the paper broker has 93%. Full quality,
-audit and packaging results appear in [CHANGELOG.md](CHANGELOG.md).
+Phase 1 local result (20 October 2026): **108 passed; 90% reported coverage**.
+The latest combined Phase 1/2 validation is recorded in [CHANGELOG.md](CHANGELOG.md).
 
 ```sh
 .venv/bin/pytest --cov=trading_agent --cov-report=term-missing
@@ -15,6 +14,7 @@ audit and packaging results appear in [CHANGELOG.md](CHANGELOG.md).
 .venv/bin/python scripts/check_secrets.py
 .venv/bin/pip-audit --skip-editable
 .venv/bin/python scripts/benchmark.py
+.venv/bin/python scripts/benchmark_strategy.py
 ```
 
 ## Coverage matrix
@@ -43,6 +43,26 @@ The persistence suite includes actual child-process death before commit, not onl
 an exception mock. A seeded thirty-round-trip sequence combines partial buys,
 residual cancellations, partial sells, same-time exit reissues and reconciliation
 after each completed position to exercise monetary conservation across operations.
+
+## Phase 2 automated acceptance
+
+The added suite tests ORB/VWAP triggers and their distinct pullback requirements;
+completed-candle warmup; prior-only volume/range features; session resets and missing
+opening data; stale/missing/wide/empty quotes; independent risk rejection; future
+quote prefix invariance; strict later-tick execution with zero latency; and absence
+of fabricated OHLC fills or end-of-data closes.
+
+Dataset tests cover chronological and availability clocks, restricted raw basis and
+paths, input mutation, bounded reads, schema/field errors and rejected symlinks.
+Export tests verify original orders/journal are unchanged, calendar provenance and
+synthetic classification survive, overrides work and failed exports lack manifests.
+Metric tests verify observed peak drawdown, net fees, null no-trade/no-loss ratios
+and one completed trade across partial fills. Functional CLI tests generate/re-run
+reports deterministically and preserve source orders during export. The strategy
+benchmark records analysis-only latency separately from the existing ingestion path.
+
+No real-market profitability or walk-forward ML acceptance is inferred from these
+tests. Reports retain incomplete exposure and research evidence gaps.
 
 ## Manual external acceptance
 

@@ -41,3 +41,25 @@ is local risk/commit p99 below 50 ms; measure it on Pi before adopting that targ
 Alert on stale exchange timestamps rather than relying on CPU timing alone. Introduce
 batching or PostgreSQL only after profiling identifies a measurable bottleneck and
 atomic durability remains tested.
+
+## Phase 2 completed-candle analysis
+
+Run `.venv/bin/python scripts/benchmark_strategy.py --samples 2000 --output benchmark.json`.
+The committed [strategy baseline](benchmark-strategy-macos.json) uses the same Mac
+and patched Python, with 2,000 evaluations per hypothesis:
+
+| Hypothesis | p50 | p95 | p99 |
+|---|---:|---:|---:|
+| Opening-range breakout | 0.0109 ms | 0.0118 ms | 0.0177 ms |
+| VWAP continuation | 0.0105 ms | 0.0111 ms | 0.0168 ms |
+
+It includes indicator updates, prior-volume mean, opening-range/filter checks,
+candidate caps and candidate creation when triggered. Quotes/candles are prebuilt;
+input decoding, disk, network, risk/accounting transactions and report writing are
+excluded. It is synthetic single-symbol analysis, not end-to-end feed latency.
+
+Rolling volume uses a bounded deque plus running sum rather than rescanning a
+window. Strategy state is per symbol and resets on the next session. Event input,
+decisions and equity outputs stream; final trade summaries scale with trade count.
+Offline source export may scan/sort the journal and requires exclusive ownership.
+Neither export nor report generation runs in the connected feed process.

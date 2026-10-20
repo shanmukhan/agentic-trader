@@ -81,7 +81,18 @@ for running status. Opening the engine cancels pre-existing pending orders as pa
 of restart recovery. This behavior applies to database-owning commands as well as
 service startup. Inspect the journal before restarting experiments.
 
+Phase 2 adds `research-demo`, `backtest`, and `export-research`; see
+[backtesting.md](backtesting.md) for arguments and dataset contracts. Backtest/demo
+accounts are isolated from the service database. Unlike engine-owning commands,
+`export-research` does not run recovery or cancel pending source orders, though the
+service must be stopped to release its account lock. No new HTTP control or live
+route is added. The strategy commands have no network or credential requirement.
+
 Journal categories include quote, candidate, risk_decision, order_state, fill,
 data_quality and kill_switch. Intent IDs are correlation keys for order/decision
 events. `seq` supplies durable journal ordering. Secrets and full user profiles are
 not journal payloads. Quote events contain market data and both timestamps.
+Research journals also include `strategy_evaluation` with completed-candle features,
+filter reasons and the generated candidate. Only subsequent risk decisions can
+authorize a simulated order. Zero simulated latency still requires a strictly later
+exchange timestamp than the order's decision/creation time.
