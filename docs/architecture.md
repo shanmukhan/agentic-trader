@@ -186,3 +186,24 @@ Supervised source export also preserves first candle observation clocks and reco
 connection changes. Delayed bars sort by actual availability, missing clocks fail,
 and unclocked external overrides are refused; manual-source close assumptions remain
 explicitly separate.
+
+## Responsive supervision and local diagnostics (0.4.1)
+
+The UI is plain packaged HTML/CSS/JavaScript under `api/static`, with no Node build,
+external asset fetch, browser token persistence or client financial calculations.
+`api/console.py` captures a combined account/orders/quote/automation view under the
+engine lock; separate transactions for automation status avoid nesting. The orders
+query uses reverse rowid traversal with a 201-row bound and returns at most 200;
+quotes are bounded at ten. Existing full-history API behavior remains unchanged.
+UI polling performs no recovery, arming, journal write or integrity scan. Transport
+staleness is visible and blocks entry-enabling UI controls while the independent
+server watchdog remains responsible for actual risk handling.
+
+`observability/preflight.py` is a separate on-demand read path. It opens the existing
+account with SQLite `mode=ro`, query-only and ordinary WAL locks, takes a coherent
+read transaction and reuses the SELECT-only ledger reconciliation routine. It does
+not instantiate the owning Database/PaperBroker. A progress deadline bounds normal
+SQL work; raw failure details/secrets are not emitted. Local environment/storage/
+identity checks and private evidence are distinct from unverified external broker/
+device acceptance. See [acceptance.md](acceptance.md) and
+[operator-console.md](operator-console.md).

@@ -169,6 +169,29 @@ Enhancements to the Phase 4 plan:
 Actual feed duration, fill calibration, entitlement and Pi reboot/storage/power-loss
 drills remain external acceptance work. Synthetic tests deliver the code milestone only.
 
+## Phase 4 acceptance tooling and responsive console — version 0.4.1
+
+The next locally implementable milestone extends acceptance support while actual
+broker/device/model evidence remains pending. It does not advance into live execution.
+
+| Work item | Implementation / evidence |
+|---|---|
+| Responsive operator UI | Packaged HTML/CSS/JS, account cards, readiness reasons, positions, recent orders, details and mobile CSS stacking |
+| Consistent bounded view | Authenticated `/api/console`, engine-serialized snapshot, latest 200 orders and at most ten quote rows |
+| Operator safety | Lock clears values/token and rejects late requests; stale indicators, serialized actions, explicit arm/reset confirmation, no automatic action retry |
+| Local acceptance diagnostic | `preflight [--strict] [--output NEW_PATH]`, read-only WAL-aware accounting/integrity, identity/permission/calendar/disk/runtime checks |
+| Evidence integrity | New private JSON/Markdown reports and last-written hash manifest; external/live acceptance always false |
+| Deployment patch check | Explicit official SQLite WAL-reset fix branches; actual local runtime SQLite 3.53.1 |
+| Validation | 284 Python tests, 13 JavaScript cases, 92% Python coverage; wheel includes and loads all UI assets |
+| Usage and external work | Dedicated [console](operator-console.md) and [acceptance](acceptance.md) guides and corresponding component documentation |
+
+Enhancements: diagnose accounts without acquiring write ownership/recovering orders;
+keep heavy integrity work out of the feed/UI polling path; bound recent UI history;
+retain exact decimal display; distinguish local checks, current session and external
+acceptance. CSS supports mobile browsers but small-screen visual/physical-phone
+acceptance remains pending because browser tooling did not yield reliable evidence.
+Desktop Safari and the isolated virtual kill/reset/lock flow were verified locally.
+
 ## Remaining milestones and acceptance gates
 
 | Milestone | Required next evidence |

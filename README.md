@@ -19,7 +19,8 @@ uv run trading-agent serve
 ```
 
 Open <http://127.0.0.1:8000>. `/health` works without credentials; paper controls
-require `TRADING_OPERATOR_TOKEN`. `/ready` returns 503 until entry prerequisites
+require `TRADING_OPERATOR_TOKEN`. The responsive web console supports desktop and
+mobile browser layouts; there is no native mobile app. `/ready` returns 503 until entry prerequisites
 are met. The demo uses synthetic data and its own isolated database, with no network.
 
 Read the [complete usage guide](docs/how-to-use.md) before connecting market data.
@@ -35,12 +36,18 @@ training/calibration, validation, JSON artifacts and later scored portfolio repl
 The [supervised paper-feed guide](docs/paper-feed.md) covers dedicated accounts,
 authenticated arming, outages/restarts, history loading and operational evidence.
 
-Local validation: **259 tests passed; 92% coverage**, with lint/type checks, dependency
+The [console guide](docs/operator-console.md) covers desktop/mobile access and safe
+controls. The [acceptance guide](docs/acceptance.md) covers `preflight --strict`,
+private diagnostic evidence and remaining broker/device work. Node 24 is used only
+for JavaScript tests; serving the console needs no Node or frontend build.
+
+Local validation: **284 Python tests and 13 JavaScript tests passed; 92% Python coverage**, with lint/type checks, dependency
 audit and builds passing. Details are in the change log. Real Kite credentials and
 Raspberry Pi deployment remain unverified.
 
 ```sh
 uv run pytest --cov=trading_agent
+node --test tests/ui/console.test.cjs
 uv run ruff check .
 uv run mypy src/trading_agent
 uv run python scripts/benchmark.py

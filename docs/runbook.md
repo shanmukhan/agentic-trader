@@ -146,3 +146,24 @@ running authenticated API for status. After stopping, `paper-report` performs
 integrity/accounting checks without recovery/cancellation. Preserve partial/failed
 folders, source ledger and last telemetry. A crash can lose recent timing samples;
 reports cannot certify full-day coverage, real hardware recovery or live readiness.
+
+## Local preflight and browser supervision (0.4.1)
+
+Run `trading-agent --config PATH preflight --strict --output NEW_PRIVATE_DIRECTORY`
+with the service's environment to inspect local configuration/account health without
+opening recovery or cancelling orders. It may read the running WAL account. Choose
+a quiet period because integrity/accounting reads consume I/O and can delay WAL
+recycling. Exit 2 identifies blocked required local checks, 1 a command/config/output
+failure. Inspect the structured result rather than treating exit 0 without `--strict`
+as a readiness approval. Missing accounts are reported, not initialized. Review
+pending positions/orders before any later owning command. See
+[acceptance.md](acceptance.md) for the five-second cooperative query budget, SQLite
+fix branches and target-device procedures.
+
+The responsive browser console is described in [operator-console.md](operator-console.md).
+A stale banner means displayed values require refresh; it does not prove the server
+stopped. Kill/flatten/disarm remain immediate requests when unlocked; arm/reset ask
+for confirmation and require current display state. A timed-out control has an unknown
+outcome: inspect state before retry. Lock clears the page/token but does not disarm
+an automated service. Phone access needs a separately reviewed private route to the
+loopback service; no public listener or mobile tunnel is installed here.

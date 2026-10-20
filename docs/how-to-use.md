@@ -124,9 +124,15 @@ trading-agent serve
 ```
 
 Open <http://127.0.0.1:8000>, enter the operator token, and select **Unlock / refresh**.
-The dashboard displays virtual cash, cash reservations, equity, estimated liquidation
-P&L, positions, paper order states, feed status and kill state. It refreshes every
-three seconds. Values use UTC timestamps; session rules use Asia/Kolkata.
+The responsive web dashboard shows account cards, readiness reasons, positions,
+paper orders and controls. Desktop uses columns; mobile widths stack the panels.
+There is no native Android/iOS app. It polls one consistent response every three
+seconds while visible and marks old data stale after six seconds. Displayed update
+times use IST; detailed raw timestamps remain UTC. **Lock** clears account values and
+the token from the tab without stopping/disarming the server. Arming and kill reset
+require confirmation; kill/flatten/disarm act immediately. See the complete
+[console guide](operator-console.md), including order-history limits, timed-out actions,
+mobile/private access and the remaining physical-device checks.
 
 With no feed, `/health` is 200 and `/ready` is 503. This is expected. The app starts
 without Kite credentials. With no operator token, the public page and health checks
@@ -346,3 +352,20 @@ automatically rearm. Manual entry intents are disabled on dedicated automated ac
 Stop the service, then use `paper-report --output NEW_PATH` with the same config for
 integrity/reconciliation and source-preserving operational evidence. Real broker,
 fill-model and target-device acceptance remain unverified; execution stays virtual.
+
+## 17. Read-only local acceptance diagnostics
+
+```sh
+trading-agent --config config/paper.toml preflight --strict
+trading-agent --config config/paper.toml preflight --output data/preflight-first
+```
+
+This command can inspect a running account without startup recovery or cancelling
+pending orders. It checks local runtime, SQLite patch level, disk, permissions,
+calendar, integrity/accounting and stored identities. A missing account is reported
+without creating it. Use the service's actual environment/config. No broker call,
+model approval or runtime arming occurs. `--strict` exits 2 for blocked required
+local checks; ordinary diagnostics exit 0 even when checks are blocked. Command or
+configuration errors exit 1. A new private output folder contains JSON/Markdown and
+a final hash manifest. Read [acceptance.md](acceptance.md) for exact limits, cooperative
+query budget, WAL sidecar behavior and actual broker/device acceptance procedures.

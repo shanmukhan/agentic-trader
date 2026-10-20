@@ -1,5 +1,51 @@
 # Change log
 
+## 2026-10-20 — Responsive console and local acceptance tooling (0.4.1)
+
+Continued Phase 4 acceptance support with a responsive packaged HTML/CSS/JavaScript
+operator console: account cards, readiness reasons, observed quotes, positions,
+latest orders and raw details. Added authenticated `/api/console` for engine-serialized
+state capture with a 200-order/ten-quote bound. Existing order/control/risk contracts
+remain in force. CSS stacks panels and touch-sized controls for narrow viewports;
+there is no native mobile app or public listener.
+
+Added memory-only unlock/lock, clearing of private values, rejection of late/older
+poll responses, visible-tab polling, overlapping-request suppression, six-second
+stale display protection and request timeouts. Arm/reset ask for confirmation and
+stale data blocks them; emergency kill/flatten/disarm remain direct requests. Actions
+are serialized with no automatic retry. Timeout messages disclose unknown outcomes,
+and queued exits are not represented as fills. Dynamic rendering uses text nodes,
+fetches reject redirects/omit cookies, and same-origin static CSS permits a tighter CSP.
+
+Added `preflight [--strict] [--output NEW_PATH]` before the owning CLI startup path:
+read-only WAL-aware ledger/integrity and stored-identity checks plus runtime, SQLite
+fix branches, calendar, permissions, token presence, disk and catalog diagnostics.
+It does not create missing accounts, construct a broker, take ownership, recover or
+cancel pending work, call Kite, validate an external model or arm anything. Queries
+have cooperative budgets and retain normal locking; heavy integrity scans stay out
+of UI/feed processing. Private JSON/Markdown reports have a final hash manifest.
+Strict exit 2 identifies blocked required local checks; external/live acceptance
+always remains false. Full controller identity is still verified at actual startup.
+
+Added console/acceptance usage guides and updated corresponding plan/specification,
+architecture/API, performance, threat model, runbook, tests and paper-feed documents.
+Added Node 24 JavaScript checks to CI; no Python or browser runtime dependency was
+added. Package/version/lock now identify 0.4.1.
+
+### Validation
+
+- **284 Python cases and 13 JavaScript cases passed**; Python coverage **92%** overall,
+  preflight **97%**, console view **93%**, API **90%**, paper broker **93%**.
+- Ruff lint/format, mypy, secret-pattern/Markdown-link checks, frozen offline lock/sync,
+  dependency audit (no known vulnerabilities) and wheel/source builds passed. Packaged UI assets load outside the repository.
+- Desktop Safari account/readiness and lock/unlock/kill/reset behavior checked in an
+  isolated virtual preview. Its balance remains ₹25,000, flat, kill inactive.
+- Original account read-only preflight reconciles ₹25,000.00 with no pending orders
+  or positions; missing operator-token configuration is correctly reported blocked.
+- Local Python **3.13.16**, SQLite **3.53.1**, macOS ARM64. Real broker, hardware,
+  sustained-session, fill/model acceptance and mobile visual/handset checks remain
+  pending. Browser tooling did not provide reliable mobile visual verification.
+
 ## 2026-10-20 — Phase 4 supervised paper-feed engineering (0.4.0)
 
 Added explicitly enabled supervised paper automation, authenticated arm/disarm and

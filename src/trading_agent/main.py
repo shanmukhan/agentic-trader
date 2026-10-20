@@ -55,6 +55,13 @@ def parser() -> argparse.ArgumentParser:
     commands.add_parser("init-db")
     commands.add_parser("status")
     commands.add_parser("verify-db")
+    preflight = commands.add_parser(
+        "preflight", help="read-only local acceptance diagnostics; no account recovery/network"
+    )
+    preflight.add_argument("--output", type=Path, help="optional new private evidence directory")
+    preflight.add_argument(
+        "--strict", action="store_true", help="exit 2 if any required local check is blocked"
+    )
     commands.add_parser("login-url")
     token = commands.add_parser("exchange-token")
     token.add_argument("--output", type=Path, required=True, help="new mode-0600 shell env file")
@@ -158,6 +165,13 @@ def execute(args: argparse.Namespace) -> Any:
         }
     # Validate mode even for demonstrations and broker-only commands.
     settings = Settings.load(args.config)
+    if args.command == "preflight":
+        from trading_agent.observability.preflight import preflight, write_preflight
+
+        report = preflight(settings, clock())
+        if args.output:
+            write_preflight(report, args.output)
+        return report
     if args.command == "paper-init":
         strategy, feed_policy, model = paper_options(settings, args)
         if settings.database.exists() or not settings.stream_tokens:
@@ -516,6 +530,8 @@ def main() -> None:
         result = execute(args)
         if result is not None:
             print(json.dumps(result, indent=2, default=str))
+            if args.command == "preflight" and args.strict and not result["local_checks_passed"]:
+                sys.exit(2)
     except Exception as exc:
         # No exception repr/tracebacks: third-party errors can contain credentials.
         print(

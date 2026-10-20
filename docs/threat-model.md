@@ -108,3 +108,24 @@ reports explicitly disclose missing crash measurements and incomplete coverage.
 Synthetic drills cannot pass provenance/sample/model evidence gates. No report can
 enable live execution or attest empirical broker/device acceptance. No external
 alert is sent; supervision remains the operator dashboard and local journal/logs.
+
+## Console and acceptance diagnostic changes (0.4.1)
+
+The static shell has no private values until Bearer authentication. Script and CSS
+load from same-origin package resources; CSP now also restricts style to self and
+blocks form navigation/objects. Text nodes render all dynamic values; no HTML
+injection sink, browser persistence, external analytics or credential-bearing URL is
+used. Fetches omit cookies and reject redirects. Lock/authorization failure clear
+private values and discard late responses. Stale data disables arm/reset, and their
+confirmation dialogs do not override server authorization/risk checks. Emergency
+kill/flatten/disarm remain direct actions. Native phone/remote-access acceptance is
+pending; this change does not expose a listener publicly.
+
+The preflight reads an existing URI-escaped SQLite file with `mode=ro`, query-only,
+untrusted schema and normal WAL locking. It bypasses process ownership only for
+read-only inspection, never SQL mutation/recovery or initialization. It checks private
+storage, local identities, disk and officially fixed SQLite WAL-reset version branches;
+unknown vendor backports remain for review. Raw errors/environment credentials are
+not included. Reports are private account/platform data with hashes for accidental
+integrity only, not signatures or an acceptance authority. No network request,
+credential probe, model execution or change to financial risk limits was added.

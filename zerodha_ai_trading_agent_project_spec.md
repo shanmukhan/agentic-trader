@@ -1,6 +1,6 @@
 # Zerodha AI Intraday Equity Trading Agent
 
-**Project specification:** v1.4
+**Project specification:** v1.5
 
 **Prepared:** 20 October 2026
 
@@ -45,6 +45,11 @@ account initialization, authenticated arming, paced independent history loading,
 stale/disconnect/restart controls, telemetry/reports and fault drills. See
 [the supervised guide](docs/paper-feed.md). It does not establish real-feed or
 target-device acceptance. Live phases require separate explicit approval.
+Version 0.4.1 adds a responsive desktop/mobile browser console, combined bounded
+supervision endpoint, stale/lock/action-race safeguards and read-only local preflight
+with private diagnostic evidence. See the [console guide](docs/operator-console.md)
+and [acceptance procedure](docs/acceptance.md). Native mobile apps, handset visual
+acceptance and actual broker/device evidence remain unimplemented/unverified.
 Implementation does not imply real-market profitability or broker/device readiness.
 
 ## 1. Project charter

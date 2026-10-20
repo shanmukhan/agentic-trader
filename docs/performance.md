@@ -121,3 +121,20 @@ maxima and exceedances. Reports check retained local p99 and cumulative fraction
 above budget; these are not global quantiles. Telemetry can miss crash observations,
 and per-run observed drawdown is not a complete cross-restart equity path.
 See [paper-feed.md](paper-feed.md).
+
+## Version 0.4.1 operator/acceptance workload
+
+The console polls one combined view every three seconds only while visible. It
+reads at most 201 recent orders by reverse rowid traversal, returns 200, and caps
+quote rows at ten. This avoids loading/serializing the growing full order history
+at each refresh. State capture still holds the engine lock: UI polling can contend
+with quote processing, so measure it with the actual target-device workload. Existing
+analysis/execution algorithms and FULL/WAL settings are unchanged; no new p99 claim
+is inferred from the earlier benchmark.
+
+Preflight integrity/reconciliation can scan the fill ledger. It runs only on explicit
+CLI invocation, outside quote processing and UI polls, with a one-second SQLite busy
+wait and a five-second cooperative query budget. Read transactions can delay WAL
+recycling and consume I/O even without SQL writes. Run outside busy entry periods;
+OS/storage stalls are not hard-bounded by the SQL progress callback. A low-disk floor
+is not a retention plan. See [acceptance.md](acceptance.md).

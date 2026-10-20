@@ -12,6 +12,8 @@ for non-browser clients. Untrusted Origins return 403; untrusted Hosts return 40
 |---|---|
 | `GET /` | Operator console shell, no account values until authenticated |
 | `GET /dashboard.js` | Static console script |
+| `GET /dashboard.css` | Static responsive console stylesheet |
+| `GET /api/console` | Serialized account/readiness/automation and bounded recent orders |
 | `GET /health` | Liveness, 200 and `mode: paper` |
 | `GET /ready` | Entry prerequisites; 200 ready / 503 blocked |
 | `GET /api/status` | Transactionally derived account/risk snapshot |
@@ -145,3 +147,30 @@ trades and a completion marker. Stop the source service first for its ownership 
 Journal additions: `automation_start/stop/state/candidate/fault`, `feed_connection`,
 `feed_evaluation`, `history_failure`, `paper_telemetry`. Reports disclose percentile
 windows and missing crash measurements; see [paper-feed.md](paper-feed.md).
+
+## Version 0.4.1 console and preflight contracts
+
+`GET /api/console` uses the existing Bearer/Host/security-header boundary. Schema v1
+returns `observed_at`, `account`, `orders`, `order_limit` (200), `orders_truncated`,
+`quotes`, `automation` and `entry_readiness: {ready, reasons}`. Orders are newest
+insertion first; the existing full orders endpoint remains unchanged. Quotes cover
+the configured catalog tokens or at most ten most recent observed symbols for a
+manual service. Monetary values remain decimal strings. An empty positions list is
+flat, while entry readiness additionally needs data/session/risk prerequisites.
+Automation requires explicit arming and whole-universe readiness. A ready response
+never approves an arbitrary intent. Polling captures state under the engine lock,
+without polling/recovery/submission/arming side effects; nested DB transactions are
+avoided when obtaining automation status.
+
+The responsive page polls this endpoint once per refresh. CSS/script are packaged
+same-origin resources, with CSP `style-src 'self'`, no inline styles/scripts and no
+third-party assets. Arm/reset dialogs add an operator step without changing the
+server's authorization or risk contracts. [operator-console.md](operator-console.md)
+details browser freshness, request races and private mobile access.
+
+`preflight [--strict] [--output NEW_PATH]` runs before the CLI's engine-opening path.
+It uses an existing read-only SQLite snapshot including WAL rather than constructing
+an owning Database/PaperBroker. It neither creates accounts nor runs recovery.
+Exit 0 means a diagnostic was produced; strict mode exits 2 for blocked required
+local checks. Invalid config/output/command failures exit 1. Structured checks and
+private artifact/measurement limits are in [acceptance.md](acceptance.md).

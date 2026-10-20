@@ -148,3 +148,38 @@ empirical fills, full-session coverage, hardware recovery or live readiness. CI 
 the drills and populated-account benchmark.
 Additional cases preserve observed candle receipt/connection clocks on export,
 reject missing clocks/overrides, and cancel pending buys at model-age expiry.
+
+## Version 0.4.1 console and acceptance tooling
+
+Combined local result: **284 Python cases and 13 JavaScript cases passed**. Python
+statement coverage is **92% overall**, preflight **97%**, combined console view **93%**,
+API **90%** and independent execution **93%**. There are 25 new Python cases covering
+running WAL account inspection without cancellation/events, missing source paths,
+unknown sessions, official SQLite fix branches, policy/permission/low-disk failures,
+corrupt/missing state, schema refusal, query budgets, symlinks, private/exclusive
+hashed artifacts and failed output without a finished manifest. Functional API/CLI
+cases exercise authentication, bounded history, feed/kill/stale diagnostics, disarmed
+polling, security headers/assets, missing-account diagnostics and strict exit codes.
+
+Run the dependency-free browser logic suite with Node 24:
+
+```sh
+node --test tests/ui/console.test.cjs
+```
+
+It tests exact decimal/rupee display, locked shell and text-only injection handling,
+late responses after lock, six-second display staleness, arm/reset confirmations,
+post-action/poll ordering, auth failures, visible-tab polling, overlap suppression,
+immediate kill messaging, unknown timeout outcomes and server reset rejection.
+These tests execute application JavaScript using a minimal DOM harness; they are
+not browser rendering, accessibility certification or physical touch acceptance.
+Node is for tests only and is not a runtime frontend dependency. CI includes the
+same Node suite alongside Python checks; remote CI was not run here.
+
+Desktop Safari was visually checked with an isolated virtual account: account/readiness
+cards, lock/unlock and kill/reset dialog behavior. The preview returned flat at
+₹25,000 with kill inactive. Small-screen visual/real handset verification remains
+pending: browser automation did not yield reliable mobile evidence. The source/wheel
+build contains all three UI assets and loads them outside the repository. Original
+account read-only preflight reconciled cash ₹25,000.00 with no holdings/pending orders;
+operator-token configuration is correctly blocked in the unconfigured shell.

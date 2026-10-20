@@ -4,63 +4,21 @@ import threading
 from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
+from importlib.resources import files
 from typing import TYPE_CHECKING, Annotated, Any
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
+from trading_agent.api.console import console_snapshot
 from trading_agent.execution.paper_broker import IntentConflict, PaperBroker
 from trading_agent.models import Candidate
 
 if TYPE_CHECKING:
     from trading_agent.paper.runtime import PaperFeed
 
-DASHBOARD = """<!doctype html><html lang="en"><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Paper trading operator console</title>
-<style>body{font:16px system-ui;max-width:1000px;margin:3rem auto;padding:1rem;background:#101923;
-color:#e5edf6}button,input{font:inherit;padding:.6rem;margin:.3rem}pre{white-space:pre-wrap;
-background:#1c2938;padding:1rem}small{color:#b1c9df}</style>
-<h1>Paper trading console</h1><p>Virtual money · NSE cash equity · Live execution unavailable</p>
-<p><label>Operator token <input id="token" type="password" autocomplete="off"></label>
-<button id="refresh">Unlock / refresh</button></p>
-<p><button id="kill">Activate kill switch</button><button id="flatten">Queue flatten</button>
-<button id="reset">Reset kill switch</button></p>
-<p><button id="arm">Arm paper automation</button><button id="disarm">Disarm entries</button></p>
-<small>Exits require fresh quotes and liquidity. A queued exit is not a completed fill.
-The token stays in this page's memory; close the page to clear it.</small>
-<p id="message" role="status"></p><h2>Account / risk</h2><pre id="status">Locked</pre>
-<h2>Paper orders</h2><pre id="orders">Locked</pre>
-<h2>Paper automation / telemetry</h2><pre id="automation">Locked</pre>
-<script src="/dashboard.js"></script></html>"""
-
-JAVASCRIPT = """let token='';
-async function call(path,method='GET',body){
- const response=await fetch(path,{method,headers:{Authorization:'Bearer '+token,
- 'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined,cache:'no-store'});
- const data=await response.json();
- if(!response.ok)throw Error(data.detail||'Request failed');return data;
-}
-async function refresh(){try{
- document.getElementById('status').textContent=JSON.stringify(await call('/api/status'),null,2);
- const orders=await call('/api/paper/orders');
- document.getElementById('orders').textContent=JSON.stringify(orders,null,2);
- document.getElementById('automation').textContent=JSON.stringify(
- await call('/api/paper/automation'),null,2);
- document.getElementById('message').textContent='Updated '+new Date().toLocaleTimeString();
-}catch(error){document.getElementById('message').textContent=error.message;}}
-document.getElementById('refresh').onclick=()=>{if(document.getElementById('token').value)
-token=document.getElementById('token').value;
-document.getElementById('token').value='';refresh();};
-for(const name of ['kill','flatten','reset'])document.getElementById(name).onclick=async()=>{
-try{await call('/api/control/'+name,'POST');await refresh();}
-catch(error){document.getElementById('message').textContent=error.message;}};
-for(const name of ['arm','disarm'])document.getElementById(name).onclick=async()=>{
-try{await call('/api/paper/automation/'+name,'POST');await refresh();}
-catch(error){document.getElementById('message').textContent=error.message;}};
-setInterval(()=>{if(token)refresh();},3000);
-"""
+ASSETS = files("trading_agent.api").joinpath("static")
 
 
 def create_app(
@@ -124,7 +82,8 @@ def create_app(
         response.headers["Referrer-Policy"] = "no-referrer"
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; script-src 'self'; "
-            "style-src 'unsafe-inline'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'"
+            "style-src 'self'; form-action 'none'; object-src 'none'; "
+            "connect-src 'self'; frame-ancestors 'none'; base-uri 'none'"
         )
         return response
 
@@ -160,11 +119,24 @@ def create_app(
 
     @app.get("/", response_class=HTMLResponse)
     def dashboard() -> str:
-        return DASHBOARD
+        return ASSETS.joinpath("index.html").read_text(encoding="utf-8")
 
     @app.get("/dashboard.js")
     def javascript() -> HTMLResponse:
-        return HTMLResponse(JAVASCRIPT, media_type="application/javascript")
+        return HTMLResponse(
+            ASSETS.joinpath("dashboard.js").read_text(encoding="utf-8"),
+            media_type="application/javascript",
+        )
+
+    @app.get("/dashboard.css")
+    def stylesheet() -> HTMLResponse:
+        return HTMLResponse(
+            ASSETS.joinpath("dashboard.css").read_text(encoding="utf-8"), media_type="text/css"
+        )
+
+    @app.get("/api/console", dependencies=[Depends(authorized)])
+    def console() -> dict[str, Any]:
+        return console_snapshot(engine, clock(), automation)
 
     @app.get("/health")
     def health() -> dict[str, str]:

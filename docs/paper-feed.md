@@ -237,3 +237,19 @@ observation records fail the export. External `--candles` overrides are refused 
 automated accounts because those records lack the captured receipt clocks.
 The exporter preserves source orders and journal. Legacy manual-source exports
 retain their explicitly documented close-time assumption. See [backtesting.md](backtesting.md).
+
+## Local readiness and responsive supervision (0.4.1)
+
+Before target-device acceptance, use `preflight --strict --output NEW_PATH` with the
+actual service config/environment. It preserves pending account work and can inspect
+a running WAL snapshot. This checks local preparation only; it neither proves broker
+entitlement/current feed readiness nor matches/approves a supplied model or full
+controller configuration. Startup and arming still enforce those boundaries. Read
+[acceptance.md](acceptance.md) for the exact checks and external evidence procedure.
+
+The [responsive console](operator-console.md) now shows account cards, blocked-entry
+reasons, positions, the latest 200 orders, and arm/reset confirmation dialogs. Display
+staleness is independent of server feed freshness. Locking the page does not disarm
+the feed. Kill/flatten/disarm remain immediate server requests, and queued exits still
+need actual subsequent virtual fills. Desktop visual acceptance is recorded locally;
+mobile visual/physical-device acceptance remains pending.
