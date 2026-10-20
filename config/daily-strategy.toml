@@ -1,0 +1,14 @@
+# Predeclared offline research hypothesis; not a validated investment strategy.
+stop_pct = "2"
+target_pct = "4"
+max_entry_gap_bps = "100"
+max_hold_sessions = 20
+max_open_quote_gap_seconds = 30
+max_active_labels = 32
+max_samples = 2000
+
+[screen]
+momentum_sessions = 20
+trend_sessions = 50
+min_average_turnover = "10000000"
+max_daily_volatility_pct = "5"

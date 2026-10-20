@@ -242,3 +242,20 @@ and [Zerodha's split/bonus explanation](https://zerodha.com/varsity/wp-content/u
 Issuer-specific notices and actual credit/payment evidence remain required. This
 paper workflow does not implement real settlement, bank reconciliation, tax returns,
 tax lots, automatically adjusted research history or a validated long-term strategy.
+
+## Daily execution research integration (0.8.0)
+
+LT3b reuses these exact action/receipt contracts in offline execution JSONL (`action`
+with `batch`, `receipt` with `receipt`). Sourced calendars must match the daily data;
+quarantine, complete reviewed batch/hash, post-application clear review and a new
+quote remain mandatory. Portfolio replay retains original reviewed cash deductions
+and actual receipt amounts, with independent reconstruction. Raw daily period
+share/cash benefits must agree with applied effects; contradictory source bundles
+cannot produce a finished artifact.
+
+Independent labeling has a different quantity/account per candidate. Dividend or
+payment events therefore censor affected active trials instead of copying a portfolio's
+total deduction/payment; supported pure share actions can proceed, with unresolved
+fractional claims excluding completion. The observer has no entitlement and is not
+a traded portfolio. See [daily-execution.md](daily-execution.md) for full input/usage
+and the remaining custody, historical costs and tax limitations.

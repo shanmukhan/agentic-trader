@@ -6,7 +6,7 @@ from typing import Annotated, Literal
 
 from pydantic import Field, field_validator, model_validator
 
-from trading_agent.ml.inference import Artifact
+from trading_agent.ml.contracts import ValidationIdentity
 from trading_agent.ml.schema import TrainingSettings
 from trading_agent.models import DomainModel, utc
 
@@ -140,7 +140,7 @@ class ValidationReport(DomainModel):
     def aware(cls, value: datetime) -> datetime:
         return utc(value)
 
-    def verify(self, artifact: Artifact, version: str) -> None:
+    def verify(self, artifact: ValidationIdentity, version: str) -> None:
         cfg = self.settings
         if (
             self.model_sha256 != version

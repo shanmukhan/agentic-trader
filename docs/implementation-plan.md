@@ -7,7 +7,8 @@ Prepared 20 October 2026; updated 21 October 2026. This is the execution record 
 
 The repository delivers Phases 1–3 infrastructure/research and Phase 4 supervised
 intraday paper-feed engineering, LT1–LT2 long-term paper mechanics and LT3a daily
-research foundations. The paper horizons share transactional risk/execution mechanics. Rules/models
+research foundations plus LT3b offline quote-executed daily strategy/ML validation.
+The paper horizons share transactional risk/execution mechanics. Rules/models
 run offline or on explicitly configured dedicated paper accounts. No live adapter, profitability
 or compliance readiness is implied. External account creation, entitlement checks
 and OS service installation require real credentials/hardware and are not fabricated.
@@ -244,8 +245,8 @@ commands, retry/failure behavior and exclusions are in [corporate-actions.md](co
 
 LT3 is implemented in dependency order: **LT3a delivered in 0.7.0** reviewed completed daily data,
 point-in-time membership and total-return-aware causal screening with an accessible
-offline research dashboard; **LT3b** quote-executed daily strategy research and
-separate chronological ML validation; **LT3c** lot additions/SIP, reviewed rebalance
+offline research dashboard; **LT3b delivered in 0.8.0** quote-executed daily strategy
+research and separate chronological ML validation; **LT3c next** lot additions/SIP, reviewed rebalance
 proposals and aggregate capital coordination. A daily bar cannot establish an
 executable fill, and screening statistics cannot approve a model or portfolio.
 
@@ -263,7 +264,7 @@ analysis p50 **8.0033 ms** including input/validation/hashes. See
 |---|---|---|
 | LT1: overnight paper foundations | Lifecycle, delivery costs, reviews, risk, console, evidence and tests | Engineering delivered |
 | LT2: corporate actions and cash/share ledger | Reviewed split/bonus/dividend entitlements and effective/payment dates, integral/fractional handling, atomic idempotency, independent reconstruction and recovery | Supported paper engineering delivered; complex actions/tax lots/custody remain excluded |
-| LT3: daily research and portfolio management | Completed daily price/total-return data, point-in-time universe, causal strategy/ML validation, SIP/lot additions, rebalancing and cross-account allocation | LT3a delivered; LT3b quote-executed daily strategy research is next; LT3c portfolio mechanics pending |
+| LT3: daily research and portfolio management | Completed daily price/total-return data, point-in-time universe, causal strategy/ML validation, SIP/lot additions, rebalancing and cross-account allocation | LT3a/LT3b engineering delivered; LT3c lot/SIP/rebalance/capital mechanics next |
 | LT4: actual read-only holdings and supervised acceptance | Reviewed custody/sellable holdings/settlement reconciliation, calibrated costs/fills and sustained actual device/feed evidence | Pending external access and engineering |
 | Live infrastructure / pilot | Existing separate empirical, compliance, adapter/reconciliation and explicit approval gates | Pending; execution unavailable |
 
@@ -272,7 +273,36 @@ Real settlement/custody, income tax/AMC, automatic long-term signals, complex ac
 lot/tax management and combined capital coordination are not implemented. Preserved
 overnight state alone is not full investment-platform or production readiness.
 
-## Remaining milestones and acceptance gates
+## LT3b delivered — quote-executed daily strategy and separate ML, version 0.8.0
+
+| Work item | Implementation / evidence |
+|---|---|
+| Reviewed executions | Separate strict bounded quote/control/action bundle; matching catalog, exact sourced daily calendars, availability clocks and structural raw price/benefit checks |
+| Causal strategy | Prior completed available daily windows, current PIT universe, applied-action reference basis, deterministic simultaneous rank, one proposal/session and bounded session-horizon/screen exits |
+| Exact delivery replay | Isolated account, existing durable Decimal broker/risk/fees/DP/action/cash ledger, later quote/depth fills, retained unresolved exposure and independent reconstruction |
+| Independent labels | Separate account per standalone candidate; full net outcomes and actual final fill intervals; explicit partial/unfilled/interrupted/gap/cash-action/capacity exclusions |
+| Separate daily ML | Own twelve-feature/model namespaces, expanding whole-session interval purge/embargo, train-only scaling, separate calibration, frozen holdout and retained failed diagnostics |
+| Later scoring | Bounded JSON math, hash/audit/context/gate checks, after-validation availability, probability rank/threshold and independent risk; pure Python inference |
+| Explanatory UI | Responsive offline portfolio/label/validation/scored dashboards, exact money, searchable evidence, incomplete states, chronology and plain-language next steps |
+| Validation/docs | 479 Python + 29 JavaScript tests, 92% coverage; complete [daily execution guide](daily-execution.md), main usage/component updates, CI/demo/benchmark |
+
+Enhancements: keep independent cash-specific dividend/payment intervals censored
+instead of guessing a counterfactual deduction; keep quiet declared sessions in
+training chronology; use actual market-open elapsed coverage rather than counting
+overnight time as missing ticks; require model availability after the last declared
+source session close plus embargo; preserve actual incomplete trial accounts and
+explicitly separate label sums/observer state from portfolio returns. Source hashes
+and final manifests support consistency, not authenticated broker provenance.
+
+Measured Mac fixture: durable three-session/nine-trade replay p50 **35.4865 ms**,
+p99 **47.7677 ms**; warmed single-symbol screen p99 **0.0074 ms**. No unsafe SQLite
+tuning or new runtime dependency. These timings exclude network/Pi and do not claim
+large-universe performance. Actual daily data acquisition, empirical acceptance,
+historical fee matching and custody remain pending. Daily models do not enable the
+connected long-term service. **Next locally implementable item: LT3c lot additions/SIP,
+reviewed rebalancing and aggregate capital coordination**, before LT4 actual holdings.
+
+## Remaining milestones and acceptance gates (external evidence)
 
 | Milestone | Required next evidence |
 |---|---|

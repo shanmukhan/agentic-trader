@@ -117,6 +117,26 @@ def parser() -> argparse.ArgumentParser:
     daily.add_argument("--as-of", required=True, type=datetime.fromisoformat)
     daily.add_argument("--policy", type=Path, default=Path("config/daily-research.toml"))
     daily.add_argument("--output", required=True, type=Path)
+    for name in ("daily-backtest", "daily-labels"):
+        command = commands.add_parser(name, help="isolated quote-executed daily delivery research")
+        command.add_argument("daily", type=Path)
+        command.add_argument("execution", type=Path)
+        command.add_argument("--strategy", type=Path, default=Path("config/daily-strategy.toml"))
+        command.add_argument("--output", required=True, type=Path)
+        if name == "daily-backtest":
+            command.add_argument("--model", type=Path)
+            command.add_argument("--allow-synthetic-model", action="store_true")
+    daily_train = commands.add_parser(
+        "daily-train", help="separate chronological daily model validation"
+    )
+    daily_train.add_argument("samples", type=Path)
+    daily_train.add_argument("--training", type=Path, default=Path("config/daily-ml.toml"))
+    daily_train.add_argument("--output", type=Path, required=True)
+    execution_demo = commands.add_parser(
+        "daily-execution-demo", help="invented delivery replay/labels and optional ML workflow"
+    )
+    execution_demo.add_argument("--directory", type=Path, default=Path("data/daily-execution-demo"))
+    execution_demo.add_argument("--with-ml", action="store_true")
     long_report = commands.add_parser(
         "long-term-report", help="preserve source delivery account work"
     )
@@ -196,6 +216,48 @@ def execute(args: argparse.Namespace) -> Any:
         }
     # Validate mode even for demonstrations and broker-only commands.
     settings = Settings.load(args.config)
+    if args.command == "daily-execution-demo":
+        from trading_agent.daily_execution.demo import execution_demo
+
+        return execution_demo(args.directory, with_ml=args.with_ml)
+    if args.command == "daily-train":
+        from trading_agent.daily_execution.model import DailySamples, train_daily
+        from trading_agent.ml.schema import TrainingSettings
+
+        return train_daily(
+            DailySamples(args.samples),
+            settings=TrainingSettings.load(args.training),
+            output=args.output,
+        )
+    if args.command in {"daily-backtest", "daily-labels"}:
+        from trading_agent.daily_execution.contracts import DailyStrategy
+        from trading_agent.daily_execution.dataset import ExecutionDataset
+        from trading_agent.daily_execution.model import load_daily_model
+        from trading_agent.daily_execution.runner import run_daily
+        from trading_agent.daily_research.dataset import DailyDataset
+
+        if settings.investment_horizon != "long_term":
+            raise ValueError("daily execution research requires a dedicated long-term policy")
+        daily_strategy = DailyStrategy.load(args.strategy)
+        daily_source = ExecutionDataset(args.execution, DailyDataset(args.daily))
+        daily_model = (
+            load_daily_model(
+                args.model,
+                strategy=daily_strategy,
+                policy=settings,
+                allow_synthetic=args.allow_synthetic_model,
+            )
+            if args.command == "daily-backtest" and args.model
+            else None
+        )
+        return run_daily(
+            daily_source,
+            strategy=daily_strategy,
+            policy=settings,
+            output=args.output,
+            labels=args.command == "daily-labels",
+            model=daily_model,
+        )
     if args.command == "daily-research-demo":
         from trading_agent.daily_research.demo import daily_research_demo
 

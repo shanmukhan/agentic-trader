@@ -1,10 +1,12 @@
 # Zerodha AI Equity Trading Agent — intraday and long-term paper accounts
 
-**Project specification:** v1.8
+**Project specification:** v1.9
 
 **Prepared:** 20 October 2026
 
-**Status:** Intraday Phases 1–4, supported LT1–LT2 paper engineering and LT3a daily research delivered; empirical acceptance and remaining long-term/live milestones pending
+**Updated:** 21 October 2026
+
+**Status:** Intraday Phases 1–4, supported LT1–LT2 and LT3a/LT3b daily research/ML engineering delivered; LT3c portfolio mechanics, empirical acceptance and live milestones pending
 
 **Safety:** Paper only. No live trading, real orders or funds transfers in the implemented phases.
 
@@ -504,3 +506,26 @@ dashboard explains provenance, metrics, reasons, filters and incomplete states.
 Source/code hashes, mutation checks and unit/functional/UI tests support reproducible
 review. LT3b quote-executed daily strategies/chronological ML and LT3c lot/SIP/rebalance/
 combined capital mechanics remain open. No research result authorizes automation.
+
+## 19. Daily execution and separate ML — LT3b, version 0.8.0
+
+The [daily execution guide](docs/daily-execution.md) defines two reviewed matching
+bundles, prior-completed-daily strategy decisions and actual later observed quote
+execution using the shared exact delivery ledger/risk/fees. Screen/session-horizon
+exits retain overnight state and require executable quotes. Source contradictions,
+quote gaps, stale/incomplete exposure and unpaid claims remain visible.
+
+Independent full-entry trials retain actual label intervals and unfavorable outcomes;
+interruption, partial/unfilled, unresolved and account-specific cash outcomes remain
+explicitly excluded/censored. A separate daily feature/model identity uses whole-session
+purge/embargo, train-only scaling, disjoint calibration and frozen holdout diagnostics.
+Only validated models score a separate later offline replay after availability.
+There is no failed-gate override or connected long-term model attachment.
+
+Responsive evidence dashboards distinguish portfolio P&L from independent labels,
+explain incomplete states and show exact money, policy and chronological checks.
+Unit/functional/UI tests, source/artifact hashes, independent ledger reconstruction,
+synthetic workflow and separately measured analysis/durable replay support the code
+milestone. Real market/model acceptance remains pending. LT3c lot additions/SIP,
+reviewed rebalancing and aggregate capital coordination are next; LT4 custody and
+the original live gates are unchanged.

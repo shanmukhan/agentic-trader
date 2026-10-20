@@ -144,3 +144,16 @@ labels screening as execution, forecasts or model validation. Local JS tests cov
 rendering, filtering, sorting, reset/focus, missing/empty states and safe text. Browser
 pixel/handset inspection remains pending computer-use permissions. Follow
 [daily-research.md](daily-research.md) for complete usage.
+
+## Separate daily execution/validation dashboards (0.8.0)
+
+`daily-execution-demo --directory NEW --with-ml` writes `portfolio/index.html`,
+`labels/index.html`, `model/index.html` and `scored/index.html`. Open them directly
+in a browser. They use responsive desktop/mobile layouts and no network, account
+token, live refresh or trading controls. Exact money and IST clocks accompany
+coverage/claim/open-exposure checks, search, evidence views and expandable policy.
+Labels explicitly show that portfolio returns are not measured; failed validation
+explains that loading is blocked. Tables cap display at 200 rows, retaining full
+JSON/JSONL evidence and empty-state guidance. Keyboard focus/scrolling and clear
+labels are tested. Actual handset/pixel acceptance remains pending. Full walkthrough:
+[daily-execution.md](daily-execution.md). The authenticated connected console flow is unchanged.

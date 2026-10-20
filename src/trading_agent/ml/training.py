@@ -11,9 +11,10 @@ from typing import Any
 from trading_agent.backtesting.dataset import digest_file
 from trading_agent.backtesting.report import code_digest
 from trading_agent.market_data.calendar import IST
+from trading_agent.ml.contracts import Outcome
 from trading_agent.ml.inference import Artifact, ArtifactManifest, Coefficients
 from trading_agent.ml.samples import Samples
-from trading_agent.ml.schema import Sample, TrainingSettings
+from trading_agent.ml.schema import TrainingSettings
 from trading_agent.ml.splits import Split, chronological_splits
 
 
@@ -67,7 +68,7 @@ def fit(split: Split, settings: TrainingSettings) -> Coefficients:
 
 
 def evaluate(
-    rows: tuple[Sample, ...], model: Coefficients, baseline: float, settings: TrainingSettings
+    rows: tuple[Outcome, ...], model: Coefficients, baseline: float, settings: TrainingSettings
 ) -> dict[str, Any]:
     from sklearn.metrics import brier_score_loss, log_loss, roc_auc_score
 

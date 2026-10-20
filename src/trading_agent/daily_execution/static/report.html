@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-{{SCRIPT_HASH}}'; style-src 'sha256-{{STYLE_HASH}}'; base-uri 'none'; form-action 'none'">
+<title>Daily delivery research · Execution and validation evidence</title>
+<style>{{STYLE}}</style></head><body><main>
+<header><span class="eyebrow">Offline daily delivery research</span>
+<h1 id="title">Understand execution and validation</h1>
+<p id="provenance" class="muted"></p><p id="period"></p>
+<p class="notice" id="meaning"></p></header>
+<section class="cards" aria-label="Evidence summary">
+<article class="card"><span id="label-one"></span><strong id="value-one">—</strong><p id="note-one" class="muted"></p></article>
+<article class="card"><span id="label-two"></span><strong id="value-two">—</strong><p id="note-two" class="muted"></p></article>
+<article class="card"><span id="label-three"></span><strong id="value-three">—</strong><p id="note-three" class="muted"></p></article>
+</section>
+<section class="panel"><h2>What needs attention</h2>
+<p id="next-step" role="status"></p><ul id="gates"></ul>
+<p id="exposure" class="muted"></p></section>
+<section class="panel" aria-labelledby="rows-heading"><h2 id="rows-heading">Inspect the evidence</h2>
+<div class="toolbar">
+<label>Find a symbol or reason<input id="search" type="search" autocomplete="off" placeholder="Symbol, reason or split"></label>
+<label>Evidence view<select id="view"><option value="trades">Completed trades</option><option value="decisions">All strategy decisions</option></select></label>
+<button id="clear" type="button">Clear search</button>
+</div><p id="result-count" role="status" aria-live="polite"></p>
+<div class="scroll" role="region" aria-label="Research evidence, scroll horizontally on small screens" tabindex="0">
+<table><thead id="columns"></thead><tbody id="rows"></tbody></table></div>
+<p id="empty" class="empty" hidden></p></section>
+<section class="panel"><h2>Read these results correctly</h2>
+<dl><div><dt>Real quotes, virtual execution</dt><dd>Later observed quote clocks, adverse tick prices, available depth and delivery costs determine simulated fills. Daily candle closes never fill orders.</dd></div>
+<div><dt>Incomplete outcomes remain visible</dt><dd>Open positions, orders, unpaid claims and coverage gaps are preserved. An exit request is not a completed liquidation.</dd></div>
+<div><dt>Labels and portfolio returns differ</dt><dd>Each label uses its own starting virtual cash. Summing independent label P&amp;L does not measure a feasible portfolio or shared capital allocation.</dd></div>
+<div><dt>Validation is chronological</dt><dd>Whole-session splits purge overlapping outcome intervals, embargo neighboring data, fit scalers on training only and calibrate separately. Frozen holdout checks cannot authorize live trading.</dd></div></dl>
+<details><summary>Financial policy, counts and model details</summary><pre id="details"></pre></details>
+<details><summary>Limitations and next research steps</summary><ul id="limits"></ul>
+<p>Review source clocks, calendars, corporate-action basis, quote coverage and unfavorable outcomes. Use a later independent portfolio replay to assess a model. No control here sends orders or arms a service.</p></details></section>
+<noscript><p class="notice">Enable local JavaScript or read the neighboring JSON/Markdown evidence. This report uses no remote scripts.</p></noscript>
+<footer>Private self-contained evidence · Exact money strings · IST display times · No network, live refresh or trading controls<br>Complete usage: docs/daily-execution.md</footer>
+</main><script id="data" type="application/json">{{DATA}}</script><script>{{SCRIPT}}</script></body></html>

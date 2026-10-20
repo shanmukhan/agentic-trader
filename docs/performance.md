@@ -189,3 +189,20 @@ fixture is not a large-universe or connected-feed latency guarantee.
 The engine streams bars with bounded per-symbol rolling state and binary-search
 membership checks. It runs outside the connected quote process. Its gross analytical
 returns are descriptive and have no execution authority.
+
+## LT3b daily screen and durable execution (0.8.0)
+
+[Captured Mac evidence](benchmark-daily-execution-macos.json) measures twenty new
+three-session accounts with 219 daily bars, 36 quotes and nine completed trades.
+Full input validation/hashing, FULL SQLite fill/reconciliation, report rendering/writes
+and artifact hashing: p50 **35.4865 ms**, p95 **38.7704 ms**, p99/max **47.7677 ms**.
+One thousand warmed single-symbol causal screens: p50 **0.0058 ms**, p99 **0.0074 ms**.
+Daily bars parse once, selected symbol rolling windows are bounded, membership uses
+binary search and open-market coverage uses prefix sums. Rare late old rows rebuild
+the affected symbol. No durability setting was weakened.
+
+Reproduce: `.venv/bin/python scripts/benchmark_daily_execution.py --samples 20`.
+Fixture creation, ML fitting, independent label trials, network/history, intratick
+extremes and actual Pi are excluded. Cached screen timings do not represent full
+execution latency, large-universe throughput or exchange fills. CI uses five runs
+without a hardware-specific time assertion. See [daily-execution.md](daily-execution.md).

@@ -181,3 +181,20 @@ UI rendering uses text nodes, restrictive hash CSP and no fetch/storage/eval sin
 Outputs are private, fsynced and completed with a final hash manifest. Research can
 be misleading if the operator omits calendar/universe/corporate-action evidence;
 those assumptions and lack of execution/model approval remain visible in the report.
+
+## LT3b delivery evidence and daily model input (0.8.0)
+
+New daily quote/control/action inputs use strict tagged schemas, bounded local
+nonsymlink files, duplicate-key rejection, aware nondecreasing clocks, catalog and
+exact sourced-calendar agreement, with before/after hashes. New private output
+accounts avoid service recovery/mutation. Hash manifests are written only after
+reconciliation, closed DB hashing and artifact completion. Sample loading cross-checks
+completion audits, candidate/feature identity and full net cash outcome. JSON model
+loading checks dimensions, chronology, validation consistency and context; no executable
+serialization is accepted. Synthetic flags/overrides cannot relax statistical or risk gates.
+
+The owner can rewrite every hash/file; these checks do not authenticate market,
+issuer or bank provenance. Counterfactual cash entitlements are not inferred. Escaped
+embedded JSON, text-only DOM rendering and hash CSP keep reports local with no network
+or trade authority. Training remains offline and daily models cannot arm a connected
+long-term service. See [daily-execution.md](daily-execution.md) for workflow/limits.

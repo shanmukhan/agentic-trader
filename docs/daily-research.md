@@ -3,7 +3,8 @@
 Version 0.7.0 adds an **offline research screen**, reviewed completed daily data and
 point-in-time universe membership. It does not open a trading account, place orders,
 simulate fills, validate a model or change paper risk policy. LT3a is the first
-dependency of LT3; daily execution research/ML and portfolio/lot management remain
+dependency of LT3; [daily execution research/ML](daily-execution.md) arrived in
+0.8.0. Portfolio/lot management remains
 later work in [the plan](implementation-plan.md).
 
 ## 1. Generate the invented example
@@ -190,7 +191,7 @@ HTML writing, network/history, execution and actual Pi are excluded. Windows hav
 bounded state; membership lookups use binary search. Analysis remains outside the
 connected quote process, and this small fixture is not a large-universe guarantee.
 
-LT3b still needs quote-executed daily strategy research and separate chronological
-ML validation. LT3c needs lots/SIP additions, reviewed rebalancing and aggregate
+LT3b now provides [quote-executed daily strategy research and separate chronological
+ML validation](daily-execution.md). LT3c needs lots/SIP additions, reviewed rebalancing and aggregate
 capital controls. Real data acquisition, empirical acceptance, custody and all live
 phases remain open. See [implementation-plan.md](implementation-plan.md).

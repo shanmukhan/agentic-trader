@@ -249,3 +249,18 @@ returns assume same-close reinvestment before costs/tax/payment delays. LT3b sti
 requires later actual quote execution and chronological strategy/model validation;
 LT2 ledger adjustments do not automatically create a daily bundle. Full schema,
 units and workflow: [daily-research.md](daily-research.md).
+
+## LT3b daily delivery replay is now separate (0.8.0)
+
+Use `daily-backtest` with a long-term config and matching reviewed daily/execution
+bundles, not the intraday `backtest` format. Prior completed daily screens and applied
+action reference basis create one observation per symbol/session; simultaneous
+ranking remains deterministic. Existing long-term risk and delivery accounting
+execute only on later observed quotes. Daily-screen/session-limit exits preserve
+unresolved holdings/orders/claims. Reports disclose quote coverage and stale marks.
+
+`daily-labels` evaluates independent standalone candidates, retaining adverse paths
+and exclusions; labels are not portfolio returns. `daily-train` and a separate later
+`daily-backtest --model` supply daily chronological model validation. Intraday rules,
+artifacts and connected guards remain distinct. Schemas, commands, reports and recovery
+are in [daily-execution.md](daily-execution.md). Actual source/cost/fill acceptance is pending.

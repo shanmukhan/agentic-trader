@@ -1,5 +1,62 @@
 # Change log
 
+## 2026-10-21 — LT3b daily quote execution and separate chronological ML (0.8.0)
+
+Implemented the next long-term dependency after completed daily screening. Added
+`daily-backtest`, `daily-labels`, `daily-train` and `daily-execution-demo --with-ml`,
+using matching raw daily/quote bundles, reviewed sourced calendars, strict clocks,
+current PIT membership and applied corporate-action reference basis. Prior daily
+features advance once by availability with bounded windows and rare late-row rebuilds.
+Daily decisions rank only simultaneous candidates and retain session-limit/screen exits.
+
+Portfolio execution reuses the exact Decimal transactional delivery broker, risk,
+latency/depth/adverse ticks, fees/DP, action and cash ledger. Fresh later quotes drive
+fills; unfinished positions/orders/claims and missing coverage are preserved. Calendar
+source definitions are retained for corporate-action review. Independent label trials
+retain favorable/adverse completed full-entry outcomes and explicit unfilled, partial,
+interrupted, stale/gap, capacity and unresolved exclusions. Cash-specific dividends/
+receipts censor counterfactual trials rather than guessing different account deductions.
+
+Added separate daily feature/model identity with whole-session interval purge/embargo,
+train-only scaling, separate sigmoid calibration, fixed logistic baseline and frozen
+final holdout. Coefficients freeze before holdout diagnostics; unsuccessful evidence
+is retained but loading fails. Model availability follows source/label/session-close
+evidence plus embargo, with a strictly later independent scored replay. JSON-only
+pure Python scoring, context/hash/audit/cash checks, synthetic provenance/override and
+existing independent risk remain enforced. Shared numerical helpers gained structural
+types; intraday feature/model authorization and long-term service guards are unchanged.
+
+Added responsive private self-contained portfolio/label/validation/scored dashboards:
+exact money, IST clocks, search/view/clear, incomplete exposure, explicit label-vs-
+portfolio meaning, chronological checks and useful failure/next-step guidance. Updated
+main usage, detailed daily execution guide, plan/specification and corresponding
+component docs. Standing documentation requirement remains in root AGENTS.md.
+
+Validation: **479 Python + 29 JavaScript tests, 92% Python coverage**; financial
+reconstruction/later fills, overnight/session-limit exits, sourced split replay,
+dividend routing, exclusions, chronology/purge, audit/model tampering, failed gates,
+no training imports during scoring, isolated CLI and UI exact-money/search/empty/
+incomplete/failed-model cases. Full synthetic workflow produces 150 labels (100
+positive, 50 adverse) and a distinct ten-session scored replay; no market edge is implied.
+Twenty-run Mac durable replay p50 **35.4865 ms**, p99 **47.7677 ms**, including
+219 daily bars/36 quotes/nine trades, validation/hashes/report writes. Warmed screen
+p99 **0.0074 ms** over 1,000 observations. Network, training/label trials and Pi excluded.
+
+LT3c lot/SIP/rebalance/aggregate capital mechanics are next. Actual source/model
+acceptance, historical fee matching, custody/settlement and device/browser pixel
+acceptance remain pending. No live route or connected long-term automation was added.
+
+Final checks: Ruff lint/format and mypy pass; frozen offline lock/sync and installed
+dependency consistency pass; source distribution and wheel build, with all three UI
+asset groups loaded/rendered from the wheel outside the repository. Secret-pattern
+and 22 Markdown-file local-link checks pass. Online `pip-audit --skip-editable`
+reports no known vulnerabilities. No dependency was added. Read-only preflight
+preserves the original intraday account at ₹25,000, zero fees, zero journal events,
+no positions/orders and the unchanged legacy risk hash. Missing operator/session/
+broker/device prerequisites remain disclosed; local trading readiness is not claimed.
+The generated offline portfolio HTML was opened. Browser pixel/phone verification
+remains pending the previously unavailable computer-use permissions.
+
 ## 2026-10-21 — LT3a daily research and explanatory dashboard (0.7.0)
 
 Continued after LT2 into the next dependency of the long-term roadmap. Added

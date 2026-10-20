@@ -251,3 +251,20 @@ or naive clocks fail without a finished manifest. Report schema 1 includes rows,
 statuses/reasons, candidate ranks, policy, source/code hashes and coverage. Live,
 execution and model-validation flags are always false. Its interactive `index.html`
 is an offline file; no route/auth/trading contract changed.
+
+## LT3b offline command contracts (0.8.0)
+
+- `--config LONG_TERM daily-backtest DAILY EXECUTION --strategy TOML --output NEW`
+  replays into an isolated delivery account; optional `--model DIRECTORY` selects
+  upstream daily candidates only after validation plus embargo. Synthetic scoring
+  requires `--allow-synthetic-model` and explicitly synthetic execution input.
+- `--config LONG_TERM daily-labels DAILY EXECUTION --strategy TOML --output NEW`
+  creates standalone candidate trials and auditable exclusions; no model filtering.
+- `daily-train LABELS --training TOML --output NEW` validates finished evidence,
+  performs chronological fitting and retains failed diagnostics without allowing scoring.
+- `daily-execution-demo --directory NEW [--with-ml]` creates invented isolated evidence.
+
+Global config precedes the subcommand. No service API/authorization, long-term
+model attachment or broker capability was added. Strict event schemas, matching
+calendars, files, return meanings and recovery are in [daily-execution.md](daily-execution.md).
+Reports support desktop/mobile browsers; model loading uses bounded JSON and hashes.

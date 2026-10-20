@@ -244,3 +244,33 @@ empty states and large-value display. CI executes all UI tests, daily demo and b
 
 Actual browser pixel/handset acceptance is pending computer-use permissions. The
 synthetic screen is not a daily fill/backtest/model validation or real-market result.
+
+## LT3b quote execution and daily ML validation (0.8.0)
+
+Current combined evidence: **479 Python tests, 29 JavaScript tests, 92% Python
+coverage**. Fifty-nine new Python cases include exact fees/cash/reconstruction,
+later fills/private artifacts, adverse independent labels, source exhaustion,
+partial/unfilled/interruption/stale/gap exclusions, input identity/paths/clocks,
+closed-hour coverage, unavailable/late daily review and rebuild invariance,
+premarket membership availability, overnight session-limit exits,
+capacity/rank, contradictory basis/OHLC, sourced split-before-entry, dividend/payment
+routing and counterfactual cash censoring. Model cases check separate namespace,
+whole-session interval purge/embargo, disjoint training/scaling, after-validation
+availability, matching audit/candidate/cash evidence, corrupt/rehashed artifacts,
+failed holdout refusal, synthetic/context gates and no heavy training imports in scoring.
+Functional CLI exercises isolated replay/labels/train and fail-closed intraday config.
+
+Six new JavaScript cases cover exact large money, incomplete exposure, explicit
+label/portfolio meaning, view/search/clear/focus, failed validation, 200-row disclosure,
+empty states and exponents. CI runs daily end-to-end ML demo and separate benchmark.
+Ruff/mypy/frozen lock/build/resource/dependency/secret checks supplement behavioral
+validation. Browser pixel/physical-phone and actual broker/Pi evidence remain pending.
+See [daily-execution.md](daily-execution.md) and [implementation-plan.md](implementation-plan.md).
+
+Final local checks: Ruff lint/format, mypy, frozen offline `uv` lock/sync and installed
+dependency consistency pass. Sdist/wheel builds pass; wheel-loaded console/daily/
+execution resources and escaped CSP rendering work outside the repository. Secret
+patterns and all local links in 22 Markdown files pass. Online advisory scan reports
+no known vulnerabilities. Read-only preflight leaves the original account at exactly
+₹25,000, zero fees, flat/no orders and its legacy risk hash; operator/calendar/broker/
+device readiness remains explicitly incomplete. No new dependency or broker action.

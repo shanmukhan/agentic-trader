@@ -32,4 +32,6 @@ jobs:
       - run: uv run trading-agent corporate-actions-demo --directory data/ci-corporate-actions
       - run: uv run trading-agent daily-research-demo --directory data/ci-daily-research
       - run: uv run python scripts/benchmark_daily.py --samples 5
+      - run: uv run trading-agent daily-execution-demo --directory data/ci-daily-execution --with-ml
+      - run: uv run python scripts/benchmark_daily_execution.py --samples 5
       - run: uv run python scripts/benchmark_long_term.py --samples 1000 --corporate-actions

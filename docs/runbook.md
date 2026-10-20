@@ -231,3 +231,19 @@ new directory after correcting inputs. Review calendar age/completeness, histori
 membership, raw/benefit units, availability and all data-gap/excluded rows. Do not
 convert a research rank directly into an order. Input/report references are private;
 sharing the report shares those references. See [daily-research.md](daily-research.md).
+
+## LT3b daily offline experiment operations (0.8.0)
+
+Use new output directories and keep complete favorable/unfavorable/failed experiments.
+Run `daily-backtest` / `daily-labels` with an explicit long-term config and reviewed
+matching daily/quote sources. Training uses only a finished verified independent-label
+bundle; daily scoring requires a separate later interval after validation plus embargo.
+No command opens the configured account or requires broker credentials. Do not run
+training inside a connected feed process or change account economics to bypass model
+identity. Individual trial DBs can use substantial storage; monitor available disk.
+
+On failure, preserve partial output; no finished manifest means no loadable evidence.
+Review source clocks, actions, coverage and censored audits; rerun a corrected reviewed
+experiment into a new directory. Open HTML locally and check full JSON for records
+beyond the 200-row display. Do not force-close surviving research exposure to make a
+result look complete. Detailed commands/recovery: [daily-execution.md](daily-execution.md).

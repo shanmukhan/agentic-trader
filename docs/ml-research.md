@@ -270,3 +270,22 @@ bars, explicit period benefits, historical membership and a fixed descriptive sc
 Those outputs are not training labels, a daily execution backtest or model approval.
 LT3b must derive quote-executed outcomes with chronology/purge/calibration/holdout
 checks before long-term ML can be enabled. Existing intraday model guards remain.
+
+## LT3b separate daily model workflow (0.8.0)
+
+The preceding intraday command/schema descriptions remain intraday-specific. Daily
+research now has `daily-labels`, `daily-train` and later `daily-backtest --model`, with
+`daily-delivery-features-v1` / `daily-delivery-model-v1` identities. Completed daily
+availability/PIT membership and fresh current quotes produce twelve causal features;
+independent exact delivery trials produce full-entry net outcomes and actual final
+fill intervals. Account-specific cash actions/payments censor trials rather than
+transferring reviewed total deductions to different quantities.
+
+Whole-session splits retain quiet declared days, purge full overlapping outcomes,
+embargo 1,440 elapsed minutes by default, fit scalers on training only and calibrate
+separately. Final coefficients precede holdout diagnostics; failed checks remain
+inspectable but cannot load. Availability follows the latest label/source/declared
+close plus embargo. JSON-only loading/scoring imports no training packages, enforces
+context/provenance/hash/audit checks and ranks only simultaneous later candidates.
+No connected long-term model/controller is enabled. Full commands, features, censoring,
+chronology and report interpretation: [daily-execution.md](daily-execution.md).

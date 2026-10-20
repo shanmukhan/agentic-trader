@@ -274,3 +274,43 @@ def long_term_factory(tmp_path):
     yield make
     for db in opened:
         db.close()
+
+
+@pytest.fixture
+def execution_inputs(tmp_path):
+    from trading_agent.daily_execution.demo import create_execution_demo
+
+    daily, execution, future = create_execution_demo(tmp_path / "inputs", sessions=3)
+    return daily, execution, future
+
+
+@pytest.fixture
+def daily_policy():
+    return Settings.load("config/long-term.toml")
+
+
+@pytest.fixture
+def daily_strategy():
+    from pathlib import Path
+
+    from trading_agent.daily_execution.contracts import DailyStrategy
+
+    return DailyStrategy.load(Path("config/daily-strategy.toml"))
+
+
+@pytest.fixture
+def execution_source(execution_inputs):
+    from trading_agent.daily_execution.dataset import ExecutionDataset
+    from trading_agent.daily_research.dataset import DailyDataset
+
+    daily, execution, _ = execution_inputs
+    return ExecutionDataset(execution, DailyDataset(daily))
+
+
+@pytest.fixture(scope="session")
+def daily_ml_demo(tmp_path_factory):
+    from trading_agent.daily_execution.demo import execution_demo
+
+    directory = tmp_path_factory.mktemp("daily-ml") / "demo"
+    result = execution_demo(directory, with_ml=True)
+    return directory, result

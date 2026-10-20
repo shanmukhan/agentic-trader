@@ -9,6 +9,7 @@ from typing import Literal
 from pydantic import Field, field_validator, model_validator
 
 from trading_agent.backtesting.dataset import digest_file
+from trading_agent.ml.contracts import NumericVector
 from trading_agent.ml.features import (
     FEATURE_NAMES,
     FEATURE_VERSION,
@@ -56,7 +57,7 @@ class Coefficients(DomainModel):
             raise ValueError("invalid coefficient dimensions or nonpositive scaling")
         return self
 
-    def probability(self, features: FeatureVector) -> float:
+    def probability(self, features: NumericVector) -> float:
         value = self.intercept + sum(
             (x - m) / s * w
             for x, m, s, w in zip(

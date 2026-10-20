@@ -274,3 +274,21 @@ metric definitions, actionable incomplete states and keyboard/mobile layout. No
 network or live-control surface is present. The analytical gross total-return index
 assumes same-close reinvestment; it is not paper account accounting or execution.
 See [daily-research.md](daily-research.md).
+
+## LT3b offline daily execution and model boundary (0.8.0)
+
+`daily_execution` owns separate strict execution contracts, availability-driven
+`DailyTimeline`, strategy, quote/action routing, independent label accounts and
+JSON daily model validation/loading. `runner` creates a new dedicated delivery
+account and reuses `PaperBroker`, LT2 ledger and independent database reconciliation.
+It never acquires the configured service account. Equal-clock controls/quotes finish
+before fresh proposals rank; different-clock proposals never reorder retrospectively.
+Daily windows advance once; selected symbols and active trials are bounded. Sourced
+execution calendars retain corporate-action authority, and future daily ranges/
+benefits are consistency refusals only, never execution/features.
+
+Shared ML coefficient/split/fit/diagnostic algorithms use structural types without
+sharing feature/model namespace or enabling connected long-term inference. Model
+availability includes final evidence/declared close plus embargo. Failure leaves no
+finished manifest. Self-contained CSP-bound dashboards explain portfolio, label and
+validation meanings. Detailed contracts and workflow: [daily-execution.md](daily-execution.md).

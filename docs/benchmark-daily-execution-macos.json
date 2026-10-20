@@ -1,0 +1,26 @@
+{
+  "python": "3.13.16",
+  "platform": "macOS-27.0-arm64-arm-64bit-Mach-O",
+  "synthetic": true,
+  "sessions": 3,
+  "symbols": 3,
+  "daily_bars": 219,
+  "quotes": 36,
+  "completed_trades": 9,
+  "replay_samples": 20,
+  "replay": {
+    "p50_ms": 35.486458,
+    "p95_ms": 38.770375,
+    "p99_ms": 47.767708,
+    "max_ms": 47.767708
+  },
+  "cached_screen_samples": 1000,
+  "cached_screen": {
+    "p50_ms": 0.005791,
+    "p95_ms": 0.006042,
+    "p99_ms": 0.007375,
+    "max_ms": 0.014708
+  },
+  "includes": "replay: input parse/validation/hashes, FULL SQLite fills/reconcile, reports and artifact hashes; cached screen: warmed single-symbol metrics",
+  "excludes": "fixture creation, network, intratick events, ML fitting, label trials, real feed and Pi"
+}

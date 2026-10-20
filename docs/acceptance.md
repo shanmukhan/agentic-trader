@@ -161,3 +161,19 @@ re-entry and excluded examples. It does not establish empirical strategy/model
 performance. Actual source/calendar completeness, point-in-time notices, benefit
 units and receipt clocks require external review; future quote-executed daily
 strategies/ML and actual device/browser checks remain pending.
+
+## LT3b daily execution/model engineering acceptance (0.8.0)
+
+Software evidence covers later quote/depth fills, exact cash/fees/reconstruction,
+overnight/session-horizon exits, sourced split integration, original dividend/payment
+routing, source contradictions, censored independent intervals, audit/model tampering,
+chronology/purge, train-only fitting, failed gates, after-validation model availability,
+CLI isolation and clear responsive report states. An invented fifty-session experiment
+provides 150 standalone outcomes and a distinct later ten-session scored replay.
+Synthetic statistical checks do not establish a market edge.
+
+Actual reviewed daily/quote coverage, PIT universe/action notices, matching historical
+costs, empirical sample/model performance, custody/settlement and target-device/browser
+pixel/handset acceptance remain pending. Daily models stay offline. The next code
+milestone is LT3c lot/SIP/rebalance/aggregate capital. Workflow and explicit limitations:
+[daily-execution.md](daily-execution.md).

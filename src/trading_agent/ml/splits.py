@@ -1,24 +1,26 @@
 """Expanding whole-session splits with label-interval purge and time embargo."""
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date, timedelta
 
 from trading_agent.market_data.calendar import IST
-from trading_agent.ml.schema import Sample, TrainingSettings
+from trading_agent.ml.contracts import Outcome
+from trading_agent.ml.schema import TrainingSettings
 
 
 @dataclass(frozen=True)
 class Split:
     name: str
-    train: tuple[Sample, ...]
-    calibration: tuple[Sample, ...]
-    evaluation: tuple[Sample, ...]
+    train: tuple[Outcome, ...]
+    calibration: tuple[Outcome, ...]
+    evaluation: tuple[Outcome, ...]
     purged_train: int
     purged_calibration: int
 
 
 def chronological_splits(
-    rows: list[Sample], sessions: tuple[date, ...], settings: TrainingSettings
+    rows: Sequence[Outcome], sessions: tuple[date, ...], settings: TrainingSettings
 ) -> list[Split]:
     if tuple(sorted(set(sessions))) != sessions:
         raise ValueError("sessions must be strictly chronological")

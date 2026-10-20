@@ -200,3 +200,20 @@ reinvestment before taxes/costs/payment delay; paper cash/claims remain governed
 LT2. Missing/late/unreviewed inputs and universe re-entry cannot be forward-filled
 into a candidate. Further quote-executed research/ML and portfolio mechanics require
 separate validation. See [daily-research.md](daily-research.md).
+
+## LT3b daily offline research risk (0.8.0)
+
+Daily momentum/model rank is an upstream selection hypothesis, not risk authority.
+Fresh quotes, long-term review/quarantine, entry window, reservations, notional,
+loss/drawdown, delivery fees/DP and adverse tick execution still apply independently.
+Configured stop/target/session-limit exits request liquidation; actual observed gap
+prices can exceed planned loss. No daily close or end-of-input sale is invented.
+The current applied action factor/cash adjusts the prior raw entry reference;
+unsupported/mismatched basis refuses completion rather than creating false returns.
+
+Independent label accounts each own their seed capital and cannot measure shared
+allocation by summation. Partial, interrupted, uncertain and account-specific cash
+outcomes are excluded/censored. Statistical checks are not market, custody or live
+approval. The daily model cannot attach to a long-term service. Historical fee
+matching, settlement and aggregate capital remain external/later work. Full assumptions
+and failure states: [daily-execution.md](daily-execution.md).

@@ -1,10 +1,14 @@
 # How to use Agentic Trader
 
+Updated 21 October 2026 for version 0.8.0. This guide and corresponding detailed
+guides are updated with every feature or changed workflow, as required by [AGENTS.md](../AGENTS.md).
+
 ## 1. Scope and prerequisites
 
 This release implements Phases 1–4 engineering: virtual execution/risk controls,
 predeclared rules, isolated backtests, chronological ML research and opt-in
-supervised feed automation.
+supervised intraday feed automation, long-term paper holdings/corporate actions and
+offline completed-daily screening, quote execution and separate daily ML validation.
 It does not choose an investment universe, produce investment recommendations or
 execute live trades. Sample trades are synthetic. Read
 [risk-policy.md](risk-policy.md) before submitting paper intents.
@@ -435,6 +439,56 @@ universe events, raw prices, explicit split/distribution units, availability clo
 gap handling, policy rules, failed-output recovery and benchmark boundaries. The
 gross analytical index assumes same-close reinvestment, excluding costs, tax and
 payment delays; it does not represent the LT2 ledger's actual paper cash behavior.
-Daily quote-executed strategy validation, long-term ML and lot/SIP/rebalance/capital
-coordination remain later stages. Keep unfavorable research artifacts and never use
+Lot/SIP/rebalance/capital coordination remain later stages. Keep unfavorable research artifacts and never use
 the invented demo calendar/prices as actual market evidence.
+
+## 21. Daily quote execution and separate daily ML (LT3b)
+
+```sh
+trading-agent daily-execution-demo --directory data/daily-execution-first --with-ml
+open data/daily-execution-first/portfolio/index.html
+open data/daily-execution-first/model/index.html
+```
+
+Use a new directory. This offline example creates three-symbol invented daily and
+quote inputs, a portfolio replay, 150 independent outcome labels, chronological
+model validation and a later ten-session scored replay. It uses separate private
+accounts and requires no login/token or service account changes. Synthetic evidence
+does not establish profitability. The browser reports support desktop/mobile
+layouts; there is no native app, live refresh or trading control.
+
+For reviewed inputs, use the dedicated long-term policy and matching daily/quote
+bundles. Global config precedes the command:
+
+```sh
+trading-agent --config config/long-term.toml daily-backtest \
+  /absolute/path/daily /absolute/path/execution \
+  --strategy config/daily-strategy.toml --output data/daily-portfolio-first
+trading-agent --config config/long-term.toml daily-labels \
+  /absolute/path/daily /absolute/path/execution \
+  --strategy config/daily-strategy.toml --output data/daily-labels-first
+trading-agent daily-train data/daily-labels-first \
+  --training config/daily-ml.toml --output data/daily-model-first
+trading-agent --config config/long-term.toml daily-backtest \
+  /absolute/path/later-daily /absolute/path/later-execution \
+  --strategy config/daily-strategy.toml --model data/daily-model-first \
+  --output data/daily-scored-first
+```
+
+Open `index.html` in each output. Start with **What needs attention**, then inspect
+trades/decisions, search symbols/reasons and expand financial/model details. Labels
+show excluded/censored counts and explicitly do not report portfolio returns.
+Validation shows split counts, calibration and held-out checks. Full JSON evidence
+accompanies tables capped at 200 display rows. Exact decimal money and IST times
+remain clear; incomplete exposure, quotes and claims are never hidden by an invented
+final sale. Failed statistical checks block scoring. For invented models only,
+`--allow-synthetic-model` allows an explicitly synthetic later replay while retaining
+all other checks. The first replay event must follow final validation plus embargo.
+
+Read [daily-execution.md](daily-execution.md) for schemas/event examples, action and
+quote consistency, strategy/coverage assumptions, exact fees, independent label
+exclusions, feature identities, purge/calibration/holdout, model availability,
+failure/recovery and performance. Preserve partial failed outputs; absence of a
+finished manifest prevents loading. Correct reviewed inputs and rerun into a new
+directory. Daily models remain offline and cannot arm the long-term service.
+LT3c lot/SIP/rebalance/aggregate-capital mechanics are next in the plan.
