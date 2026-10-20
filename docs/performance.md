@@ -63,3 +63,33 @@ window. Strategy state is per symbol and resets on the next session. Event input
 decisions and equity outputs stream; final trade summaries scale with trade count.
 Offline source export may scan/sort the journal and requires exclusive ownership.
 Neither export nor report generation runs in the connected feed process.
+
+## Phase 3 JSON inference and ranking
+
+After creating `data/ml-first` with `ml-demo`, run:
+
+```sh
+.venv/bin/python scripts/benchmark_ml.py --model data/ml-first/model \
+  --allow-synthetic-model --samples 10000 --output benchmark.json
+```
+
+The [ML Mac baseline](benchmark-ml-macos.json) records 10,000 observations per path
+on the same ARM64 Mac with Python 3.13.16:
+
+| Path | p50 | p95 | p99 |
+|---|---:|---:|---:|
+| Loaded twelve-feature score | 0.000916 ms | 0.000959 ms | 0.001167 ms |
+| Score and rank ten candidates | 0.009375 ms | 0.009584 ms | 0.014375 ms |
+
+The timer includes coefficient standardization, logistic/sigmoid math, availability
+checks and sorting where applicable. It excludes feature construction, artifact
+loading/verification, parsing, I/O, risk/sizing/commit, training and network. These
+measurements use invented model inputs and provide no strategy-performance or Pi
+latency evidence. The durable gate verifies context and recomputes probability;
+that full transaction is outside the score timer.
+
+Scoring imports no NumPy/sklearn/SciPy/joblib/pickle. Training installs optional
+locked dependencies and runs separately. Label generation uses isolated durable
+paper accounts and can be storage intensive; it is intentionally outside the feed
+path. Sample loading is bounded at one million rows and fitting remains in memory;
+partition larger research datasets explicitly rather than exhausting the device.

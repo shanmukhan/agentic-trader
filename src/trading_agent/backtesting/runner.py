@@ -8,7 +8,7 @@ from collections import Counter
 from datetime import datetime
 from decimal import Decimal
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from pydantic import VERSION as PYDANTIC_VERSION
 from pydantic import SecretStr
@@ -35,10 +35,32 @@ from trading_agent.persistence.database import Database
 from trading_agent.settings import Settings
 from trading_agent.strategy.rules import RULE_VERSION, RuleStrategy, StrategySettings
 
+if TYPE_CHECKING:
+    from trading_agent.ml.features import FeatureVector
+    from trading_agent.ml.inference import ResearchModel
+    from trading_agent.models import Candidate
+
 
 def run_backtest(
-    dataset: Dataset, *, strategy: StrategySettings, policy: Settings, output: Path
+    dataset: Dataset,
+    *,
+    strategy: StrategySettings,
+    policy: Settings,
+    output: Path,
+    model: "ResearchModel | None" = None,
 ) -> dict[str, Any]:
+    if model:
+        from trading_agent.execution.costs import Charges
+        from trading_agent.risk.policy import policy_fingerprint
+
+        if (
+            model.artifact.strategy_sha256,
+            model.artifact.policy_sha256,
+            model.artifact.charges_version,
+        ) != (strategy.digest(), policy_fingerprint(policy), Charges().version):
+            raise ValueError("model context differs from this backtest")
+        if model.artifact.synthetic and not dataset.manifest.synthetic:
+            raise ValueError("a synthetic model may only score synthetic data")
     output = output.resolve()
     if output.is_relative_to(dataset.directory):
         raise ValueError("research output must be outside the input dataset")
@@ -48,7 +70,7 @@ def run_backtest(
     )
     db = Database(isolated.database, isolated.starting_cash)
     try:
-        engine = PaperBroker(db, isolated, dataset.manifest.calendar())
+        engine = PaperBroker(db, isolated, dataset.manifest.calendar(), model=model)
         engine.register(list(dataset.manifest.instruments))
         rules = RuleStrategy(strategy, engine.calendar)
         catalog = {i.symbol: i for i in dataset.manifest.instruments}
@@ -60,14 +82,39 @@ def run_backtest(
         first: datetime | None = None
         last: datetime | None = None
         last_snapshot: dict[str, Any] | None = None
+        batch: list[tuple[float, Candidate, FeatureVector, dict[str, Any]]] = []
         with (
             (output / "decisions.jsonl").open("x") as decisions,
             (output / "equity.csv").open("x", newline="") as equity_file,
         ):
             equity = csv.writer(equity_file)
             equity.writerow(["time", "equity", "cash", "reserved_cash", "valuation_fresh"])
+
+            def flush_batch() -> None:
+                # Rank only candidates sharing the same observed availability clock.
+                for rank, (probability, candidate, vector, payload) in enumerate(
+                    sorted(batch, key=lambda row: (-row[0], row[1].symbol, row[1].intent_id)), 1
+                ):
+                    order = engine.submit(candidate, candidate.decision_time, features=vector)
+                    payload.update(
+                        {
+                            "ml_probability": probability,
+                            "ml_rank": rank,
+                            "ml_model_sha256": candidate.model_version,
+                            "ml_features": vector.model_dump(mode="json"),
+                            "risk_order_state": order["state"],
+                            "risk_reasons": order["reason"],
+                        }
+                    )
+                    decisions.write(json.dumps(payload, sort_keys=True) + "\n")
+                batch.clear()
+
             for event in dataset.events():
                 now = event.time
+                if model and now <= model.artifact.available_after:
+                    raise ValueError("backtest data must start after model validation and embargo")
+                if last is not None and now > last:
+                    flush_batch()
                 first, last = first or now, now
                 counts[event.type] += 1
                 if isinstance(event, ConnectionEvent):
@@ -111,13 +158,35 @@ def run_backtest(
                             tx, stamp(now), "strategy_evaluation", event.candle.symbol, payload
                         )
                     if evaluation.candidate:
-                        order = engine.submit(evaluation.candidate, now)
-                        payload["risk_order_state"], payload["risk_reasons"] = (
-                            order["state"],
-                            order["reason"],
-                        )
+                        if model:
+                            from trading_agent.ml.features import make_features
+
+                            candidate = evaluation.candidate.model_copy(
+                                update={"requires_ml": True, "model_version": model.version}
+                            )
+                            bounds = engine.calendar.bounds(now)
+                            assert bounds is not None
+                            vector = make_features(
+                                candidate=candidate,
+                                candle=event.candle,
+                                candle_end=evaluation.candle_end,
+                                features=evaluation.features,
+                                quote=latest[candidate.symbol],
+                                instrument=catalog[candidate.symbol],
+                                opened=bounds[0],
+                                policy=policy,
+                            )
+                            payload["candidate"] = candidate.model_dump(mode="json")
+                            batch.append((model.score(vector), candidate, vector, payload))
+                        else:
+                            order = engine.submit(evaluation.candidate, now)
+                            payload["risk_order_state"], payload["risk_reasons"] = (
+                                order["state"],
+                                order["reason"],
+                            )
                         counts["candidates"] += 1
-                    decisions.write(json.dumps(payload, sort_keys=True) + "\n")
+                    if not (model and evaluation.candidate):
+                        decisions.write(json.dumps(payload, sort_keys=True) + "\n")
                     days.add(event.candle.start.astimezone(IST).date().isoformat())
                 elif isinstance(event, KillEvent):
                     engine.kill(now)
@@ -134,6 +203,9 @@ def run_backtest(
                     ]
                 )
                 last_snapshot = snapshot
+            flush_batch()
+            if last is not None:
+                last_snapshot = engine.snapshot(last)
         if first is None or last is None or last_snapshot is None:
             raise ValueError("empty research dataset")
         if not counts["quote"] or not counts["candle"]:
@@ -184,6 +256,8 @@ def run_backtest(
         report = {
             "schema_version": 1,
             "rule_version": RULE_VERSION,
+            "model_sha256": model.version if model else None,
+            "model_available_after": stamp(model.artifact.available_after) if model else None,
             "runtime": {
                 "application": __version__,
                 "python": platform.python_version(),

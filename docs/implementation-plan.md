@@ -5,9 +5,9 @@ Prepared 20 October 2026. This is the execution record for the original
 
 ## Implemented scope
 
-The repository delivers Phase 1 infrastructure and Phase 2 strategy research using
-the same virtual broker/risk mechanics. Rules run in isolated offline accounts.
-No live adapter, trained model, automatic connected-feed strategy, profitability
+The repository delivers Phase 1 infrastructure, Phase 2 strategy research and Phase 3
+offline calibrated ML using the same virtual broker/risk mechanics. Rules and models
+run in isolated offline accounts. No live adapter, automatic connected-feed strategy, profitability
 or compliance readiness is implied. External account creation, entitlement checks
 and OS service installation require real credentials/hardware and are not fabricated.
 
@@ -25,7 +25,7 @@ and OS service installation require real credentials/hardware and are not fabric
 | Kill and recovery | Durable switch, explicit operator reset, restart reconciliation/cancellation/requeued exits |
 | Tests and quality | Unit, integration, functional CLI/API, replay, security, dependency audit, Ruff, mypy, CI |
 | Deployment and recovery | macOS/Pi scripts, launchd/systemd templates, verified backup/restore tests |
-| Research foundations | O(1) EMA/VWAP/Wilder ATR; deterministic unavailable-model stub |
+| Research foundations | O(1) EMA/VWAP/Wilder ATR; service still rejects unconfigured ML |
 
 ## Enhancements and justified changes
 
@@ -93,6 +93,48 @@ Enhancements to the Phase 2 plan:
 
 See [backtesting.md](backtesting.md) for input construction, rules, reports and sample gates.
 
+## Phase 3 delivered — version 0.3.0
+
+| Work item | Implementation / evidence |
+|---|---|
+| Causal training schema | Twelve finite ordered features, completed-time checks, economic candidate fingerprint, no outcomes in features |
+| Execution labels | Independent fee/risk/latency/depth-aware paper trials, time barriers and actual fill interval ends; exclusions retained |
+| Provenance | Source manifest/hashes, full strategy/economic settings, label policy, code hash, sample/audit hashes and completion manifest |
+| Chronological validation | Whole-session expanding walk-forward blocks, interval purge/embargo, independent later calibration and frozen final holdout |
+| Baseline model | Train-only StandardScaler + fixed logistic regression + separate regularized sigmoid calibration; no hyperparameter search |
+| Diagnostics/gates | ROC-AUC, Brier/log loss, training-only baseline, reliability/ECE, selected count/net label P&L and strict validation consistency |
+| Safe artifacts | Bounded local JSON coefficients/reports, exact dimensions/schema, hash checks, no executable persistence, failed-gate refusal |
+| Scored research | Same-availability-time ranking, deterministic ties, later portfolio replay and independent risk/model gate |
+| Account continuity | Durable model version/schema marker, missing/changed gate refusal before recovery, idempotency includes vector |
+| Lightweight inference | Pure Python twelve-feature math; optional training packages never imported for scoring; Pi setup uses runtime/broker extras |
+| Commands/docs | `ml-build`, `ml-train`, `ml-demo`, `backtest --model`, full [ML guide](ml-research.md) and corresponding component updates |
+| Verification | Unit/functional/causality/censoring/risk/integrity/determinism tests plus a separate inference/ranking benchmark |
+
+Enhancements to the Phase 3 plan:
+
+1. Label **all standalone feasible candidates**, rather than only trades selected
+   by a competing portfolio. Preserve censored/rejected/unfilled/interrupted paths
+   separately so missing outcomes never silently become negative labels.
+2. Use actual quote-driven paper execution for labels. OHLC paths and forced horizon
+   closes are not reconstructed. Label end includes the final liquidation fill,
+   allowing delayed outcomes to be purged correctly across split boundaries.
+3. Reserve separate calibration blocks in every fold; fitting scalers, base models
+   or calibration on evaluation/holdout observations is prohibited.
+4. Make model availability follow **final validation plus embargo**, not merely
+   coefficient fitting. A historical replay cannot use future approval evidence.
+5. Freeze fixed baseline coefficients before final holdout diagnostics, retain
+   unsuccessful reports, and check diagnostic consistency again during loading.
+6. Export inspectable JSON math rather than pickle/joblib. Keep training optional
+   and outside the connected feed process; add measured inference/ranking latency.
+7. Keep synthetic test settings separate from real research defaults. An explicit
+   offline synthetic override relaxes only provenance and only on synthetic data.
+8. Bind vectors to economic candidates and accounts to model identity. Model gates
+   add rejection conditions without changing the original risk hash or any limit.
+
+Synthetic end-to-end verification uses sixty training/validation sessions followed
+by ten unseen invented sessions. It establishes software behavior only. There is no
+empirically accepted market model, connected strategy automation or live readiness.
+
 ## Remaining milestones and acceptance gates
 
 | Milestone | Required next evidence |
@@ -100,7 +142,7 @@ See [backtesting.md](backtesting.md) for input construction, rules, reports and 
 | Real read-only session | Actual manual login, profile, history entitlement, full quote feed; tests currently mock Kite |
 | Target-device operations | ARM64 Pi dependency installation, reboot/launchd/systemd/power-loss drill, disk monitoring |
 | Empirical strategy validation | Actual matching raw candle/quote data, point-in-time universe/corporate-action review, calibrated fees/depth and retained unfavorable experiments |
-| ML (Phase 3) | Chronological purged walk-forward data, calibration, untouched OOS, versioned schema/model/report |
+| Empirical ML acceptance | Implemented Phase 3 workflow must pass on reviewed real data, with exclusion/selection/cost assumptions retained and later portfolio validation |
 | Extended paper validation (Phase 4) | Sustained actual feed, calibrated fill/cost assumptions, outage drills and latency distribution with positions |
 | Future live (Phases 5–6) | Separate explicit approval, current compliance and broker rules, separate reviewed adapter/reconciliation |
 

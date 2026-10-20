@@ -4,14 +4,15 @@ build-backend = "hatchling.build"
 
 [project]
 name = "agentic-trader"
-version = "0.2.0"
-description = "Read-only Kite data, durable paper execution, and causal strategy research"
+version = "0.3.0"
+description = "Read-only Kite data, durable paper execution, and chronological ML research"
 readme = "README.md"
 requires-python = ">=3.13,<3.14"
 dependencies = ["fastapi>=0.115,<1", "pydantic>=2.10,<3", "uvicorn>=0.34,<1"]
 
 [project.optional-dependencies]
 broker = ["httpx>=0.28,<1", "websockets>=17.1,<18"]
+ml = ["numpy>=2.2,<3", "scikit-learn>=1.7,<2"]
 dev = ["pytest>=8,<10", "pytest-cov>=6,<8", "httpx>=0.28,<1", "httpx2>=2,<3", "ruff>=0.11,<1", "mypy>=1.15,<2", "pip-audit>=2.9,<3"]
 
 [project.scripts]

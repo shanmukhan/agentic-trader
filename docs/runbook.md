@@ -98,3 +98,27 @@ controlled reboot yourself; this implementation has not enabled a system service
 verified power recovery on your hardware. Keep FileVault/firewall/updates enabled,
 use SSH keys for remote access, and avoid public port forwarding. SSH local forwarding
 preserves the localhost browser Origin expected by controls.
+
+## Offline model operations
+
+Follow [ml-research.md](ml-research.md) for `ml-build`, `ml-train` and scored backtests.
+Use new output directories, preserve settings/data/audit/model/report together, and
+keep training jobs outside the feed process. Pi setup installs broker/runtime extras;
+the development/training environment additionally needs `ml` and `dev` extras.
+
+If labels are sparse, inspect `manifest.json: counts` and `label_audit.jsonl` censor
+reasons. Do not turn excluded/unfilled trades into negative labels. No sample/model
+completion manifest means failure; preserve the partial folder and rerun separately.
+A fitted model failing diagnostic gates retains validation files but cannot load.
+Obtain better reviewed data or a newly predeclared hypothesis; do not edit gate flags.
+
+A context mismatch means the strategy, economic policy or fee version differs;
+restore matching reviewed inputs or retrain into a new artifact. A time rejection
+means the replay overlaps model fitting/validation/embargo; supply a later dataset.
+`--allow-synthetic-model` applies only to invented fixtures and cannot bypass other
+gates. A model-version account mismatch requires a new account. Do not erase metadata
+or restart a scored account as rule-only to remove its gate.
+
+Phase 4 still needs actual paper-feed integration, retained empirical validation,
+deployment latency/load and outage/recovery drills. No model from these commands is
+automatically attached to `serve`.

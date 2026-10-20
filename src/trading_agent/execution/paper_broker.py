@@ -6,14 +6,19 @@ import sqlite3
 import threading
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from trading_agent.execution.costs import Charges, down, up
 from trading_agent.market_data.calendar import IST, SessionCalendar
 from trading_agent.models import Candidate, Instrument, Quote, RiskDecision, stamp, utc
 from trading_agent.persistence.database import Database
 from trading_agent.risk.limits import size
+from trading_agent.risk.policy import policy_fingerprint
 from trading_agent.settings import Settings
+
+if TYPE_CHECKING:
+    from trading_agent.ml.features import FeatureVector
+    from trading_agent.ml.inference import ResearchModel
 
 D = Decimal
 PENDING = "state IN ('ACCEPTED','PARTIAL')"
@@ -30,8 +35,11 @@ class PaperBroker:
         settings: Settings,
         calendar: SessionCalendar,
         recovery_time: datetime | None = None,
+        *,
+        model: "ResearchModel | None" = None,
     ):
         self.db, self.settings, self.calendar = db, settings, calendar
+        self.model = model
         self.charges = Charges()
         self.lock = threading.RLock()
         self.connected = False  # explicitly NOT restored; reconnect must provide fresh data
@@ -39,11 +47,7 @@ class PaperBroker:
         self.bad_symbols: set[str] = set()
         self.seen_symbols: set[str] = set()
         # Account policy cannot silently change across restarts.
-        policy = settings.model_dump(
-            mode="json",
-            exclude={"operator_token", "host", "port", "database", "calendar", "stream_tokens"},
-        )
-        signature = hashlib.sha256(json.dumps(policy, sort_keys=True).encode()).hexdigest()
+        signature = policy_fingerprint(settings)
         with db.transaction() as tx:
             existing = tx.execute("SELECT value FROM meta WHERE key='policy_hash'").fetchone()
             if not existing and tx.execute("SELECT 1 FROM orders LIMIT 1").fetchone():
@@ -55,6 +59,26 @@ class PaperBroker:
                 raise RuntimeError("missing or changed account charge schedule")
             db.set(tx, "policy_hash", signature)
             db.set(tx, "charges_version", self.charges.version)
+            model_row = tx.execute("SELECT value FROM meta WHERE key='model_version'").fetchone()
+            model_schema = tx.execute(
+                "SELECT value FROM meta WHERE key='model_gate_schema'"
+            ).fetchone()
+            if bool(model_schema) != bool(model_row) or model_schema and model_schema[0] != "1":
+                raise RuntimeError("missing or unsupported account model gate metadata")
+            if (
+                not model_schema
+                and tx.execute(
+                    "SELECT 1 FROM events WHERE kind='model_decision' LIMIT 1"
+                ).fetchone()
+            ):
+                raise RuntimeError("missing account model gate fingerprint")
+            model_version = model.version if model else "none"
+            if model_row and model_row[0] != model_version:
+                raise ValueError("account model changed; use a new research account")
+            if not model_row and model and tx.execute("SELECT 1 FROM orders LIMIT 1").fetchone():
+                raise ValueError("cannot attach a model to an existing unscored account")
+            db.set(tx, "model_version", model_version)
+            db.set(tx, "model_gate_schema", "1")
             # Pending orders from a dead process are cancelled before processing new signals.
             for row in tx.execute(f"SELECT * FROM orders WHERE {PENDING}").fetchall():
                 self._cancel(tx, row, stamp(recovery_time or datetime.now(UTC)), "RESTART_RECOVERY")
@@ -226,11 +250,15 @@ class PaperBroker:
                 reasons.append("SPREAD_TOO_WIDE")
         return reasons
 
-    def submit(self, candidate: Candidate, now: datetime) -> dict[str, Any]:
+    def submit(
+        self, candidate: Candidate, now: datetime, *, features: "FeatureVector | None" = None
+    ) -> dict[str, Any]:
         now = utc(now)
         normalized = candidate.model_dump(mode="json")
         normalized["stop"] = format(candidate.stop.normalize(), "f")
         normalized["target"] = format(candidate.target.normalize(), "f")
+        if features is not None:
+            normalized["features"] = features.model_dump(mode="json")
         fingerprint = hashlib.sha256(json.dumps(normalized, sort_keys=True).encode()).hexdigest()
         try:
             with self.lock, self.db.transaction() as tx:
@@ -247,7 +275,27 @@ class PaperBroker:
                 age = (now - candidate.decision_time).total_seconds()
                 if not 0 <= age <= self.settings.max_quote_age_seconds:
                     reasons.append("STALE_OR_FUTURE_DECISION")
-                if candidate.requires_ml:
+                if self.model:
+                    model_reasons = self.model.authorize(
+                        candidate,
+                        features,
+                        now=now,
+                        policy_sha256=policy_fingerprint(self.settings),
+                        charges_version=self.charges.version,
+                    )
+                    reasons.extend(model_reasons)
+                    self.db.event(
+                        tx,
+                        stamp(now),
+                        "model_decision",
+                        candidate.intent_id,
+                        {
+                            "model_sha256": self.model.version,
+                            "reasons": model_reasons,
+                            "features": features.model_dump(mode="json") if features else None,
+                        },
+                    )
+                elif candidate.requires_ml:
                     reasons.append("MODEL_UNAVAILABLE")
                 if tx.execute(
                     "SELECT 1 FROM positions WHERE symbol=?", (candidate.symbol,)

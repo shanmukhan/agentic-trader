@@ -174,9 +174,10 @@ trades remain in the snapshot and are excluded from completed-trade statistics.
 `complete` means flat at end without detected candle/quote-quality problems. It
 does not imply profitability or sufficient evidence. The provisional sample gate
 requires twenty observed sessions and thirty completed trades. Passing it or a
-non-synthetic declaration is not out-of-sample validation. There is no optimizer,
-training split, annualized Sharpe or live approval; Phase 3 must add ML walk-forward
-validation separately.
+non-synthetic declaration is not out-of-sample validation. Rule-only runs contain no
+optimizer, training split, annualized Sharpe or live approval. Phase 3 adds a separate
+[chronological ML workflow](ml-research.md), including held-out validation and
+optional `backtest --model` scoring on a later dataset.
 
 The current observed charge schedule applies to all simulated dates; historical fee
 matching is explicitly **not verified**. Results are estimates, not reconstructed
@@ -201,3 +202,10 @@ constant work per candle. The [Mac baseline](benchmark-strategy-macos.json) meas
 approximately **0.018 ms p99** over 2,000 evaluations per hypothesis. Object
 construction, file decoding, disk, network and execution/risk transactions are
 outside that timer. See [performance.md](performance.md) and [test-plan.md](test-plan.md).
+
+With `--model`, candidates at the same availability timestamp are ranked by score,
+then symbol/intent as deterministic tie breaks, before the next timestamp's data is
+processed. The independent broker rechecks model context and risk. Model/feature
+hashes, probabilities, ranks and risk reasons extend `decisions.jsonl`. Data must
+start after completion of the model's validation data/session plus embargo. The full model usage
+and artifact contracts are in [ml-research.md](ml-research.md).

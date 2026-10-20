@@ -133,6 +133,7 @@ def write_report(directory: Path, report: dict[str, Any], trades: list[dict[str,
         f"Status: **{report['status']}**. PAPER ONLY.",
         "",
         f"Hypothesis: `{report['strategy']['hypothesis']}`.",
+        f"Model: `{report.get('model_sha256') or 'rule-only'}`.",
         "",
         f"Synthetic data: **{report['dataset']['synthetic']}**. "
         "This run does not establish strategy profitability or live readiness.",
@@ -154,8 +155,8 @@ def write_report(directory: Path, report: dict[str, Any], trades: list[dict[str,
         "- Completed five-minute candles create signals; only later observed bid/ask quotes fill.",
         "- Network, queue position, price impact and missed intratick moves are not reconstructed.",
         "- Unfinished positions remain open; stale valuations and gaps are disclosed.",
-        "- No parameter search, trained ML, annualized Sharpe, "
-        "or live trading approval is produced.",
+        "- No parameter search, annualized Sharpe or live trading approval is produced.",
+        "- Optional offline ML identity and availability are recorded in report.json.",
         "",
         "See `report.json` for exact input, configuration, code and journal hashes, "
         "data-quality counters, timestamps, gates and all financial values.",

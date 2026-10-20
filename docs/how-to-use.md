@@ -2,10 +2,10 @@
 
 ## 1. Scope and prerequisites
 
-This release implements Phase 1 and Phase 2 research: virtual execution/risk controls,
-predeclared rule hypotheses and an isolated quote-driven backtester. It does not choose
-an investment universe for you, train a model, produce investment recommendations,
-or execute live trades. Sample trades are synthetic. Read
+This release implements Phases 1–3: virtual execution/risk controls, predeclared
+rule hypotheses, isolated quote-driven backtests and chronological ML research.
+It does not choose an investment universe, produce investment recommendations or
+execute live trades. Sample trades are synthetic. Read
 [risk-policy.md](risk-policy.md) before submitting paper intents.
 
 Use macOS or 64-bit Raspberry Pi OS, a patched Python **3.13.16**, local disk with
@@ -34,7 +34,8 @@ pip-audit --skip-editable
 `uv.lock` contains exact package versions and artifact hashes. Always use `--frozen`
 for deployment. `pyproject.toml` expresses supported version ranges; do not replace
 the lock with an unconstrained `pip install`. The `broker` extra supplies HTTP and
-WebSocket transports; the `dev` extra supplies checks. For a smaller deployed
+WebSocket transports; the `dev` extra supplies checks and `ml` supplies offline
+training. Runtime/scoring does not import the training stack. For a smaller deployed
 environment, use `uv sync --frozen --extra broker` after development validation.
 `scripts/setup_macos.sh` and `scripts/setup_pi.sh` wrap the initial setup.
 
@@ -295,4 +296,26 @@ Read [backtesting.md](backtesting.md) for rule definitions, data bundles, export
 metrics and limitations. Both commands create independent accounts beneath the
 requested output directories. `serve --stream` does not automatically submit these
 rules. Completed candles and observed bid/ask quotes are required; candle-only
-history is refused instead of being converted into assumed fills. ML is unavailable.
+history is refused instead of being converted into assumed fills.
+
+## 15. Phase 3 offline ML
+
+```sh
+trading-agent ml-demo --directory data/ml-first
+trading-agent backtest data/ml-first/future-data --model data/ml-first/model \
+  --allow-synthetic-model --output data/ml-first-scored-again
+```
+
+Read the detailed [ML usage guide](ml-research.md) before using real research data.
+The synthetic demo labels sixty candidates, trains/calibrates on separate chronological
+blocks, evaluates walk-forward/final holdout periods, and compares rules/scoring on
+ten later sessions. It cannot pass the non-synthetic acceptance gate and provides no
+market-performance evidence. Every command creates new output paths and leaves the
+service account untouched.
+
+For reviewed datasets, use `ml-build`, then `ml-train --training config/ml.toml`,
+then `backtest --model` on data starting after validation plus embargo. Preserve the
+sample audit, model/validation manifests, hypotheses and failed results. Real research
+defaults require at least ninety sessions plus sufficient examples in every block.
+No command deploys a model to `serve`; the service still rejects ML-dependent intents
+without a configured model and requires operator-supplied paper intents.

@@ -1,0 +1,17 @@
+# Small SYNTHETIC functional demonstration, not a real-data acceptance policy.
+min_train_sessions = 20
+calibration_sessions = 10
+validation_sessions = 10
+walk_forward_folds = 2
+holdout_sessions = 10
+embargo_minutes = 30
+min_train_samples = 20
+min_calibration_samples = 10
+min_evaluation_samples = 10
+min_class_samples = 2
+min_selected_samples = 4
+probability_threshold = 0.6
+min_auc = 0.55
+max_calibration_error = 0.15
+regularization_c = 1.0
+max_iterations = 2000

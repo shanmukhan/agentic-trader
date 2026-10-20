@@ -1,10 +1,10 @@
 # Zerodha AI Intraday Equity Trading Agent
 
-**Project specification:** v1.2
+**Project specification:** v1.3
 
 **Prepared:** 20 October 2026
 
-**Status:** Phase 1 and Phase 2 research implemented; empirical broker/device/strategy acceptance pending
+**Status:** Phases 1–3 implemented; empirical broker/device/strategy/model acceptance pending
 
 **Safety:** Paper only. No live trading, real orders or funds transfers in the implemented phases.
 
@@ -33,7 +33,14 @@ quotes are required; candle-only simulated executions and forced end-of-data clo
 are prohibited. Synthetic demonstrations are labelled and include winning/losing
 outcomes. Research uses separate virtual accounts and cannot override risk controls.
 
-ML, automatic rule use on the connected feed and live phases remain future work.
+Phase 3 adds fee-aware counterfactual labels, a fixed twelve-feature schema,
+chronological purged walk-forward logistic training, independent sigmoid calibration,
+frozen final holdout evaluation, strict JSON artifacts and later scored portfolio
+research. Model availability includes validation plus embargo, and model approval
+cannot override the independent risk engine. See [the ML guide](docs/ml-research.md).
+Synthetic fixtures verify behavior; no market model is empirically accepted.
+
+Automatic rule/model use on the connected feed and live phases remain future work.
 Implementation does not imply real-market profitability or broker/device readiness.
 
 ## 1. Project charter
@@ -75,7 +82,7 @@ Zerodha read-only Kite API / WebSocket
                   |
      Rule candidate generation (Phase 2)
                   |
-      ML score/rank (Phase 2)
+      ML score/rank (Phase 3 offline research)
                   |
       Deterministic risk gate
                   |
@@ -230,7 +237,7 @@ Research VWAP trend continuation and opening-range breakout as **hypotheses**, n
 
 **Illustrative engineering defaults, not personalized investment advice.** These thresholds are intentionally conservative and must be evaluated against fees, lot/share sizing, and strategy viability.
 
-| Control | Phase 1/2 paper default |
+| Control | Phases 1–3 paper default |
 |---|---|
 | Virtual starting cash | ₹25,000 |
 | Max planned risk per trade | 0.25% = ₹62.50 |
@@ -404,7 +411,9 @@ installation/reboot and target-device checks remain unchecked until performed.
 | Security | Secret scan, forbidden live route, dashboard auth | No secret leaks or live execution path |
 | Operational | Disconnect, reconnect, reboot, backup/restore | Safe recovery with alerting |
 
-For Phase 1, the ML scorer is a deterministic stub. Training, validation, and performance gating come later.
+The connected service retains an unavailable-model gate. Phase 3 implements offline
+training/calibration/validation and scored research with independent risk checks.
+Empirical validation and connected paper-feed model deployment remain later acceptance work.
 
 ## 14. Initial developer tasks (implementation order)
 

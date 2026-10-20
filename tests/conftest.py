@@ -58,7 +58,7 @@ def candidate(identity="entry", *, now=NOW, symbol="NSE:DEMO", stop="495", targe
 def engine_factory(tmp_path):
     opened = []
 
-    def make(**overrides):
+    def make(*, model=None, **overrides):
         settings = Settings(
             database=tmp_path / f"account-{len(opened)}.db",
             operator_token=SecretStr(TOKEN),
@@ -72,7 +72,7 @@ def engine_factory(tmp_path):
                 date(2026, 10, 21): (time(9, 15), time(15, 30)),
             }
         )
-        engine = PaperBroker(db, settings, calendar)
+        engine = PaperBroker(db, settings, calendar, model=model)
         engine.register(
             [
                 Instrument(symbol="NSE:DEMO", token=1, tick_size=D("0.05")),
@@ -111,3 +111,37 @@ def changed_dataset(dataset, directory, transform):
     events = list(dataset.events())
     write_bundle(directory, dataset.manifest, iter(transform(events)))
     return Dataset(directory)
+
+
+@pytest.fixture(scope="session")
+def ml_demo(tmp_path_factory):
+    from pathlib import Path
+
+    from trading_agent.ml.demo import run_ml_demo
+    from trading_agent.ml.schema import TrainingSettings
+    from trading_agent.strategy.rules import StrategySettings
+
+    directory = tmp_path_factory.mktemp("ml") / "demo"
+    summary = run_ml_demo(
+        directory,
+        strategy=StrategySettings(),
+        training=TrainingSettings.load(Path("config/ml-demo.toml")),
+        policy=Settings(),
+    )
+    return directory, summary
+
+
+@pytest.fixture
+def research_model(ml_demo):
+    from trading_agent.execution.costs import Charges
+    from trading_agent.ml.inference import load_model
+    from trading_agent.risk.policy import policy_fingerprint
+    from trading_agent.strategy.rules import StrategySettings
+
+    return load_model(
+        ml_demo[0] / "model",
+        strategy_sha256=StrategySettings().digest(),
+        policy_sha256=policy_fingerprint(Settings()),
+        charges_version=Charges().version,
+        allow_synthetic=True,
+    )

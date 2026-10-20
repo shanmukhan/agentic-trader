@@ -96,3 +96,23 @@ Research journals also include `strategy_evaluation` with completed-candle featu
 filter reasons and the generated candidate. Only subsequent risk decisions can
 authorize a simulated order. Zero simulated latency still requires a strictly later
 exchange timestamp than the order's decision/creation time.
+
+## Phase 3 offline commands and artifacts
+
+- `ml-build DATASET --strategy PATH --horizon-minutes 30 --output NEW_PATH` builds
+  isolated execution labels and a hashed provenance/audit bundle.
+- `ml-train SAMPLES --training config/ml.toml --output NEW_PATH` fits chronological
+  train/calibration blocks and emits versioned JSON coefficients and diagnostics.
+- `ml-demo --directory NEW_PATH` exercises the full synthetic workflow using
+  `config/ml-demo.toml`; optional `--strategy`/`--training` select explicit fixtures.
+- `backtest DATASET --model MODEL_PATH --output NEW_PATH` requires a verified model
+  matching strategy/policy/fees and data starting after validation plus embargo.
+  `--allow-synthetic-model` is offline-only, requires `--model`, and relaxes only
+  provenance. Synthetic models cannot score non-synthetic data.
+
+There is no new HTTP route, quantity field, model upload, model deployment or live
+operation. Model-bound research journals add `model_decision` (artifact ID, features,
+reasons). `decisions.jsonl` adds probability, same-time rank, vector and model hash.
+The broker recomputes the gate rather than trusting a reported probability.
+Strict feature/sample/artifact/report contracts and new reason codes are detailed
+in [ml-research.md](ml-research.md) and [risk-policy.md](risk-policy.md).

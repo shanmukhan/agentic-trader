@@ -1,5 +1,79 @@
 # Change log
 
+## 2026-10-20 — Phase 3 chronological ML research (0.3.0)
+
+Added a versioned twelve-feature causal schema with finite values, completed-time
+and instrument checks, and a normalized fingerprint binding economic candidate
+identity. Labels use independent standalone paper accounts with existing fee-aware
+risk sizing, depth, partial fills, tick rounding and later-quote latency. Predeclared
+time barriers queue exits before reading subsequent prices; intervals end at actual
+last fills. Unfilled, unresolved, interrupted and bad/gapped paths are censored and
+audited rather than converted into negative targets or forced closes.
+
+Added hash-verified sample bundles preserving source manifests, full strategy and
+economic settings, label policy, sessions, code identity, counts and execution audit.
+Readers validate bounded local paths/records, uniqueness, universe/session context,
+outcome-count consistency and immutable inputs. Completion manifests are written
+last. Labeling uses temporary independent accounts plus a retained quote observer;
+it never opens or changes the configured service account.
+
+Added whole-session expanding walk-forward splits with timestamp-interval purging
+and strict embargo, train-only scaling/logistic fitting, disjoint later regularized
+sigmoid calibration, and a final holdout inspected after coefficients freeze. Fixed
+settings replace parameter search. Diagnostics include ROC-AUC, Brier/log loss,
+training-prevalence baseline, reliability/ECE, selected counts and net counterfactual
+P&L. Insufficient fitting data fails; failed evaluation models retain diagnostics
+and cannot load. Model availability follows the latest final validation label,
+declared session close or source observation, plus embargo.
+
+Added bounded JSON-only artifacts and a lightweight pure-Python loader/scorer.
+The loader checks hashes, schema/order/dimensions, finite math, report identities,
+split windows, reliability consistency, derived acceptance gates and contextual
+strategy/policy/fee matching. No pickle or joblib is loaded. Synthetic override
+relaxes provenance only, requires all metric gates, and only scores synthetic data.
+Integrity hashes do not authenticate a maliciously rewritten local bundle.
+
+Added same-availability-time probability ranking before independent risk admission.
+The paper broker rechecks feature/candidate/model context, availability and threshold;
+all previous sizing, cash, loss, position, freshness and kill gates remain in force.
+Vector changes conflict under an existing intent. Model version/schema metadata
+prevents silent gate removal on restart; missing metadata fails before cancelling
+pending orders. The original economic-policy hash encoding is preserved. No database
+schema migration, live route, network execution adapter or connected automation was added.
+
+Added `ml-build`, `ml-train`, `ml-demo` and `backtest --model`, separate real/synthetic
+training policies, optional locked training dependencies, CI steps and a scoring/ranking
+benchmark. The Pi setup now installs only broker/runtime extras. Updated the supplied
+specification, implementation plan and corresponding architecture, risk, security,
+API, runbook, performance, test and usage Markdown; added the detailed ML usage guide.
+
+### Phase 3 validation
+
+- **215 tests passed**, including all 159 previous regressions and 56 added unit,
+  integration and functional cases. Reported coverage: **93% overall**, features/schema
+  **100%**, training/samples **99%**, inference **97%**, labeling **94%**,
+  validation diagnostics **91%** and independent paper execution **93%**.
+- Ruff lint/format, mypy, working-tree secret-pattern checks, local Markdown links,
+  frozen lock verification and offline wheel/source builds for **0.3.0** passed.
+- Current installed dependency audit: **no known vulnerabilities**, no ignored
+  advisory. Optional NumPy 2.5.4 / scikit-learn 1.9.1 dependencies are hashed in the
+  lock. A fresh-process test confirms loading imports no heavy training/persistence stack.
+- The synthetic functional workflow labels sixty candidates (30 per class), passes
+  invented walk-forward/holdout diagnostics, and correctly fails `non_synthetic`.
+  Ten subsequent sessions remain outside training and validation. Their rule/scored
+  portfolio results are reproducible and documented as invented software fixtures.
+- The original service account passed integrity/accounting checks and remains flat
+  at **₹25,000.00**, with zero fees, zero reservations and no feed connection.
+- The 10,000-observation Mac benchmark measured score p99 **0.0012 ms** and ten-candidate
+  score/rank p99 **0.0144 ms**. These exclude feature creation, parsing, artifact I/O,
+  risk/commit, training and network. Durable quote-path recheck measured p99 **0.156 ms**
+  in the existing empty-portfolio fixture; no durability setting was weakened.
+
+No model has been empirically accepted on real market data. Quote density, exclusions,
+historical fees, corporate actions, selection bias, actual broker access, Pi operations
+and connected paper-feed validation remain external acceptance work. Synthetic passes
+and small local latency measurements do not establish profitability or live readiness.
+
 ## 2026-10-20 — Phase 2 strategy research (0.2.0)
 
 Added immutable, versioned ORB and VWAP-continuation rule settings and independent

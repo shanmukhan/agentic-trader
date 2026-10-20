@@ -20,7 +20,7 @@ can produce larger simulated losses than a stop budget.
 | Spread | At most 30 bps; positive bid and ask depth for entries |
 | Slippage | Five bps adverse, rounded adversely to instrument tick |
 | Latency / TTL | 100 ms simulated minimum / 30 s unfilled entry expiry |
-| Model | ML-dependent intents always rejected in Phase 1 |
+| Model | Service rejects ML-dependent intents; verified offline models can only add rejection gates |
 
 ## Sizing and reservations
 
@@ -91,3 +91,25 @@ completed-trade P&L from estimated liquidation equity. Historical fee matching i
 not verified: the current observed charge snapshot is an explicit approximation
 across dataset dates. Synthetic provenance and minimum sample gates cannot authorize
 live trading. See [backtesting.md](backtesting.md) for research assumptions.
+
+## Phase 3 independent model boundary
+
+An offline model cannot supply quantity or alter account limits. The broker checks
+its stored version, policy/fee identity, feature/candidate fingerprint, decision
+time, completed-feature time, validation availability and probability threshold.
+Unscored candidates on a model-bound account receive `MODEL_REQUIRED`; missing or
+inconsistent vectors receive `MODEL_FEATURE_CONTEXT`; mismatched artifacts receive
+`MODEL_CONTEXT_MISMATCH`. Low scores receive `MODEL_BELOW_THRESHOLD`. A model that
+is not available at that time receives `MODEL_NOT_YET_AVAILABLE`. Without a model,
+ML-dependent candidates still receive `MODEL_UNAVAILABLE`.
+
+Model checks precede sizing but do not replace any independent gate. The model
+identity is durable; removing or replacing it requires a separate research account.
+Idempotent intent fingerprints include the supplied feature vector. Changing a
+vector under an existing intent raises a conflict instead of rescoring its order.
+
+Training labels use separate feasible-trade accounts and actual simulated costs;
+they exclude bad/incomplete paths. Selected label P&L does not account for concurrent
+portfolio competition. Walk-forward/holdout gates and later scored replays provide
+research diagnostics only. No automatic feed strategy, live readiness or financial
+authorization follows. See [ml-research.md](ml-research.md) for label semantics and limits.

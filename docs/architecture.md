@@ -4,8 +4,9 @@ The application is a Python 3.13 modular monolith. `main.py` owns startup, CLI a
 shutdown. HTTP/WebSocket market data flows through `broker/readonly_kite.py`, typed
 models, the paper risk/execution boundary and SQLite. Stream candles are persisted
 separately after quote processing. Candle-write failure latches a fault and disconnects
-the feed. The connected service's strategy is operator supplied; ML explicitly raises
-`ModelUnavailable`. Phase 2 rules use these indicators in offline research.
+the feed. The connected service's strategy is operator supplied; ML-dependent
+service intents remain blocked. Phases 2–3 use rules and optional calibrated ML
+only in isolated offline research.
 
 ```mermaid
 flowchart LR
@@ -77,8 +78,8 @@ missing intervals are flagged. Volume deltas across boundary ticks are assigned 
 the new bucket; exact exchange OHLCV should use verified historical candles. A stream
 disconnect clears builders, preventing outage-spanning candles from looking complete.
 Indicators reject incomplete/flagged/gapped input, use session-local VWAP, EMA and
-Wilder ATR, and reset on the next local date. Models and automated signals do not run
-on the execution path in this release.
+Wilder ATR, and reset on the next local date. Connected-feed automatic model/rule
+signals remain deferred; optional models add a gate to offline research execution.
 
 Journal growth is linear in accepted quote events. Current records have indexed
 lookups and at most ten streaming instruments and two held positions by default.
@@ -115,3 +116,36 @@ The offline exporter may sort/scan substantial data; it is not run on the feed p
 `main.py` exposes separate research commands. The connected service still requires
 operator intents; automatic rule execution on the feed is deferred to paper-feed
 validation. No schema migration or existing policy-hash change was needed.
+
+## Phase 3 labels, fitting and inference
+
+`ml/labeling.py` streams causal candidates into bounded independent paper trials.
+Each uses real sizing/fill/fee code and later quotes; interrupted, unfilled or
+unresolved outcomes are censored. Its deadline is known at entry and queues an exit
+before reading later prices. Audit records precede temporary-account cleanup. The
+source, settings, code, sample file and audit are preserved in a completion manifest.
+
+`ml/splits.py` groups whole IST sessions in expanding windows and purges label
+intervals across calibration/evaluation boundaries with a time embargo. Offline
+`ml/training.py` fits train-only scaling/logistic coefficients and a later independent
+sigmoid calibrator. Final coefficients freeze before final holdout metrics are
+computed. Diagnostics and gates are stored with the model; availability follows the
+latest validation label, session close or source observation plus embargo, protecting
+later replay from approval leakage.
+
+`ml/inference.py` loads bounded, hash-verified JSON coefficients and performs pure
+Python math. `ml/validation.py` checks report identities, windows, calibration bins,
+metric gates and availability without importing training dependencies. Candidate
+fingerprints bind features to economic intent. Artifacts never execute pickle or
+joblib. A failed gate rejects loading; synthetic overrides only relax provenance.
+
+The scored runner buffers candidates at one availability timestamp, scores/sorts
+with deterministic tie breaks and submits before the next timestamp. `PaperBroker`
+checks model identity, feature context, cutoff and threshold independently, then
+applies the existing risk/sizing/reservation boundary. Model IDs persist in metadata
+so a restart cannot remove that account's gate. Rule-only runs retain their original
+immediate submission behavior. Model decisions, vectors and scores are auditable.
+
+No new database schema or live endpoint is needed. The shared policy fingerprint
+preserves the original economic hash encoding. Heavy dependencies are optional
+training extras; connected runtime imports no training code. See [ml-research.md](ml-research.md).

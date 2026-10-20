@@ -1,0 +1,21 @@
+{
+  "python": "3.13.16",
+  "platform": "macOS-27.0-arm64-arm-64bit-Mach-O",
+  "model_sha256": "7b6f161a307f72ce2f8236c346fe17cffb508ebfc40067846906a44c30a97788",
+  "features": 12,
+  "timings": {
+    "inference": {
+      "samples": 10000,
+      "p50_ms": 0.000916,
+      "p95_ms": 0.000959,
+      "p99_ms": 0.001167
+    },
+    "rank_ten": {
+      "samples": 10000,
+      "p50_ms": 0.009375,
+      "p95_ms": 0.009584,
+      "p99_ms": 0.014375
+    }
+  },
+  "limitations": "Loaded coefficient math and sorting only; excludes feature construction, artifact loading, input decoding, training, risk/execution, disk and network. Not a Pi measurement."
+}

@@ -77,12 +77,33 @@ def parser() -> argparse.ArgumentParser:
         "dataset", type=Path, help="directory with manifest.json and events.jsonl"
     )
     research.add_argument("--strategy", type=Path, default=Path("config/strategy.toml"))
+    research.add_argument("--model", type=Path, help="verified offline model artifact directory")
+    research.add_argument(
+        "--allow-synthetic-model",
+        action="store_true",
+        help="synthetic data only; does not override metric gates",
+    )
     research.add_argument(
         "--output", type=Path, required=True, help="new isolated output directory"
     )
     research_demo = commands.add_parser("research-demo")
     research_demo.add_argument("--directory", type=Path, default=Path("data/research-demo"))
     research_demo.add_argument("--strategy", type=Path, default=Path("config/strategy.toml"))
+    build = commands.add_parser(
+        "ml-build", help="label causal candidates with isolated paper trades"
+    )
+    build.add_argument("dataset", type=Path)
+    build.add_argument("--strategy", type=Path, default=Path("config/strategy.toml"))
+    build.add_argument("--horizon-minutes", type=int, default=30)
+    build.add_argument("--output", type=Path, required=True)
+    train = commands.add_parser("ml-train", help="offline purged training/calibration/validation")
+    train.add_argument("samples", type=Path)
+    train.add_argument("--training", type=Path, default=Path("config/ml.toml"))
+    train.add_argument("--output", type=Path, required=True)
+    ml_demo = commands.add_parser("ml-demo", help="complete SYNTHETIC ML workflow")
+    ml_demo.add_argument("--directory", type=Path, default=Path("data/ml-demo"))
+    ml_demo.add_argument("--strategy", type=Path, default=Path("config/strategy.toml"))
+    ml_demo.add_argument("--training", type=Path, default=Path("config/ml-demo.toml"))
     export = commands.add_parser("export-research")
     export.add_argument("--start", required=True, type=datetime.fromisoformat)
     export.add_argument("--end", required=True, type=datetime.fromisoformat)
@@ -107,6 +128,44 @@ def execute(args: argparse.Namespace) -> Any:
         }
     # Validate mode even for demonstrations and broker-only commands.
     settings = Settings.load(args.config)
+    if args.command == "ml-build":
+        from trading_agent.backtesting.dataset import Dataset
+        from trading_agent.ml.labeling import build_samples
+        from trading_agent.ml.schema import LabelPolicy
+        from trading_agent.strategy.rules import StrategySettings
+
+        return build_samples(
+            Dataset(args.dataset),
+            strategy=StrategySettings.load(args.strategy),
+            policy=settings,
+            output=args.output,
+            labels=LabelPolicy(horizon_minutes=args.horizon_minutes),
+        )
+    if args.command == "ml-train":
+        from trading_agent.ml.samples import Samples
+        from trading_agent.ml.schema import TrainingSettings
+        from trading_agent.ml.training import train_model
+
+        report = train_model(
+            Samples(args.samples), settings=TrainingSettings.load(args.training), output=args.output
+        )
+        return {
+            "output": str(args.output),
+            "gates": report["gates"],
+            "research_approved": report["research_approved"],
+            "ready_for_live": False,
+        }
+    if args.command == "ml-demo":
+        from trading_agent.ml.demo import run_ml_demo
+        from trading_agent.ml.schema import TrainingSettings
+        from trading_agent.strategy.rules import StrategySettings
+
+        return run_ml_demo(
+            args.directory,
+            strategy=StrategySettings.load(args.strategy),
+            training=TrainingSettings.load(args.training),
+            policy=settings,
+        )
     if args.command in ("backtest", "research-demo"):
         from trading_agent.backtesting.dataset import Dataset
         from trading_agent.backtesting.demo import create_demo_dataset
@@ -120,8 +179,24 @@ def execute(args: argparse.Namespace) -> Any:
             create_demo_dataset(dataset_path, strategy)
         else:
             dataset_path, output = args.dataset, args.output
+        model = None
+        if args.command == "backtest":
+            if args.allow_synthetic_model and not args.model:
+                raise ValueError("synthetic model override requires --model")
+            if args.model:
+                from trading_agent.execution.costs import Charges
+                from trading_agent.ml.inference import load_model
+                from trading_agent.risk.policy import policy_fingerprint
+
+                model = load_model(
+                    args.model,
+                    strategy_sha256=strategy.digest(),
+                    policy_sha256=policy_fingerprint(settings),
+                    charges_version=Charges().version,
+                    allow_synthetic=args.allow_synthetic_model,
+                )
         report = run_backtest(
-            Dataset(dataset_path), strategy=strategy, policy=settings, output=output
+            Dataset(dataset_path), strategy=strategy, policy=settings, output=output, model=model
         )
         return {
             "output": str(output),

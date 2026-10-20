@@ -1,0 +1,17 @@
+# Predeclare these before viewing validation/holdout results. No parameter search runs.
+min_train_sessions = 30
+calibration_sessions = 10
+validation_sessions = 10
+walk_forward_folds = 3
+holdout_sessions = 20
+embargo_minutes = 30
+min_train_samples = 100
+min_calibration_samples = 30
+min_evaluation_samples = 30
+min_class_samples = 5
+min_selected_samples = 10
+probability_threshold = 0.6
+min_auc = 0.55
+max_calibration_error = 0.15
+regularization_c = 1.0
+max_iterations = 2000

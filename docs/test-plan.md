@@ -4,7 +4,7 @@ All automated tests use virtual capital and synthetic or mocked market data.
 No broker credentials, real orders or funds are used. Run from the repository root:
 
 Phase 1 local result (20 October 2026): **108 passed; 90% reported coverage**.
-The latest combined Phase 1/2 validation is recorded in [CHANGELOG.md](CHANGELOG.md).
+The latest combined validation is recorded in [CHANGELOG.md](CHANGELOG.md).
 
 ```sh
 .venv/bin/pytest --cov=trading_agent --cov-report=term-missing
@@ -15,6 +15,7 @@ The latest combined Phase 1/2 validation is recorded in [CHANGELOG.md](CHANGELOG
 .venv/bin/pip-audit --skip-editable
 .venv/bin/python scripts/benchmark.py
 .venv/bin/python scripts/benchmark_strategy.py
+.venv/bin/python scripts/benchmark_ml.py --model data/ml-first/model --allow-synthetic-model
 ```
 
 ## Coverage matrix
@@ -63,6 +64,46 @@ benchmark records analysis-only latency separately from the existing ingestion p
 
 No real-market profitability or walk-forward ML acceptance is inferred from these
 tests. Reports retain incomplete exposure and research evidence gaps.
+
+## Phase 3 automated acceptance
+
+The ML unit/integration suite covers finite fixed-schema feature construction,
+candidate identity, future/incomplete/missing input rejection, actual fee-inclusive
+labels, later-tick fills, stops/targets, partial quantities, horizon exits and
+separate censor outcomes for interruptions, quote gaps/quality, flagged candles,
+unfilled entries and unresolved exposure. Failed builds lack completion manifests.
+
+Split tests exercise whole-session grouping across simultaneous symbols, expanding
+windows, final holdout exclusion from all fits, crossing label intervals and strict
+embargo equality. Model tests prove scaling/base coefficients use training only,
+calibration labels affect only the calibrator, holdout changes cannot affect fitting,
+and final coefficients exist before holdout metrics are computed. Insufficient or
+single-class samples fail, and reliability/gate diagnostics remain inspectable.
+
+Artifact tests reject corruption, missing manifests, NaN, wrong dimensions/scales,
+feature schema changes, inconsistent reports, oversized files, symlinks, failed
+metrics, wrong config/fees and future validation cutoffs. A fresh-process check
+proves model loading imports no NumPy, SciPy, sklearn, joblib or pickle.
+
+Scored research tests verify deterministic results and same-time ranking before
+independent position gates; later prices cannot change earlier scores. Risk tests
+exercise missing/unscored/wrong-model/changed-candidate vectors, idempotency conflicts,
+unchanged sizing, kill/position gates, durable model binding and missing metadata
+failure before pending-order recovery. Functional CLI tests run label→train→score,
+check artifacts and confirm the service database is never opened. Wrong mode and
+invalid command/override failures remain sanitized.
+
+CI includes the synthetic workflow and inference/ranking benchmark. All performance
+timers state their excluded work. Real-market model performance and full Pi/feed
+acceptance remain unverified; a synthetic diagnostic pass cannot establish either.
+
+Final combined local result on 20 October 2026: **215 passed; 93% overall coverage**.
+There are 56 added Phase 3 cases. Feature/schema modules reached 100%, training and
+sample validation 99%, inference 97%, labeling 94% and report validation 91% statement
+coverage. Ruff, formatting, mypy, secret-pattern/Markdown-link checks, frozen lock,
+offline builds and dependency audit passed. See [CHANGELOG.md](CHANGELOG.md).
+Availability tests also cover the complete validation session and delayed source
+observations after the last labeled trade.
 
 ## Manual external acceptance
 

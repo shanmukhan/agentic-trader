@@ -65,3 +65,26 @@ Invalid runs retain sanitized failure state and partial research ledgers without
 success report. Policy/config/code/input/journal identities are recorded. Reports
 contain market/research data, not credentials or profiles. No upload, notification
 service or new runtime dependency was introduced for Phase 2.
+
+## Phase 3 model artifacts and validation leakage
+
+Offline fitting uses locked optional NumPy/scikit-learn packages. The execution
+and model-loading path imports neither. It accepts fixed-name, bounded local JSON
+files with finite typed coefficients and exact feature order, not executable pickle,
+joblib or arbitrary model loaders. Local symlinks, partial manifests, hash failures,
+unknown fields, dimension errors and inconsistent diagnostics fail. Report gates,
+split windows and calibration bins are checked rather than trusting a summary flag.
+
+Training-only scaling, disjoint later calibration, label-interval purge, whole-session
+splits, frozen final coefficients and separate holdout address temporal leakage.
+Model availability includes the final validation interval plus embargo, preventing
+historical replays from using future approval evidence. Candidate fingerprints and
+durable model binding prevent accidental feature/intent substitution or gate removal
+on restart. Independent risk controls still apply to every scored order.
+
+Hashes are integrity checks, not signatures or independent provenance attestation.
+A local administrator can rewrite files and hashes; malicious code or fabricated
+market data remains outside that guarantee. The `synthetic` declaration is not
+authenticated. Protect/review datasets, configuration and artifacts. Synthetic
+override never disables metric, context, risk or temporal checks and is refused
+against non-synthetic data. No network model download or service upload is added.
