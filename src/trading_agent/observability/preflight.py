@@ -19,7 +19,7 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
-from trading_agent.execution.costs import Charges
+from trading_agent.execution.costs import charges_for
 from trading_agent.market_data.calendar import SessionCalendar
 from trading_agent.models import stamp, utc
 from trading_agent.persistence.database import Database
@@ -70,7 +70,10 @@ def _account(settings: Settings) -> dict[str, Any]:
             "positions": tx.execute("SELECT COUNT(*) FROM positions").fetchone()[0],
             "initial_cash_matches": Decimal(meta["initial_cash"]) == settings.starting_cash,
             "risk_policy_matches": meta.get("policy_hash") == policy_fingerprint(settings),
-            "charges_match": meta.get("charges_version") == Charges().version,
+            "charges_match": meta.get("charges_version") == charges_for(settings).version,
+            "horizon_matches": meta.get("investment_horizon", "intraday")
+            == settings.investment_horizon,
+            "investment_horizon": meta.get("investment_horizon", "intraday"),
             "model_metadata_valid": model_metadata,
             "automation_metadata_valid": bool(meta.get("automation_hash")) == auto_events,
             "automation_bound": bool(meta.get("automation_hash")),
@@ -162,6 +165,7 @@ def preflight(settings: Settings, now: datetime) -> dict[str, Any]:
                 "SQLite integrity and exact ledger accounting reconciled.",
             )
             for key in (
+                "horizon_matches",
                 "initial_cash_matches",
                 "risk_policy_matches",
                 "charges_match",
@@ -174,11 +178,10 @@ def preflight(settings: Settings, now: datetime) -> dict[str, Any]:
                     "Stored identity must match the configured policy and supported markers.",
                 )
             tokens = settings.stream_tokens
+            catalog_tokens = set(account.pop("catalog_tokens"))
             add(
                 "stream_catalog",
-                bool(tokens)
-                and len(set(tokens)) == len(tokens)
-                and set(tokens) <= set(account.pop("catalog_tokens")),
+                bool(tokens) and len(set(tokens)) == len(tokens) and set(tokens) <= catalog_tokens,
                 "Supervised feed needs distinct reviewed tokens present in this account's catalog.",
                 required=account["automation_bound"],
             )

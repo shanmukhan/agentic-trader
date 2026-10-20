@@ -138,3 +138,19 @@ wait and a five-second cooperative query budget. Read transactions can delay WAL
 recycling and consume I/O even without SQL writes. Run outside busy entry periods;
 OS/storage stalls are not hard-bounded by the SQL progress callback. A low-disk floor
 is not a retention plan. See [acceptance.md](acceptance.md).
+
+## LT1 long-term quote path (0.5.0)
+
+The [captured Mac benchmark](benchmark-long-term-macos.json) processes 2,000 accepted
+quotes while holding fourteen shares, with SQLite WAL/FULL durability:
+
+| Path | p50 | p95 | p99 |
+|---|---:|---:|---:|
+| Long-term quote, review/calendar, held valuation, risk and durable checkpoints/journal | 0.1843 ms | 0.2147 ms | 0.3288 ms |
+
+The timer excludes quote construction/parsing, callback contention, network/history
+and actual Pi behavior. No durability setting was weakened. Hot-path lookups use
+indexed metadata keys and bounded holdings; startup/report delivery reconstruction
+scans history separately. Source/report scans can still consume I/O and are not part
+of this latency claim. Reproduce with `python scripts/benchmark_long_term.py --samples
+2000`; CI runs 1,000 observations and the separate synthetic long-term drills.

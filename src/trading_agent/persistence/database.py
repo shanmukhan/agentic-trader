@@ -150,6 +150,9 @@ class Database:
 
     @staticmethod
     def reconcile(tx: sqlite3.Connection) -> None:
+        from trading_agent.execution.delivery import reconcile_delivery
+
+        reconcile_delivery(tx)
         cash = Decimal(Database.get(tx, "initial_cash"))
         holdings: dict[str, int] = {}
         costs: dict[str, Decimal] = {}

@@ -98,3 +98,21 @@ mobile visual evidence. Complete those checks with the actual device before rely
 on it for supervision. Keep a verified desktop operator path available.
 
 See [acceptance.md](acceptance.md) for local preflight and remaining external work.
+
+## Long-term account panel (0.5.0)
+
+The separate long-term config uses <http://127.0.0.1:8001>. After unlock, the horizon
+badge identifies the account. Its panel shows observed peak/drawdown, entry fee buffer
+and up to eleven quarantine names; use the report for full quarantine history.
+A symbol/date/source form records the raw-price review, with a confirmation dialog.
+An unchecked no-action attestation requests a persistent quarantine and its dialog
+warns that another review cannot clear it. Known actions require the later adjustment
+workflow. Review fields/details clear on Lock; stale displays block review submission.
+
+Each long-term holding has **Queue full paper exit** with symbol-specific confirmation.
+It sends only the symbol, remains protective through partial fills/restarts and never
+claims a completed sale. Intraday accounts hide this panel/actions. No buying, real
+broker trading, account conversion or automatic long-term signal control was added.
+Desktop Safari layout/horizon/buffer/review form was visually checked on an isolated
+flat account with no feed or orders; actual handset verification remains pending.
+Read [long-term.md](long-term.md) before using the new controls.

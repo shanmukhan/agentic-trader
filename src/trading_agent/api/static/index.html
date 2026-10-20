@@ -13,7 +13,7 @@
   <header class="masthead">
     <div><p class="eyebrow">AGENTIC TRADER <span class="pill">PAPER ONLY</span></p>
       <h1>Trading console</h1><p class="muted">NSE cash equity · Virtual money · Live execution unavailable</p></div>
-    <div class="connection"><span id="feed" class="badge">Locked</span><p id="updated" class="muted">No account data loaded</p></div>
+    <div class="connection"><span id="horizon" class="badge">Paper account</span> <span id="feed" class="badge">Locked</span><p id="updated" class="muted">No account data loaded</p></div>
   </header>
   <section class="panel access" aria-labelledby="access-heading">
     <div><h2 id="access-heading">Operator access</h2><p class="muted">Use your local operator token. It stays in this tab's memory.</p></div>
@@ -50,6 +50,18 @@
         <p class="notice">Queued exits need fresh quotes and liquidity. A queued exit is not a completed fill. Resetting the kill switch does not rearm automation.</p>
       </section>
     </div>
+    <section id="long-term" class="panel" hidden aria-labelledby="long-term-heading">
+      <h2 id="long-term-heading">Long-term paper safeguards</h2>
+      <p id="long-term-state" class="muted"></p>
+      <p class="notice">Virtual holdings only. Review the raw price basis since the symbol's last accepted quote. Splits, bonuses, dividends, mergers and symbol changes are not applied here. Reporting an action quarantines the symbol persistently.</p>
+      <form id="holding-review" class="review-form">
+        <label>Registered symbol <input id="review-symbol" placeholder="NSE:SYMBOL" required maxlength="34" pattern="NSE:[A-Z0-9&amp;_.-]+"></label>
+        <label>IST session date <input id="review-date" type="date" required></label>
+        <label>Review source/reference <input id="review-reference" required minlength="3" maxlength="300" placeholder="Reviewed notice or private evidence reference"></label>
+        <label class="check"><input id="review-clear" type="checkbox"> I reviewed the price basis and confirm no intervening corporate action. Leave unchecked to quarantine.</label>
+        <button id="review-submit" type="submit" disabled>Record paper review</button>
+      </form>
+    </section>
     <section class="panel" aria-labelledby="positions-heading">
       <div class="section-heading"><h2 id="positions-heading">Open positions</h2><span id="valuation" class="muted">Locked</span></div>
       <div id="positions" class="records"><p class="muted">Locked</p></div>

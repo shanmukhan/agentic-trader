@@ -8,10 +8,15 @@ from trading_agent.settings import Settings
 
 
 def policy_values(settings: Settings) -> dict[str, Any]:
-    return settings.model_dump(
+    values = settings.model_dump(
         mode="json",
         exclude={"operator_token", "host", "port", "database", "calendar", "stream_tokens"},
     )
+    # Preserve every existing intraday account/model identity byte for byte.
+    if settings.investment_horizon == "intraday":
+        values.pop("investment_horizon")
+        values.pop("long_term_drawdown_limit")
+    return values
 
 
 def policy_fingerprint(settings: Settings) -> str:

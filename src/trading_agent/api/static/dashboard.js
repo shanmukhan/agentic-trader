@@ -24,11 +24,12 @@
 
   function createConsole(doc, win, request) {
     let token = '', generation = 0, busy = false, mutating = false, fresh = false;
-    let controller = null, lastReceipt = 0, latest = null, pendingAction = null;
+    let controller = null, lastReceipt = 0, latest = null, pendingAction = null, holdingExitButtons = [];
     const el = id => doc.getElementById(id);
     const controls = ['kill', 'flatten', 'reset', 'arm', 'disarm'];
     const routes = { kill: '/api/control/kill', flatten: '/api/control/flatten',
-      reset: '/api/control/reset', arm: '/api/paper/automation/arm', disarm: '/api/paper/automation/disarm' };
+      reset: '/api/control/reset', arm: '/api/paper/automation/arm', disarm: '/api/paper/automation/disarm',
+      review: '/api/paper/long-term/reviews', exit: '/api/paper/long-term/exit' };
     const human = reason => reason.toLowerCase().replaceAll('_', ' ');
     const message = (text, error = false) => {
       el('message').textContent = text;
@@ -57,6 +58,8 @@
     }
     function buttons() {
       for (const name of controls) el(name).disabled = !token || !latest || mutating;
+      for (const button of holdingExitButtons) button.disabled = !token || !latest || mutating;
+      el('review-submit').disabled = !token || !latest || mutating || !fresh || latest.account.investment_horizon !== 'long_term';
       if (!token || !latest || mutating) return;
       const a = latest.account, auto = latest.automation;
       el('arm').disabled = !fresh || !auto.enabled || auto.armed || a.kill || a.faulted ||
@@ -74,7 +77,7 @@
     }
     function lock() {
       generation += 1;
-      token = ''; fresh = false; latest = null; busy = false; mutating = false;
+      token = ''; fresh = false; latest = null; busy = false; mutating = false; holdingExitButtons = [];
       if (controller) controller.abort();
       controller = null;
       pendingAction = null;
@@ -87,6 +90,10 @@
         el(id).replaceChildren(textNode('p', 'Locked', 'muted'));
       el('reasons').replaceChildren(textNode('li', 'Unlock to inspect readiness.'));
       for (const id of ['feed', 'readiness', 'armed']) badge(id, 'Locked');
+      el('horizon').textContent = 'Paper account';
+      el('long-term').hidden = true; el('long-term-state').textContent = '';
+      for (const id of ['review-symbol', 'review-date', 'review-reference']) el(id).value = '';
+      el('review-clear').checked = false;
       el('updated').textContent = 'No account data loaded';
       message('Locked. Enter an operator token to view the account.');
       buttons();
@@ -94,6 +101,18 @@
     function render(data) {
       const a = data.account, auto = data.automation;
       latest = data; fresh = true; lastReceipt = win.Date.now();
+      const longTerm = a.investment_horizon === 'long_term';
+      el('horizon').textContent = longTerm ? 'Long-term paper' : 'Intraday paper';
+      el('long-term').hidden = !longTerm;
+      if (longTerm) {
+        el('long-term-state').textContent = 'Observed peak ' + formatMoney(a.long_term.peak_equity) +
+          ' · Drawdown ' + formatMoney(a.long_term.observed_drawdown) +
+          ' / ' + formatMoney(a.long_term.drawdown_limit) + ' · Delivery fee buffer ' +
+          formatMoney(a.delivery_fee_buffer) + ' · Quarantined: ' +
+          (a.long_term.quarantined_symbols.join(', ') || 'none');
+        if (!el('review-date').value)
+          el('review-date').value = new Date(new Date(data.observed_at).getTime() + 19800000).toISOString().slice(0, 10);
+      }
       el('equity').textContent = formatMoney(a.equity);
       el('cash').textContent = formatMoney(a.available_cash);
       el('pnl').textContent = formatMoney(a.day_pnl);
@@ -115,10 +134,17 @@
         row.append(textNode('strong', q.symbol));
         row.append(textNode('p', q.fresh ? 'Fresh' : 'Stale or missing', 'record-value'));
       });
+      holdingExitButtons = [];
       records('positions', a.positions, 'Flat · no open positions', (row, p) => {
         row.append(textNode('strong', p.symbol + ' · ' + p.quantity + ' shares'));
         row.append(textNode('p', 'Unrealized ' + formatMoney(p.unrealized_pnl), 'record-value'));
         row.append(textNode('p', 'Stop ' + formatMoney(p.stop) + ' · Target ' + formatMoney(p.target), 'muted'));
+        if (longTerm) {
+          const exit = textNode('button', 'Queue full paper exit', 'quiet');
+          exit.type = 'button'; holdingExitButtons.push(exit);
+          exit.addEventListener('click', () => confirmAction('exit', { symbol: p.symbol }));
+          row.append(exit);
+        }
       });
       el('order-count').textContent = data.orders_truncated ? 'Showing latest ' + data.order_limit + ' · older orders omitted' : data.orders.length + ' recorded';
       records('orders', data.orders, 'No paper orders recorded', (row, o) => {
@@ -136,9 +162,10 @@
       message('Account updated. All amounts are virtual INR.');
       buttons();
     }
-    async function call(path, method, signal) {
+    async function call(path, method, signal, body) {
       const response = await request(path, { method, signal, cache: 'no-store',
-        credentials: 'omit', redirect: 'error', headers: { Authorization: 'Bearer ' + token } });
+        credentials: 'omit', redirect: 'error', body: body ? JSON.stringify(body) : undefined,
+        headers: { Authorization: 'Bearer ' + token, ...(body ? { 'Content-Type': 'application/json' } : {}) } });
       if (!response.ok) {
         if (response.status === 401 || response.status === 403) {
           const error = Error('Operator authorization failed. Unlock again.');
@@ -170,9 +197,9 @@
         if (version === generation) { busy = false; controller = null; }
       }
     }
-    async function action(name) {
+    async function action(name, body) {
       if (!token || mutating || !latest) return;
-      if (['arm', 'reset'].includes(name) && (!fresh || win.Date.now() - lastReceipt > 6000)) {
+      if (['arm', 'reset', 'review'].includes(name) && (!fresh || win.Date.now() - lastReceipt > 6000)) {
         stale('Refresh the account before confirming this action.'); return;
       }
       const version = generation;
@@ -185,9 +212,9 @@
       const timeout = win.setTimeout(() => active.abort(), 10000);
       let outcome = '', outcomeError = false;
       try {
-        await call(routes[name], 'POST', active.signal);
+        await call(routes[name], 'POST', active.signal, body);
         if (actionVersion !== generation) return;
-        outcome = name === 'kill' || name === 'flatten' ? 'Kill active. Exits queued; inspect positions for remaining exposure.' : 'Paper action completed. Inspect current state.';
+        outcome = name === 'exit' ? 'Paper exit queued. Inspect remaining holdings and subsequent fills.' : name === 'review' ? 'Paper review recorded; a fresh reviewed quote is still required.' : name === 'kill' || name === 'flatten' ? 'Kill active. Exits queued; inspect positions for remaining exposure.' : 'Paper action completed. Inspect current state.';
       } catch (error) {
         if (actionVersion !== generation) return;
         if (error.authorization) { lock(); message(error.message, true); return; }
@@ -207,20 +234,31 @@
       refresh();
     });
     el('lock').addEventListener('click', lock);
+    function confirmAction(name, body) {
+      if (!token || !latest || mutating) return;
+      pendingAction = { name, body };
+      el('confirm-title').textContent = name === 'review' ? 'Record ' + (body.no_corporate_action ? 'clear review' : 'persistent quarantine') + ' for ' + body.symbol + '?' : name === 'exit' ? 'Queue full paper exit for ' + body.symbol + '?' :
+        name === 'arm' ? 'Arm paper automation?' : 'Reset the kill switch?';
+      el('confirm-description').textContent = name === 'review' ?
+        (body.no_corporate_action ? 'Confirm that your cited review covers all changes since the last accepted quote. This does not verify real custody or settlement.' : 'This blocks the symbol across sessions. Another review cannot remove it; corporate-action adjustments are not implemented in this milestone.') : name === 'exit' ?
+        'The entire remaining virtual holding will be queued for sale. This request persists across restarts; fresh reviewed quotes and liquidity are required for fills.' : name === 'arm' ?
+        'This permits new virtual entries while all server-side readiness and risk checks pass. Protective exits remain active.' :
+        'The server must verify a flat account and eligible risk state. This does not rearm automation.';
+      el('confirm').showModal(); el('cancel-confirm').focus();
+    }
     for (const name of controls) el(name).addEventListener('click', () => {
-      if (['arm', 'reset'].includes(name)) {
-        pendingAction = name;
-        el('confirm-title').textContent = name === 'arm' ? 'Arm paper automation?' : 'Reset the kill switch?';
-        el('confirm-description').textContent = name === 'arm' ?
-          'This permits new virtual entries while all server-side readiness and risk checks pass. Protective exits remain active.' :
-          'The server must verify a flat account and eligible risk state. This does not rearm automation.';
-        el('confirm').showModal(); el('cancel-confirm').focus();
-      } else action(name);
+      if (['arm', 'reset'].includes(name)) confirmAction(name);
+      else action(name);
+    });
+    el('holding-review').addEventListener('submit', event => {
+      event.preventDefault();
+      confirmAction('review', { symbol: el('review-symbol').value.trim(), session_date: el('review-date').value,
+        no_corporate_action: el('review-clear').checked, reference: el('review-reference').value.trim() });
     });
     el('cancel-confirm').addEventListener('click', () => { pendingAction = null; el('confirm').close(); });
     el('confirm-action').addEventListener('click', () => {
-      const name = pendingAction; pendingAction = null; el('confirm').close();
-      if (name) action(name);
+      const pending = pendingAction; pendingAction = null; el('confirm').close();
+      if (pending) action(pending.name, pending.body);
     });
     el('confirm').addEventListener('cancel', () => { pendingAction = null; });
     doc.addEventListener('visibilitychange', () => { if (!doc.hidden) refresh(); });

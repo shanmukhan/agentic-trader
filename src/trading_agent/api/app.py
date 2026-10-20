@@ -12,6 +12,7 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from trading_agent.api.console import console_snapshot
+from trading_agent.execution.delivery import HoldingExit, HoldingReview
 from trading_agent.execution.paper_broker import IntentConflict, PaperBroker
 from trading_agent.models import Candidate
 
@@ -214,6 +215,22 @@ def create_app(
         except ValueError as exc:
             raise HTTPException(409, str(exc)) from None
         return {"kill": False}
+
+    @app.post("/api/paper/long-term/reviews", dependencies=[Depends(authorized)])
+    def review_holding(review: HoldingReview) -> dict[str, Any]:
+        try:
+            return engine.review_holding(review, clock())
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)) from None
+
+    @app.post("/api/paper/long-term/exit", dependencies=[Depends(authorized)])
+    def exit_holding(request: HoldingExit) -> dict[str, Any]:
+        try:
+            return engine.exit_holding(request.symbol, clock())
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)) from None
+        except KeyError:
+            raise HTTPException(404, "no open holding for this symbol") from None
 
     @app.get("/api/paper/automation", dependencies=[Depends(authorized)])
     def automation_status() -> dict[str, Any]:

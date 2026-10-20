@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "agentic-trader"
-version = "0.4.1"
-description = "Read-only Kite data, durable paper execution, and chronological ML research"
+version = "0.5.0"
+description = "Intraday and long-term paper accounts, read-only Kite data, and causal research"
 readme = "README.md"
 requires-python = ">=3.13,<3.14"
 dependencies = ["fastapi>=0.115,<1", "pydantic>=2.10,<3", "uvicorn>=0.34,<1"]

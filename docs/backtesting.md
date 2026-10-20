@@ -219,3 +219,12 @@ and artifact contracts are in [ml-research.md](ml-research.md).
 For later supervised feed validation, use a separate dedicated account and the
 [Phase 4 guide](paper-feed.md). Backtest output is not automatically attached to a
 connected service or treated as operational approval.
+
+## Long-term scope boundary (0.5.0)
+
+The existing backtester/rules describe intraday hypotheses. They reject a long-term
+policy before creating output; the connected intraday controller/model is likewise
+unavailable for delivery accounts. Overnight paper lifecycle drills are not validated
+investment strategies. Completed daily/total-return data, corporate-action-aware
+labels, portfolio allocation and long-term ML/research are later extended milestones.
+See [long-term.md](long-term.md) and [implementation-plan.md](implementation-plan.md).

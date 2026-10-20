@@ -96,6 +96,14 @@ def parser() -> argparse.ArgumentParser:
         "paper-demo", help="synthetic supervised feed and outage/restart drills"
     )
     paper_demo.add_argument("--directory", type=Path, default=Path("data/paper-demo"))
+    long_demo = commands.add_parser(
+        "long-term-demo", help="isolated overnight paper and recovery drill"
+    )
+    long_demo.add_argument("--directory", type=Path, default=Path("data/long-term-demo"))
+    long_report = commands.add_parser(
+        "long-term-report", help="preserve source delivery account work"
+    )
+    long_report.add_argument("--output", type=Path, required=True)
     paper_evidence = commands.add_parser(
         "paper-report", help="source-preserving operations evidence"
     )
@@ -165,6 +173,40 @@ def execute(args: argparse.Namespace) -> Any:
         }
     # Validate mode even for demonstrations and broker-only commands.
     settings = Settings.load(args.config)
+    if settings.investment_horizon == "long_term" and (
+        args.command
+        in {
+            "demo",
+            "replay",
+            "backtest",
+            "research-demo",
+            "ml-build",
+            "ml-train",
+            "ml-demo",
+            "export-research",
+            "paper-init",
+            "paper-report",
+        }
+        or args.command == "serve"
+        and args.automate
+    ):
+        raise ValueError(
+            "intraday research/automation is not approved for long-term paper accounts"
+        )
+    if args.command == "long-term-demo":
+        from trading_agent.paper.long_term_demo import long_term_demo
+
+        return long_term_demo(args.directory)
+    if args.command == "long-term-report":
+        from trading_agent.paper.long_term_report import long_term_report
+
+        if settings.investment_horizon != "long_term" or not settings.database.is_file():
+            raise ValueError("long-term report requires an existing delivery paper account")
+        source = Database(settings.database, settings.starting_cash)
+        try:
+            return long_term_report(source, args.output)
+        finally:
+            source.close()
     if args.command == "preflight":
         from trading_agent.observability.preflight import preflight, write_preflight
 

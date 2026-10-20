@@ -119,3 +119,19 @@ These are operator-run acceptance procedures, not automatically certified assert
 `external_acceptance_verified` and `ready_for_live` remain false in every preflight
 and paper report. Future live infrastructure/pilot phases remain separate work under
 the explicit scope gates in [implementation-plan.md](implementation-plan.md).
+
+## Long-term extension acceptance (LT1 / 0.5.0)
+
+Preflight now checks stored horizon and the appropriate charge version. Legacy absent
+horizon is intraday only; it cannot approve a long-term configuration. Full startup
+still enforces pending-order protection, selected coverage of held symbols, pinned
+used calendar definitions and long-term marker/ledger reconstruction.
+
+LT1 delivers overnight paper mechanics, not actual delivery-product acceptance.
+`long-term-report` preserves source orders and records observed marks, DP days and
+quarantine/unresolved holdings. Require separate evidence for corporate-action cash/
+share adjustments, actual custody/sellable quantities and settlement, daily strategy/
+ML/portfolio validation, account-specific costs and combined capital allocation.
+Operator no-action reviews and synthetic drills cannot satisfy those gates.
+The [extended roadmap](implementation-plan.md) identifies LT2–LT4 and retains the
+original future live approval/validation boundary. See [long-term.md](long-term.md).

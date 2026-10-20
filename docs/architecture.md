@@ -207,3 +207,27 @@ SQL work; raw failure details/secrets are not emitted. Local environment/storage
 identity checks and private evidence are distinct from unverified external broker/
 device acceptance. See [acceptance.md](acceptance.md) and
 [operator-console.md](operator-console.md).
+
+## Long-term composition and reconstruction (LT1)
+
+`Settings.investment_horizon` selects intraday or a separate long-term paper policy.
+The shared broker retains atomic reservations, adverse quote/depth fills and Decimal
+cash/cost accounting. `execution/long_term.py` composes overnight day-roll/watch,
+review/quarantine, durable exit intent, delivery DP allocation and observed portfolio
+checkpoints. It replaces session liquidation only for the bound long-term horizon.
+Intraday economic hash encoding and defaults remain unchanged. Existing intraday
+strategy/model automation is explicitly rejected on long-term accounts.
+
+`execution/delivery.py` defines strict holding review/exit contracts and startup
+reconstruction of delivery fees/day allocations and ordered review/fill/exit evidence.
+Financial effects remain in the existing fill ledger; compatible metadata/journal
+categories add horizon/schema, reviews, quarantine, exit intents and equity checkpoints.
+No destructive schema migration or silent account conversion exists. Normal SQLite
+WAL/FULL durability, ownership and rollback remain. Review blocking precedes raw quote
+replacement, and new-day reference capture precedes opening-price acceptance.
+
+The private API/console adds horizon-specific review and individual-exit controls.
+`long-term-report` reads a stopped source account without constructing an execution
+engine; `long-term-demo` owns independent invented accounts. Heavy reconstruction and
+report scans stay off the quote path. See [long-term.md](long-term.md) for supported
+scope and the pending cash/share adjustment, daily strategy and real custody layers.

@@ -13,6 +13,8 @@ from pydantic import BaseModel, ConfigDict, Field, SecretStr, model_validator
 class Settings(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
     mode: Literal["paper"] = "paper"
+    investment_horizon: Literal["intraday", "long_term"] = "intraday"
+    long_term_drawdown_limit: Decimal = Field(default=Decimal("2500.00"), gt=0)
     database: Path = Path("data/paper.sqlite3")
     host: Literal["127.0.0.1", "::1"] = "127.0.0.1"
     port: int = Field(default=8000, ge=1024, le=65535)
@@ -45,6 +47,7 @@ class Settings(BaseModel):
             self.max_total_notional,
             self.slippage_bps,
             self.max_spread_bps,
+            self.long_term_drawdown_limit,
         )
         if any(not value.is_finite() for value in values):
             raise ValueError("non-finite policy value")
@@ -54,10 +57,18 @@ class Settings(BaseModel):
             raise ValueError("invalid loss budgets")
         if not self.max_position_notional <= self.max_total_notional <= self.starting_cash:
             raise ValueError("unleveraged exposure limits required")
+        if self.investment_horizon == "long_term" and not (
+            self.daily_loss_limit <= self.long_term_drawdown_limit < self.starting_cash
+        ):
+            raise ValueError("long-term drawdown limit must cover daily loss and be below capital")
         if self.order_ttl_seconds * 1000 <= self.latency_ms:
             raise ValueError("order TTL must exceed latency")
-        if any(token <= 0 for token in self.stream_tokens) or len(self.stream_tokens) > 10:
-            raise ValueError("provide up to ten positive instrument tokens")
+        if (
+            any(token <= 0 for token in self.stream_tokens)
+            or len(self.stream_tokens) > 10
+            or len(set(self.stream_tokens)) != len(self.stream_tokens)
+        ):
+            raise ValueError("provide up to ten distinct positive instrument tokens")
         token = self.operator_token.get_secret_value()
         if token and len(token) < 32:
             raise ValueError("operator token requires at least 32 characters")

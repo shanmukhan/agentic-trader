@@ -1,10 +1,10 @@
-# Zerodha AI Intraday Equity Trading Agent
+# Zerodha AI Equity Trading Agent — intraday and long-term paper accounts
 
-**Project specification:** v1.5
+**Project specification:** v1.6
 
 **Prepared:** 20 October 2026
 
-**Status:** Phases 1–4 engineering implemented; empirical broker/device/strategy/model acceptance pending
+**Status:** Intraday Phases 1–4 engineering and long-term LT1 delivered; empirical acceptance and later long-term/live milestones pending
 
 **Safety:** Paper only. No live trading, real orders or funds transfers in the implemented phases.
 
@@ -54,14 +54,14 @@ Implementation does not imply real-market profitability or broker/device readine
 
 ## 1. Project charter
 
-Build a secure, testable, eventually fully automated **intraday NSE cash-equity trading agent** integrated with a personal Zerodha account. Use a **hybrid strategy**: deterministic candidate generation, ML ranking, and an independent deterministic risk engine. Begin with **read-only market data and paper execution**. Live trading is a separate future milestone subject to successful testing and current broker/exchange requirements.
+Build a secure, testable **intraday and long-term NSE cash-equity paper platform** using read-only data from a personal Zerodha account. Eventual automation and live scope require separate validation. Use a **hybrid strategy**: deterministic candidate generation, ML ranking, and an independent deterministic risk engine. Begin with **read-only market data and paper execution**. Live trading is a separate future milestone subject to successful testing and current broker/exchange requirements.
 
 | Parameter | Decision |
 |---|---|
 | Broker | Zerodha Kite Connect |
 | Market | NSE cash equities; long-only initially |
 | Trading style | Intraday; positions exited same day |
-| Virtual pilot capital | ₹25,000 |
+| Virtual pilot capital | ₹25,000 per isolated paper account; shared allocation pending |
 | Strategy | Rule-based signals + ML scoring |
 | Deployment | Raspberry Pi 4 or Mac mini; portable Python application |
 | Backend | Python 3.13.16; pinned and tested environment |
@@ -226,8 +226,8 @@ Start as a modular monolith; avoid Redis, Kubernetes, and microservices until a 
 
 - Start with 5–10 liquid NSE stocks; selection based on measurable spread, turnover, price, and data availability.
 - Use completed 5-minute candles for initial signals; 1-minute data may be used for execution simulation.
-- Example entry window: 09:30–14:30 IST; target simulated flat by 15:15 IST; respect trading holidays and early closures.
-- Long-only, unleveraged; no overnight positions.
+- Intraday example entry window: 09:30–14:30 IST; request simulated flatten at 15:15 IST; respect reviewed holidays and early closures.
+- Both horizons are long-only and unleveraged. Intraday prohibits intended overnight positions; LT1 long-term holdings persist overnight under its separate reviewed policy.
 
 ### Rule-based candidate generator
 
@@ -242,7 +242,7 @@ Research VWAP trend continuation and opening-range breakout as **hypotheses**, n
 - Save feature schema, training window, model hash, validation report, and calibration diagnostics.
 - LLMs may explain trades and logs, but may not directly place orders or bypass the risk gate.
 
-## 6. Risk policy for virtual ₹25,000 account
+## 6. Default intraday risk policy for a virtual ₹25,000 account
 
 **Illustrative engineering defaults, not personalized investment advice.** These thresholds are intentionally conservative and must be evaluated against fees, lot/share sizing, and strategy viability.
 
@@ -452,3 +452,28 @@ an explicit rule baseline. Empirical broker/device acceptance remains pending.
 - Kite Connect Python client: https://github.com/zerodha/pykiteconnect
 
 Check official documentation for current pricing, product availability, API limits, authentication and retail algo trading rules before acting. This document is a technical design, not a guarantee of financial returns or a legal/compliance determination.
+
+## 16. Long-term extension — LT1 engineering, version 0.5.0
+
+The user expanded scope to long-term holdings. `investment_horizon = "long_term"`
+creates a dedicated virtual account with delivery-cost estimates and its own risk
+limits/database/listener. Existing intraday no-overnight/session-flatten behavior
+remains valid only for the intraday horizon. The legacy economic hash is preserved;
+accounts cannot switch horizon or silently remove protection on restart.
+
+LT1 persists holdings across sessions/weekends, retains requested exits through
+recovery, measures daily gaps against prior trusted observations and retains a durable
+portfolio high-water mark/drawdown kill. It requires reviewed raw price basis per
+symbol/session, pins used calendar definitions and quarantines reported corporate
+actions. It applies observed delivery taxes/fees and atomic symbol/day DP charging.
+Typed local review/individual-exit routes, a separate console panel, source-preserving
+reports, deterministic drills and unit/functional tests support operator review.
+
+The [long-term guide](docs/long-term.md) specifies supported behavior, independent
+virtual capital, accounting, setup and missing work. The extended roadmap in
+[implementation-plan.md](docs/implementation-plan.md) schedules LT2 corporate-action
+cash/share adjustments, LT3 daily research/ML/portfolio allocation and LT4 actual
+custody/settlement/supervised evidence. Current intraday rule/ML commands cannot be
+used as approved long-term strategies. No actual settlement, dividends/splits,
+SIP/rebalancing, combined account capital cap, live order or broker holdings sync is
+claimed. These scope changes do not imply profitability or completed production readiness.

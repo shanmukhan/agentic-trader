@@ -167,3 +167,26 @@ for confirmation and require current display state. A timed-out control has an u
 outcome: inspect state before retry. Lock clears the page/token but does not disarm
 an automated service. Phone access needs a separately reviewed private route to the
 loopback service; no public listener or mobile tunnel is installed here.
+
+## Long-term account supervision (LT1)
+
+Use its exact long-term config/database and default 8001 listener; intraday and
+long-term capital are independent virtual seeds. Regular closes/restarts do not sell
+these holdings. Before each session, inspect the prior quote basis and review all
+intervening corporate actions for each held/selected symbol. Missing review blocks
+raw-price acceptance; a false review persistently quarantines the symbol and retains
+unresolved exposure. Do not clear it with a false no-action declaration or edit rows.
+
+Requested holding exits remain latched through pending-order cancellation and restart;
+normal polling restores residual exits, which still need usable reviewed quotes.
+On `INSUFFICIENT_EXIT_FEE_CASH`, preserve the blocked holding/evidence rather than
+manufacturing a sale or replenishment. On drawdown kill, waiting a date does not reset
+the high-water loss limit. Preserve the account and review the experiment.
+
+Capture `preflight` and, with ownership stopped, `long-term-report --output NEW_PATH`
+before owning recovery/backup commands if pending-order state must be retained in
+the report. Owning `verify-db`/`backup` still cancel old pending orders on engine startup;
+exit latches survive and are restored on later polling. Restore to a new path with
+matching horizon/risk/charges and the pinned reviewed calendar. No real custody or
+settlement is inferred from successful SQLite recovery. Full procedures and limits:
+[long-term.md](long-term.md).

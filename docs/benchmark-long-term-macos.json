@@ -1,0 +1,14 @@
+{
+  "samples": 2000,
+  "python": "3.13.16",
+  "platform": "macOS-27.0-arm64-arm-64bit-Mach-O",
+  "architecture": "arm64",
+  "p50_ms": 0.184292,
+  "p95_ms": 0.214666,
+  "p99_ms": 0.328792,
+  "max_ms": 1.133209,
+  "synchronous": "FULL",
+  "includes": "quote, review/calendar, held valuation, risk, durable clock/equity and journal",
+  "excludes": "construction, parsing, callback contention, network/history and Pi",
+  "held_shares": 14
+}

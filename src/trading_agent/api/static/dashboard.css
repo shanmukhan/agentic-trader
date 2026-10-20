@@ -355,3 +355,37 @@ dialog p {
     font-size:.75rem
   }
 }
+[hidden] {
+  display: none !important;
+}
+.review-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(220px,1fr));
+  gap: 14px;
+  margin-top: 18px;
+}
+.review-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--muted);
+  font-size: .85rem;
+  min-width: 0;
+}
+.review-form input {
+  width: 100%;
+}
+.review-form .check {
+  grid-column: 1/-1;
+  flex-direction: row;
+  align-items: center;
+}
+.review-form input[type=checkbox] {
+  width: 20px;
+  flex: 0 0 20px;
+}
+@media(max-width:640px) {
+  .review-form {
+    grid-template-columns: minmax(0,1fr);
+  }
+}

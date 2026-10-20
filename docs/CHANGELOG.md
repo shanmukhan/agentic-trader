@@ -1,5 +1,73 @@
 # Change log
 
+## 2026-10-20 — LT1 long-term paper foundations (0.5.0)
+
+Expanded the user-requested plan to include long-term NSE cash-equity paper holdings.
+Added a separately bound `investment_horizon`, dedicated config/database/8001 listener,
+portfolio drawdown limit and separate delivery charge schedule. Legacy intraday
+policy hash `642c1e1c9fabdd41278868d4e66108e201e7c1b15ddb888ed5ad9704afd1cbaa`
+and existing intraday defaults/model artifacts remain unchanged. Horizon/policy
+changes fail before pending recovery; a selected feed cannot omit a held symbol.
+Each account has independent virtual capital, not a shared cross-account budget.
+
+Added composed overnight day-roll/watch behavior: regular closes/weekends/restarts
+preserve long-term holdings, entry residuals still expire, prior trusted portfolio
+observations anchor the new day's P&L before opening quotes, and observed peak/
+drawdown persist across dates. Protective stop/target/operator/kill exits remain
+latched per holding until closure, including cancelled/restarted partial residuals.
+Waiting for a new date cannot reset a breached long-term drawdown limit.
+
+Added typed, authenticated current-session price-basis review and individual-holding
+exit routes with console controls/confirmation. Missing review blocks raw quote
+replacement and fills. Reviews pin the used calendar and prior quote basis; reported
+corporate actions persistently quarantine symbols and cancel pending buys. Another
+review cannot clear quarantine. No split/dividend/cash/share adjustment is invented.
+Existing intraday automatic rules/ML/research are refused on long-term configs.
+
+Delivery estimates include both-side STT, delivery stamp, variable taxes/fees and
+atomic DP once per sold symbol/IST day across partial fills and replacement orders.
+An entry cash buffer protects ordinary exit-fee capacity. Actual fee shortfall blocks
+the fill without charging an unfilled DP amount, creating negative cash or deleting
+the holding. Startup independently reconstructs delivery fees/day allocation,
+review authority, quarantine, fill journal and durable exit evidence.
+
+Added source-preserving `long-term-report`, three independent invented lifecycle
+scenarios, an isolated populated benchmark and CI commands. Added the detailed
+long-term guide and updated all corresponding plan/specification, usage, API,
+architecture/risk, threat/operations, acceptance, research/model, performance/test
+Markdown. The extended roadmap names LT2 corporate-action accounting, LT3 daily
+research/portfolio management and LT4 actual custody/settlement acceptance. This
+package version is not the original future live infrastructure Phase 5.
+
+### LT1 validation and measured limits
+
+- **328 Python tests and 17 JavaScript tests passed**; **92% Python coverage**.
+  Forty-four new Python cases include financial outcomes, fault rollback, corruption,
+  horizon/coverage rejection, API/CLI/report flows and lifecycle drills. Long-term
+  policy **96%**, delivery verification **93%**, charges **100%**, independent broker
+  **93%**, long-term demo **90%**, report **92%**, API **91%**.
+- Ruff lint/format, mypy, secret-pattern/Markdown-link checks, frozen offline lock,
+  dependency audit (no known vulnerabilities) and wheel/source builds passed.
+  Packaged long-term modules and console assets load outside the repository.
+- Populated 2,000-observation Mac benchmark: p50 **0.1843 ms**, p95 **0.2147 ms**,
+  p99 **0.3288 ms**, fourteen held shares, WAL/FULL unchanged. Parsing, network,
+  callback contention, history and actual Pi behavior are excluded.
+- Invented independent outcomes: overnight/restart cash **₹25,379.54**, opening-gap
+  cash **₹24,261.40**, quarantine account cash **₹17,986.78** plus fourteen retained
+  shares. These are software fixtures, not market-return or profitability evidence.
+- Original-account read-only preflight reconciled **₹25,000.00**, zero fees, no
+  pending orders/positions, matching legacy intraday policy/charges. Missing operator
+  token in the unconfigured shell remains correctly blocked. No source recovery ran.
+- Desktop Safari visually displayed the isolated long-term account, horizon, fee
+  buffer and review form. No Kite session, real order or custody action occurred.
+  Mobile/actual-device checks remain pending.
+
+LT1 does not implement corporate-action adjustments, actual custody/sellable holdings/
+settlement, daily long-term strategies/ML, SIP/rebalancing/tax lots or aggregate capital
+allocation. Virtual same-day protective exits/immediate sale cash are simulation
+simplifications. Real-feed/model/strategy/device acceptance and all live phases
+remain pending under the documented gates.
+
 ## 2026-10-20 — Responsive console and local acceptance tooling (0.4.1)
 
 Continued Phase 4 acceptance support with a responsive packaged HTML/CSS/JavaScript

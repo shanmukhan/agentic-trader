@@ -1,6 +1,7 @@
 # Paper risk and accounting policy
 
-All balances are virtual. These engineering defaults are not evidence that a strategy
+The table below describes the default intraday profile. The LT1 section specifies
+the separate long-term policy. All balances are virtual. These engineering defaults are not evidence that a strategy
 will make money. Limits are planned constraints; gaps, unavailable quotes and outages
 can produce larger simulated losses than a stop budget.
 
@@ -134,3 +135,39 @@ validation age. Manual entries are disabled on supervised services.
 Disarm preserves protective handling of filled positions; flatten/kill separately
 request exits. Operational reports expose incidents and preliminary evidence gates,
 and always retain false live readiness/external acceptance. See [paper-feed.md](paper-feed.md).
+
+## Long-term paper horizon (LT1, 0.5.0)
+
+The intraday defaults above are unchanged. Long-term uses a separate explicitly bound
+account with `config/long-term.toml`: virtual ₹25,000, planned trade risk ₹250, daily
+loss ₹500, persistent peak-to-equity drawdown ₹2,500, position ₹7,500, portfolio ₹20,000
+and five positions. These engineering defaults are not recommended capital allocations.
+The two virtual seeds are independent; a shared capital/aggregate risk cap is not supplied.
+
+Long-term closes/weekends/restarts do not force liquidation or trigger an overnight
+kill. Pending entries retain TTL/session expiry. Stop/target, operator exit, kill,
+daily loss and portfolio drawdown can queue protective exits. Requests are latched
+per holding until flat; restart/cancellation of residual orders cannot discard them.
+A selected restarted feed must include all held symbols before pending recovery runs.
+Fresh reviewed quotes, session liquidity and affordability still govern actual fills.
+
+A new reviewed session uses the last fully trusted observed portfolio equity as its
+daily reference before replacing old quotes, retaining opening gaps. Full-portfolio
+freshness is required to update trusted equity/peak and evaluate portfolio loss gates;
+stale/quarantined holdings delay those marks and block entries. Individual reviewed
+holding stops/exits remain protective. Peak/drawdown persist across dates/restarts;
+waiting for another session cannot reset breached portfolio drawdown. Reference marks
+are observations, not guaranteed closing valuations or maximum-loss guarantees.
+
+Current-session raw-price reviews must cover intervening corporate actions since
+the previous accepted quote. Missing review blocks quote replacement/fills. A reported
+action cancels buys and persistently quarantines the symbol: no split, dividend,
+bonus or changed cost basis is invented. Adjustments are a later milestone.
+
+Delivery fee estimates have a separate pinned version, cumulative variable order
+charges and one actual-fill DP charge per symbol/IST day. An entry buffer of
+`max_positions × DP` reduces available entry cash. It is not a booked fee. Actual
+exit cash shortfall blocks a fill without creating negative cash or losing the holding.
+Startup rederives delivery fee and review/exit/quarantine evidence independently.
+See [long-term.md](long-term.md) for observed official sources, cost assumptions,
+excluded account/personal taxes/settlement cases and all operational boundaries.

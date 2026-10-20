@@ -252,3 +252,13 @@ python scripts/benchmark_ml.py --model data/ml-first/model \
 The [Mac benchmark](performance.md#phase-3-json-inference-and-ranking) separates score
 math and ten-candidate ranking from parsing, feature construction and durable risk
 execution. Measure the complete workload on actual target hardware before deployment.
+
+## Long-term boundary (0.5.0)
+
+These features, labels and calibrated artifacts remain intraday-specific. Long-term
+paper accounts cannot attach this model/controller or invoke the current intraday
+training/replay pipeline as an approved investment strategy. New daily/total-return
+features, corporate-action-aware outcomes, holding intervals and portfolio validation
+are required by later LT milestones. Default intraday policy hashes remain unchanged,
+so existing validated intraday artifacts are not silently invalidated by the added
+settings fields. See [long-term.md](long-term.md).

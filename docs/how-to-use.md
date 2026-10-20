@@ -369,3 +369,22 @@ local checks; ordinary diagnostics exit 0 even when checks are blocked. Command 
 configuration errors exit 1. A new private output folder contains JSON/Markdown and
 a final hash manifest. Read [acceptance.md](acceptance.md) for exact limits, cooperative
 query budget, WAL sidecar behavior and actual broker/device acceptance procedures.
+
+## 18. Long-term paper holdings (LT1)
+
+```sh
+trading-agent long-term-demo --directory data/long-term-first
+trading-agent --config config/long-term-session.toml init-db
+trading-agent --config config/long-term-session.toml instruments
+trading-agent --config config/long-term-session.toml serve --stream
+```
+
+Create the working config from `config/long-term.toml`, reviewing database/calendar/
+actual tokens and loading the private environment before the latter commands. The
+separate UI defaults to <http://127.0.0.1:8001>. Each horizon has its own virtual seed;
+capital is not shared. Follow [long-term.md](long-term.md) for complete setup, current
+price-basis reviews, typed entry/exit requests, overnight/restart protection, DP fees,
+source-preserving reports and actual acceptance limits. Ordinary closes do not sell
+these holdings. Reported corporate actions quarantine the symbol; adjustments,
+daily long-term strategies, SIP/rebalancing and real settlement remain later work.
+Intraday research/automation commands are refused on a long-term config.

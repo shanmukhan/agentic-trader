@@ -253,3 +253,13 @@ staleness is independent of server feed freshness. Locking the page does not dis
 the feed. Kill/flatten/disarm remain immediate server requests, and queued exits still
 need actual subsequent virtual fills. Desktop visual acceptance is recorded locally;
 mobile visual/physical-device acceptance remains pending.
+
+## Long-term service boundary (0.5.0)
+
+This automatic feed controller remains intraday-only. Long-term uses a separate
+`investment_horizon = "long_term"` account with manual operator hypotheses and ordinary
+`serve --stream`, default port 8001. Passing `--automate`/intraday models is refused.
+Its normal overnight disconnect/closure preserves holdings rather than forcing the
+intraday exit policy. Long-term reviews, protective exits, delivery fees and current
+limits are specified in [long-term.md](long-term.md); no automatic investment strategy
+or actual settlement is claimed.

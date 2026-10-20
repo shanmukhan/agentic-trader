@@ -183,3 +183,28 @@ pending: browser automation did not yield reliable mobile evidence. The source/w
 build contains all three UI assets and loads them outside the repository. Original
 account read-only preflight reconciled cash ₹25,000.00 with no holdings/pending orders;
 operator-token configuration is correctly blocked in the unconfigured shell.
+
+## Long-term LT1 automated and local acceptance (0.5.0)
+
+Combined local result: **328 Python tests and 17 JavaScript tests passed**; **92% Python
+coverage**. The 44 added Python cases cover overnight/weekend retention, required and
+strict/idempotent reviews, persistent quarantine, changed price rejection, opening-gap
+loss accounting, cross-day high-water/drawdown, same-day and cross-day partial DP,
+exit cancellation/restart latches, horizon/config/model refusal before recovery,
+fee cash shortfall, rollback, corruption/missing metadata/journal, held feed coverage,
+current API/Origin/auth behavior, source-preserving private hashed reports, horizon/
+cost preflight and isolated CLI drills/refusals. Intraday and ML regressions pass.
+
+Long-term policy coverage: **96%**; delivery reconstruction **93%**; charges **100%**;
+independent paper broker **93%**; long-term demo **90%**, report **92%**; API **91%**.
+The JavaScript suite adds four cases for horizon/review fields and clearing, explicit
+quarantine confirmation, typed symbol-only holding exits and stale-review blocking.
+A populated 2,000-quote Mac benchmark measured long-term p99 **0.3288 ms**, excluding
+network/parsing/contention/history/Pi, with WAL/FULL preserved.
+
+Desktop Safari displayed the long-term horizon, virtual account/buffer, blocked
+readiness and review form in an isolated flat/no-feed account. No market-data session,
+real order or custody action was attempted. Mobile/actual-device acceptance remains
+pending. Original-account read-only checks and final quality/build/audit results are
+recorded in [CHANGELOG.md](CHANGELOG.md). See [long-term.md](long-term.md) for exact
+supported behavior and the still-missing adjustment/research/settlement milestones.

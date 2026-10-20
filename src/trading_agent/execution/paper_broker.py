@@ -8,7 +8,9 @@ from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from typing import TYPE_CHECKING, Any
 
-from trading_agent.execution.costs import Charges, down, up
+from trading_agent.execution.costs import charges_for, down, up
+from trading_agent.execution.delivery import HoldingReview
+from trading_agent.execution.long_term import LongTermBook
 from trading_agent.market_data.calendar import IST, SessionCalendar
 from trading_agent.models import Candidate, Instrument, Quote, RiskDecision, stamp, utc
 from trading_agent.persistence.database import Database
@@ -42,7 +44,10 @@ class PaperBroker:
         self.db, self.settings, self.calendar = db, settings, calendar
         self.model = model
         self.automation = automation
-        self.charges = Charges()
+        self.charges = charges_for(settings)
+        if settings.investment_horizon == "long_term" and (model or automation):
+            raise ValueError("long-term ML/automatic signals require a separate research milestone")
+        self.long_term = LongTermBook(self) if settings.investment_horizon == "long_term" else None
         self.lock = threading.RLock()
         self.connected = False  # explicitly NOT restored; reconnect must provide fresh data
         self.faulted = False
@@ -51,6 +56,14 @@ class PaperBroker:
         # Account policy cannot silently change across restarts.
         signature = policy_fingerprint(settings)
         with db.transaction() as tx:
+            horizon = tx.execute("SELECT value FROM meta WHERE key='investment_horizon'").fetchone()
+            long_schema = tx.execute(
+                "SELECT value FROM meta WHERE key='long_term_schema'"
+            ).fetchone()
+            if horizon and horizon[0] != settings.investment_horizon:
+                raise ValueError("investment horizon changed: use a separate paper account")
+            if long_schema and (not horizon or horizon[0] != "long_term"):
+                raise RuntimeError("missing long-term horizon binding")
             existing = tx.execute("SELECT value FROM meta WHERE key='policy_hash'").fetchone()
             if not existing and tx.execute("SELECT 1 FROM orders LIMIT 1").fetchone():
                 raise RuntimeError("missing account policy fingerprint")
@@ -59,6 +72,9 @@ class PaperBroker:
             charges = tx.execute("SELECT value FROM meta WHERE key='charges_version'").fetchone()
             if existing and (not charges or charges[0] != self.charges.version):
                 raise RuntimeError("missing or changed account charge schedule")
+            if self.long_term:
+                self.long_term.bind(tx, utc(recovery_time or datetime.now(UTC)))
+            db.set(tx, "investment_horizon", settings.investment_horizon)
             db.set(tx, "policy_hash", signature)
             db.set(tx, "charges_version", self.charges.version)
             model_row = tx.execute("SELECT value FROM meta WHERE key='model_version'").fetchone()
@@ -169,12 +185,12 @@ class PaperBroker:
             fresh = fresh and self._fresh(quote, now)
             mark = quote.bid if quote else D(row["cost"]) / row["quantity"]
             exit_price = self._sell_price(tx, row["symbol"], mark)
-            net = exit_price * row["quantity"] - self.charges.fee(
-                "SELL", exit_price * row["quantity"]
+            net = exit_price * row["quantity"] - self._sale_fee(
+                tx, row["symbol"], exit_price * row["quantity"], now
             )
             stop_price = self._sell_price(tx, row["symbol"], D(row["stop"]))
-            stop_net = stop_price * row["quantity"] - self.charges.fee(
-                "SELL", stop_price * row["quantity"]
+            stop_net = stop_price * row["quantity"] - self._sale_fee(
+                tx, row["symbol"], stop_price * row["quantity"], now
             )
             value += net
             exposure += max(mark * row["quantity"], D(row["cost"]))
@@ -187,8 +203,9 @@ class PaperBroker:
                 }
             )
         equity = cash + value
-        return {
+        result = {
             "mode": "paper",
+            "investment_horizon": self.settings.investment_horizon,
             "cash": str(cash),
             "reserved_cash": str(reserved),
             "available_cash": str(cash - reserved),
@@ -209,11 +226,25 @@ class PaperBroker:
             "charges_version": self.charges.version,
         }
 
+        if self.long_term:
+            self.long_term.decorate(tx, now, result)
+        return result
+
+    def _sale_fee(
+        self, tx: sqlite3.Connection, symbol: str, turnover: Decimal, now: datetime
+    ) -> Decimal:
+        if self.long_term:
+            return self.long_term.sale_fee(tx, symbol, turnover, now)
+        return self.charges.fee("SELL", turnover)
+
     def snapshot(self, now: datetime) -> dict[str, Any]:
         with self.lock, self.db.transaction() as tx:
             return self._snapshot(tx, utc(now))
 
     def _roll_day(self, tx: sqlite3.Connection, now: datetime) -> None:
+        if self.long_term:
+            self.long_term.roll_day(tx, now)
+            return
         today = now.astimezone(IST).date().isoformat()
         if self.db.get(tx, "day") == today:
             return
@@ -259,6 +290,11 @@ class PaperBroker:
             reasons.append("LOSS_STREAK")
         if self.db.get(tx, "day") != local.date().isoformat():
             reasons.append("UNRESOLVED_PREVIOUS_SESSION")
+        if self.long_term:
+            if not quote or not self.long_term.reviewed(tx, quote.symbol, now):
+                reasons.append("LONG_TERM_REVIEW_REQUIRED")
+            if D(snapshot["long_term"]["observed_drawdown"]) >= s.long_term_drawdown_limit:
+                reasons.append("LONG_TERM_DRAWDOWN_LIMIT")
         if quote:
             if quote.ask_size == 0 or quote.bid_size == 0:
                 reasons.append("NO_LIQUIDITY")
@@ -433,6 +469,8 @@ class PaperBroker:
             return dict(tx.execute("SELECT * FROM orders WHERE id=?", (intent,)).fetchone())
 
     def _exit(self, tx: sqlite3.Connection, symbol: str, now: datetime, reason: str) -> None:
+        if self.long_term:
+            self.long_term.latch_exit(tx, symbol, now, reason)
         for order in tx.execute(
             f"SELECT * FROM orders WHERE {PENDING} AND side='BUY' AND symbol=?", (symbol,)
         ).fetchall():
@@ -494,6 +532,12 @@ class PaperBroker:
                 raise ValueError("daily loss limit still breached")
             if snapshot["loss_streak"] >= self.settings.max_consecutive_losses:
                 raise ValueError("loss streak still breached; wait for next session")
+            if (
+                self.long_term
+                and D(snapshot["long_term"]["observed_drawdown"])
+                >= self.settings.long_term_drawdown_limit
+            ):
+                raise ValueError("long-term drawdown remains breached; preserve this account")
             if self.faulted:
                 raise ValueError("database fault requires verified restart")
             self.db.set(tx, "kill", "false")
@@ -503,7 +547,34 @@ class PaperBroker:
     def flatten(self, now: datetime) -> None:
         self.kill(now, "OPERATOR_FLATTEN")
 
+    def review_holding(self, review: HoldingReview, now: datetime) -> dict[str, Any]:
+        if not self.long_term:
+            raise ValueError("holding reviews require a long-term paper account")
+        try:
+            return self.long_term.review(review, now)
+        except (sqlite3.Error, RuntimeError):
+            self.faulted = True
+            self.connected = False
+            raise
+
+    def exit_holding(self, symbol: str, now: datetime) -> dict[str, Any]:
+        if not self.long_term:
+            raise ValueError("individual holding exits require a long-term paper account")
+        now = utc(now)
+        with self.lock, self.db.transaction() as tx:
+            self._roll_day(tx, now)
+            if not tx.execute("SELECT 1 FROM positions WHERE symbol=?", (symbol,)).fetchone():
+                raise KeyError(symbol)
+            self._exit(tx, symbol, now, "OPERATOR_HOLDING_EXIT")
+            row = tx.execute(
+                f"SELECT * FROM orders WHERE {PENDING} AND side='SELL' AND symbol=?", (symbol,)
+            ).fetchone()
+            return {"exit_queued": True, "order": dict(row)}
+
     def _watch(self, tx: sqlite3.Connection, now: datetime) -> None:
+        if self.long_term:
+            self.long_term.watch(tx, now)
+            return
         self._roll_day(tx, now)
         snapshot = self._snapshot(tx, now)
         if D(snapshot["day_pnl"]) <= -self.settings.daily_loss_limit:
@@ -581,6 +652,8 @@ class PaperBroker:
                 ):
                     self.bad_symbols.add(quote.symbol)
                     return False
+                if self.long_term and not self.long_term.before_quote(tx, quote, now):
+                    return False
                 self.bad_symbols.discard(quote.symbol)
                 self.seen_symbols.add(quote.symbol)
                 tx.execute(
@@ -649,6 +722,12 @@ class PaperBroker:
             quantity = min(order["quantity"] - order["filled"], liquidity[side])
             if quantity <= 0:
                 continue
+            if (
+                self.long_term
+                and side == "SELL"
+                and not self.long_term.can_sell(tx, order, quantity, price, now)
+            ):
+                continue
             liquidity[side] -= quantity
             self._fill(tx, order, quantity, price, now)
 
@@ -656,7 +735,11 @@ class PaperBroker:
         self, tx: sqlite3.Connection, order: sqlite3.Row, qty: int, price: Decimal, now: datetime
     ) -> None:
         turnover = D(order["turnover"]) + price * qty
-        fees_total = self.charges.fee(order["side"], turnover)
+        fees_total = (
+            self.long_term.order_fees(tx, order, turnover, now, record=True)
+            if self.long_term
+            else self.charges.fee(order["side"], turnover)
+        )
         fee = fees_total - D(order["fees"])
         cash = D(self.db.get(tx, "cash"))
         position = tx.execute(

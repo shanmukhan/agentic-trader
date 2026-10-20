@@ -1,0 +1,25 @@
+# Dedicated virtual account. This is an engineering policy, not an investment recommendation.
+mode = "paper"
+investment_horizon = "long_term"
+database = "data/long-term.sqlite3"
+host = "127.0.0.1"
+port = 8001
+starting_cash = "25000.00"
+max_trade_risk = "250.00"
+daily_loss_limit = "500.00"
+long_term_drawdown_limit = "2500.00"
+max_position_notional = "7500.00"
+max_total_notional = "20000.00"
+max_positions = 5
+max_consecutive_losses = 3
+max_quote_age_seconds = 5
+max_spread_bps = "30"
+slippage_bps = "5"
+latency_ms = 100
+order_ttl_seconds = 30
+entry_start = "09:30"
+entry_end = "14:30"
+# Required by the common config schema; this never forces long-term holdings closed.
+flatten_at = "15:15"
+calendar = "config/sessions.csv"
+stream_tokens = []

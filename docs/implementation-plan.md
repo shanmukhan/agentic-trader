@@ -6,7 +6,8 @@ Prepared 20 October 2026. This is the execution record for the original
 ## Implemented scope
 
 The repository delivers Phases 1–3 infrastructure/research and Phase 4 supervised
-paper-feed engineering using the same virtual broker/risk mechanics. Rules/models
+intraday paper-feed engineering plus LT1 long-term paper foundations using the same
+transactional risk/execution mechanics. Rules/models
 run offline or on explicitly configured dedicated paper accounts. No live adapter, profitability
 or compliance readiness is implied. External account creation, entitlement checks
 and OS service installation require real credentials/hardware and are not fabricated.
@@ -191,6 +192,48 @@ retain exact decimal display; distinguish local checks, current session and exte
 acceptance. CSS supports mobile browsers but small-screen visual/physical-phone
 acceptance remains pending because browser tooling did not yield reliable evidence.
 Desktop Safari and the isolated virtual kill/reset/lock flow were verified locally.
+
+## Long-term scope extension — LT1 delivered, version 0.5.0
+
+The user extended the project to include long-term investing. This introduces a
+separate paper horizon; it does not convert intraday accounts or implement the
+original live infrastructure Phase 5. Full usage and explicit limits are in
+[long-term.md](long-term.md).
+
+| Work item | Implementation / evidence |
+|---|---|
+| Separate horizon | `investment_horizon`, dedicated config/database/8001 listener, durable binding and unchanged legacy intraday hash |
+| Overnight lifecycle | Holdings survive close/weekend/restart; pending buys expire, requested exits remain latched until closure |
+| Independent risk | Existing sizing, cash/depth/tick/latency limits plus durable observed peak/drawdown and gap-preserving daily reference |
+| Price-basis integrity | Current-session operator review, previous accepted quote clock, pinned used calendar definitions and persistent corporate-action quarantine |
+| Delivery costs | Observed retail NSE delivery schedule, exact partial-order fees, atomic per-symbol/day DP allocation and entry cash buffer |
+| Reconstruction | Delivery fees/day markers, fills, review authority, quarantines and requested exits checked against journal/ledger on startup |
+| Operator/API | Horizon badge, long-term risk/review panel and confirmed individual full-holding exit, authenticated typed endpoints |
+| Evidence/drills | Source-preserving `long-term-report`; invented overnight partial/restart, opening-gap and unadjusted-action scenarios |
+| Performance/validation | 328 Python + 17 JavaScript tests, 92% Python coverage; populated long-term p99 0.3288 ms on this Mac, excluding network/Pi |
+| Documentation | New detailed long-term guide plus updated original specification, usage, API, risk, architecture, threat, operations, acceptance and tests |
+
+Enhancements to the scope: require a separate account instead of changing intraday
+semantics; preserve opening gaps rather than marking the new day's baseline at its
+first new price; retain explicit exits across cancelled/restarted residual orders;
+charge DP only on actual fills; block unaffordable exit fees without inventing cash;
+reject a restarted selected feed that omits a held symbol; quarantine known corporate
+actions instead of treating an unadjusted price jump as ordinary market P&L.
+
+### Extended long-term roadmap
+
+| Milestone | Required implementation / acceptance | Status |
+|---|---|---|
+| LT1: overnight paper foundations | Lifecycle, delivery costs, reviews, risk, console, evidence and tests | Engineering delivered |
+| LT2: corporate actions and cash/share ledger | Reviewed split/bonus/dividend entitlements and effective/payment dates, integral/fractional handling, atomic idempotency, independent reconstruction and recovery | Next long-term code milestone |
+| LT3: daily research and portfolio management | Completed daily price/total-return data, point-in-time universe, causal strategy/ML validation, SIP/lot additions, rebalancing and cross-account allocation | Pending |
+| LT4: actual read-only holdings and supervised acceptance | Reviewed custody/sellable holdings/settlement reconciliation, calibrated costs/fills and sustained actual device/feed evidence | Pending external access and engineering |
+| Live infrastructure / pilot | Existing separate empirical, compliance, adapter/reconciliation and explicit approval gates | Pending; execution unavailable |
+
+LT1 reviews are operator assertions, not verified corporate-action feeds. Actual
+share/cash adjustments, real settlement, income tax/AMC, automatic long-term signals,
+lot/tax management and combined capital coordination are not implemented. Preserved
+overnight state alone is not full investment-platform or production readiness.
 
 ## Remaining milestones and acceptance gates
 

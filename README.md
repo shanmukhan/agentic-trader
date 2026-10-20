@@ -1,7 +1,8 @@
 # Agentic Trader — paper only
 
 Read-only Zerodha Kite data, deterministic risk checks, durable simulated execution,
-and a local authenticated dashboard. Starting virtual cash: **₹25,000**.
+and a local authenticated dashboard for intraday and long-term paper accounts.
+Starting virtual cash per isolated account: **₹25,000**.
 There is no live execution adapter, live order route, or funds transfer functionality.
 
 Python **3.13.16** is recommended. The application targets Python 3.13 on macOS and
@@ -15,6 +16,7 @@ uv run trading-agent demo --directory data/demo-first
 uv run trading-agent research-demo --directory data/research-first
 uv run trading-agent ml-demo --directory data/ml-first
 uv run trading-agent paper-demo --directory data/paper-first
+uv run trading-agent long-term-demo --directory data/long-term-first
 uv run trading-agent serve
 ```
 
@@ -41,7 +43,7 @@ controls. The [acceptance guide](docs/acceptance.md) covers `preflight --strict`
 private diagnostic evidence and remaining broker/device work. Node 24 is used only
 for JavaScript tests; serving the console needs no Node or frontend build.
 
-Local validation: **284 Python tests and 13 JavaScript tests passed; 92% Python coverage**, with lint/type checks, dependency
+Local validation: **328 Python tests and 17 JavaScript tests passed; 92% Python coverage**, with lint/type checks, dependency
 audit and builds passing. Details are in the change log. Real Kite credentials and
 Raspberry Pi deployment remain unverified.
 
@@ -60,7 +62,13 @@ uv run pip-audit
 Phase 1 provides infrastructure and paper execution. Phase 2 adds predeclared rule
 hypotheses and quote-driven historical research in isolated accounts. Phase 3 adds
 offline calibrated ML and probability-ranked research with independent risk gates.
-Phase 4 adds opt-in supervised paper-feed automation and operations reports.
+Phase 4 adds opt-in supervised intraday paper-feed automation and operations reports.
+Version 0.5.0 adds LT1 overnight paper holdings, delivery-cost/DP accounting, persistent
+protective exits, price-basis review/quarantine and portfolio drawdown. Read the
+[long-term usage guide](docs/long-term.md) for the separate config, localhost:8001 UI,
+commands, limits and remaining milestones. Corporate-action adjustments, daily
+long-term strategies/ML, SIP/rebalancing and actual custody/settlement are pending.
+Each account has its own virtual capital; combined allocation is not implemented.
 Real-feed/target-device acceptance and live execution remain later milestones in
 the [original specification](zerodha_ai_trading_agent_project_spec.md).
 Engineering tests and synthetic demonstrations provide no evidence of trading profitability.

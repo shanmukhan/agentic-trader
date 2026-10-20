@@ -174,3 +174,38 @@ an owning Database/PaperBroker. It neither creates accounts nor runs recovery.
 Exit 0 means a diagnostic was produced; strict mode exits 2 for blocked required
 local checks. Invalid config/output/command failures exit 1. Structured checks and
 private artifact/measurement limits are in [acceptance.md](acceptance.md).
+
+## Long-term paper contracts (0.5.0 / LT1)
+
+`investment_horizon` defaults to `intraday`; `long_term` requires a separate bound
+account. `config/long-term.toml` supplies the dedicated 8001 listener and engineering
+risk defaults. Status/console snapshots add `investment_horizon`. Long-term snapshots
+also expose `delivery_fee_buffer` and `long_term` observed peak/drawdown/reference,
+quarantine names (at most eleven in the console) and false adjustment/settlement flags.
+Full quarantine history is available in the account report. Available cash excludes
+the delivery entry buffer; cash/fees remain actual simulated ledger values.
+
+| Method/path | Schema and behavior |
+|---|---|
+| `POST /api/paper/long-term/reviews` | `{symbol, session_date, no_corporate_action, reference}`; strict boolean, current IST reviewed date, registered selected symbol, reference 3–300 characters |
+| `POST /api/paper/long-term/exit` | `{symbol}` only; durable full remaining holding exit, no client quantity, repeated pending request returns current order |
+
+Both routes retain Bearer/Host/Origin checks and are refused with 409 on intraday
+accounts. Wrong review context or clearing quarantine returns 409; malformed/unknown
+fields return 422. A nonexistent/closed holding exit returns 404. A successful exit
+response has `exit_queued: true` and `order`; it is not a fill. A successful review
+returns its record and paper/adjustment flags, not proof of external verification.
+Clear reviews are idempotent by unchanged payload; changes append audit evidence.
+A false review permanently quarantines that symbol in LT1 and cancels pending buys.
+
+Manual long-term entries use the existing Candidate/intents schema and independent
+fee-aware sizing. Intraday automatic rules/models cannot be attached to this horizon.
+New entry codes include `LONG_TERM_REVIEW_REQUIRED` and `LONG_TERM_DRAWDOWN_LIMIT`.
+An exit lacking fee cash remains pending with journal reason `INSUFFICIENT_EXIT_FEE_CASH`.
+Legacy intraday policy hashes remain byte-identical, including existing model artifacts.
+
+`long-term-demo --directory NEW_PATH` creates only separate invented accounts.
+`--config LONG_CONFIG long-term-report --output NEW_PATH` requires a stopped existing
+long-term account, reconciles without engine recovery/cancellation and emits private
+JSON/Markdown/trades plus a final hash manifest. All live/external/settlement acceptance
+flags remain false. Read [long-term.md](long-term.md) for full command and simulation limits.

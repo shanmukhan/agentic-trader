@@ -49,6 +49,8 @@ def run_backtest(
     output: Path,
     model: "ResearchModel | None" = None,
 ) -> dict[str, Any]:
+    if policy.investment_horizon != "intraday":
+        raise ValueError("the current rule backtester supports intraday hypotheses only")
     if model:
         from trading_agent.execution.costs import Charges
         from trading_agent.risk.policy import policy_fingerprint

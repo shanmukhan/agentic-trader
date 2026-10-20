@@ -200,3 +200,43 @@ def paper_factory(tmp_path):
     yield make
     for db in databases:
         db.close()
+
+
+@pytest.fixture
+def long_term_factory(tmp_path):
+    opened = []
+
+    def make(*, now=NOW, **overrides):
+        values = dict(
+            investment_horizon="long_term",
+            max_trade_risk=D("250"),
+            daily_loss_limit=D("500"),
+            max_position_notional=D("7500"),
+            max_positions=5,
+        )
+        values.update(overrides)
+        settings = Settings(
+            database=tmp_path / f"long-term-{len(opened)}.sqlite3",
+            operator_token=SecretStr(TOKEN),
+            **values,
+        )
+        days = [NOW.date() + timedelta(days=n) for n in (0, 1, 2, 3, 6, 7)]
+        calendar = SessionCalendar(
+            {day: (time(9, 15), time(15, 30)) for day in days},
+            {day: "invented long-term test calendar" for day in days},
+        )
+        db = Database(settings.database, settings.starting_cash)
+        opened.append(db)
+        engine = PaperBroker(db, settings, calendar, recovery_time=now)
+        engine.register(
+            [
+                Instrument(symbol="NSE:DEMO", token=1, tick_size=D("0.05")),
+                Instrument(symbol="NSE:SECOND", token=2, tick_size=D("0.05")),
+            ]
+        )
+        engine.set_connected(True)
+        return engine
+
+    yield make
+    for db in opened:
+        db.close()

@@ -200,3 +200,62 @@ test('reset asks for confirmation and server rejection remains visible after ref
   assert.equal(s.calls[1].url, '/api/control/reset');
   assert.match(s.nodes.message.textContent, /account must be flat/);
 });
+
+function deliveryView() {
+  const view = data();
+  view.account.investment_horizon = 'long_term';
+  view.account.delivery_fee_buffer = '76.70';
+  view.account.long_term = { peak_equity: '25000', observed_drawdown: '30', drawdown_limit: '2500', quarantined_symbols: [] };
+  return view;
+}
+
+test('long-term view labels the account, fills IST review date and clears private review values on lock', async () => {
+  const s = setup(async () => ok(deliveryView())); await s.unlock();
+  assert.equal(s.nodes.horizon.textContent, 'Long-term paper');
+  assert.equal(s.nodes['long-term'].hidden, false);
+  assert.equal(s.nodes['review-date'].value, '2026-10-20');
+  assert.ok(!s.nodes['review-submit'].disabled);
+  s.nodes['review-symbol'].value = 'NSE:DEMO'; s.nodes['review-reference'].value = 'private review note';
+  s.nodes.lock.fire('click');
+  assert.equal(s.nodes['long-term'].hidden, true);
+  assert.equal(s.nodes['review-reference'].value, '');
+  assert.equal(s.nodes['long-term-state'].textContent, '');
+});
+
+test('corporate-action review is confirmed with explicit quarantine warning and typed JSON body', async () => {
+  const s = setup(async (url, options) => ok(options.method === 'POST' ? { paper_only: true } : deliveryView()));
+  await s.unlock(); s.nodes['review-symbol'].value = 'NSE:DEMO';
+  s.nodes['review-reference'].value = 'reviewed notice'; s.nodes['review-clear'].checked = false;
+  s.nodes['holding-review'].fire('submit'); await flush();
+  assert.equal(s.calls.length, 1);
+  assert.match(s.nodes['confirm-title'].textContent, /persistent quarantine/);
+  s.nodes['confirm-action'].fire('click'); await flush();
+  assert.equal(s.calls[1].url, '/api/paper/long-term/reviews');
+  assert.deepEqual(JSON.parse(s.calls[1].options.body), { symbol: 'NSE:DEMO', session_date: '2026-10-20', no_corporate_action: false, reference: 'reviewed notice' });
+  assert.equal(s.calls[1].options.headers['Content-Type'], 'application/json');
+});
+
+test('holding exit identifies the symbol and posts no client-supplied quantity only after confirmation', async () => {
+  const view = deliveryView();
+  view.account.positions = [{ symbol: 'NSE:DEMO', quantity: 14, unrealized_pnl: '0', stop: '490', target: '600' }];
+  const s = setup(async (url, options) => ok(options.method === 'POST' ? { exit_queued: true } : view));
+  await s.unlock();
+  const exit = s.nodes.positions.children[0].children.find(node => node.textContent === 'Queue full paper exit');
+  exit.fire('click'); assert.match(s.nodes['confirm-title'].textContent, /NSE:DEMO/);
+  assert.equal(s.calls.length, 1);
+  s.nodes['confirm-action'].fire('click'); await flush();
+  assert.equal(s.calls[1].url, '/api/paper/long-term/exit');
+  assert.deepEqual(JSON.parse(s.calls[1].options.body), { symbol: 'NSE:DEMO' });
+  assert.match(s.nodes.message.textContent, /exit queued/);
+});
+
+test('intraday view hides delivery actions; stale delivery review is blocked at confirmation', async () => {
+  const manual = setup(); await manual.unlock();
+  assert.equal(manual.nodes['long-term'].hidden, true);
+  assert.ok(manual.nodes['review-submit'].disabled);
+  const s = setup(async () => ok(deliveryView())); await s.unlock();
+  s.nodes['review-symbol'].value = 'NSE:DEMO'; s.nodes['review-reference'].value = 'reviewed note';
+  s.nodes['review-clear'].checked = true; s.nodes['holding-review'].fire('submit');
+  s.advance(6001); s.nodes['confirm-action'].fire('click'); await flush();
+  assert.equal(s.calls.filter(c => c.options.method === 'POST').length, 0);
+});

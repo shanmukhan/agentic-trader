@@ -129,3 +129,20 @@ unknown vendor backports remain for review. Raw errors/environment credentials a
 not included. Reports are private account/platform data with hashes for accidental
 integrity only, not signatures or an acceptance authority. No network request,
 credential probe, model execution or change to financial risk limits was added.
+
+## Long-term boundaries (0.5.0)
+
+A durable horizon binding, different economic-policy hash and separate charge version
+prevent intraday/delivery account confusion before pending recovery. Legacy intraday
+hashes are preserved. Existing intraday automation/research is refused for long-term
+configs. Missing long-term markers/checkpoints and inconsistent delivery fee/review/
+quarantine/exit evidence fail reconstruction; no protection is silently reseeded.
+
+Authenticated typed review/exit routes preserve existing Bearer/Host/Origin/unknown-field
+controls. Review assertions are not external corporate-action verification. The API
+requires current reviewed dates/registered selected symbols and refuses clearing a
+known quarantine; raw changed prices are blocked before financial processing.
+UI reviews and exits require confirmation, use text rendering and do not persist
+credentials. Review references live in private evidence: never put secrets in them.
+No broker order method, custody synchronization, settlement permission, public listener
+or actual cash/share adjustment capability was added. See [long-term.md](long-term.md).
