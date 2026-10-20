@@ -1,6 +1,7 @@
 # Long-term paper investing: LT1 engineering and usage
 
-Version 0.5.0 adds a separate **long-term, long-only NSE cash-equity paper account**.
+Version 0.5.0 added a separate **long-term, long-only NSE cash-equity paper account**;
+version 0.6.0 extends it with [reviewed corporate-action accounting](corporate-actions.md).
 Holdings persist across closes, weekends and restarts. Entries remain explicit
 operator hypotheses; the existing intraday rule/ML pipeline cannot automatically
 trade this account. No real order, custody, withdrawal or settlement capability exists.
@@ -19,7 +20,7 @@ live-trading Phase 5. Further long-term milestones remain open.
 | Protective exits | Stop, target, operator holding exit, kill, daily loss and portfolio drawdown |
 | Restart | Reconcile first, cancel old pending orders, restore persistent requested exits on polling |
 | Delivery costs | Separate observed schedule, cumulative order fees, DP once per symbol/IST date |
-| Corporate actions | Review required; known action quarantines the symbol; no adjustment or dividend credit |
+| Corporate actions | Review/quarantine, offline reviewed split/bonus/dividend batch, separate net receipts and retained fractional claims |
 | Portfolio risk | Durable observed peak, drawdown kill and opening-gap-aware daily reference |
 | Automation/model | Existing intraday automation/research refused; no approved long-term strategy/model yet |
 | Reports | Source-preserving ledger/DP/quarantine evidence, explicit past valuation and acceptance limits |
@@ -111,9 +112,10 @@ If an action is present or unresolved, leave the confirmation unchecked and reco
 the quarantine. The dialog explains that it persists across sessions. It cancels
 pending buys, blocks new raw-price acceptance/fills and preserves holdings and exit
 requests. A later clear review cannot remove it. **Do not attest “no action” to bypass
-this block.** Preserve evidence and stop this symbol/account until a reviewed action
-adjustment workflow is implemented. LT1 does not fabricate split quantities,
-cash-in-lieu, dividend eligibility/payment, tax withholding or a new price basis.
+this block.** Preserve evidence and stop the service, then follow
+[corporate-actions.md](corporate-actions.md) to apply a supported complete reviewed
+batch and record separate cash receipts. Unsupported actions remain quarantined.
+No split quantities, cash-in-lieu, dividend payment, deductions or raw price are inferred.
 
 Equivalent authenticated request, replacing the placeholders before use:
 
@@ -221,8 +223,9 @@ network/history and actual Pi behavior. Reproduce with:
 
 ## Remaining long-term work
 
-LT2 must implement reviewed split/bonus/dividend and other cash/share adjustments,
-with entitlement dates, atomic idempotent accounting and independent reconstruction.
+LT2 now provides reviewed split/bonus/dividend accounting, retained fractional
+claims, separate receipts, atomic idempotency and independent reconstruction. Its
+[detailed guide](corporate-actions.md) defines supported dates/ratios and exclusions.
 LT3 adds completed daily data, total-return-aware research, long-term strategies,
 portfolio allocation/SIP/rebalancing and separately validated ML. LT4 requires actual
 read-only custody/sellable-holdings/settlement reconciliation and supervised evidence.

@@ -161,8 +161,9 @@ are observations, not guaranteed closing valuations or maximum-loss guarantees.
 
 Current-session raw-price reviews must cover intervening corporate actions since
 the previous accepted quote. Missing review blocks quote replacement/fills. A reported
-action cancels buys and persistently quarantines the symbol: no split, dividend,
-bonus or changed cost basis is invented. Adjustments are a later milestone.
+action cancels buys and persistently quarantines the symbol. A clear review cannot
+remove it; a complete supported offline action batch is required, as described in
+[corporate-actions.md](corporate-actions.md). No share quantity/payment is inferred.
 
 Delivery fee estimates have a separate pinned version, cumulative variable order
 charges and one actual-fill DP charge per symbol/IST day. An entry buffer of
@@ -171,3 +172,21 @@ exit cash shortfall blocks a fill without creating negative cash or losing the h
 Startup rederives delivery fee and review/exit/quarantine evidence independently.
 See [long-term.md](long-term.md) for observed official sources, cost assumptions,
 excluded account/personal taxes/settlement cases and all operational boundaries.
+
+### LT2 claims and adjusted price basis (0.6.0)
+
+Split/bonus changes retain total capital cost and holding identity; whole shares and
+fractional claims partition basis without discarding residuals. Claim basis rounds
+down to paise, leaving the holding's exact residual. Stops round down and targets
+up on the registered tick after dividing by the share factor. Dividends leave these
+protective levels unchanged. Old symbol quotes/candles are invalidated; a clear
+current-session review and strictly post-application quote are required to resume.
+
+Known net unpaid dividends contribute to estimated equity, never spendable cash.
+Receipt transfers receivable to cash without resetting the daily reference/peak.
+Unknown fractional claims make portfolio valuation stale and block entries/portfolio
+loss updates; whole-share stops and latched exits remain active on usable quotes.
+Dividend income is separate from capital realized P&L. Fraction proceeds less its
+basis join capital P&L; payment does not incur another trade/DP fee. Entitlements
+persist after whole-share sale. Receipt processing time books cash; no historical
+daily marks are rewritten. Unreviewed/unsupported actions remain quarantined.

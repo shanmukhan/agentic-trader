@@ -228,3 +228,13 @@ unavailable for delivery accounts. Overnight paper lifecycle drills are not vali
 investment strategies. Completed daily/total-return data, corporate-action-aware
 labels, portfolio allocation and long-term ML/research are later extended milestones.
 See [long-term.md](long-term.md) and [implementation-plan.md](implementation-plan.md).
+
+## LT2 ledger compatibility and research boundary (0.6.0)
+
+Long-term reports now reconstruct whole-share capital metrics through explicitly
+reviewed split/bonus batches, retain fractional basis transfers and report dividend
+income/fraction settlement separately. These paper ledger adjustments do not create
+adjusted candles or total-return research data. Existing intraday backtests/ML remain
+intraday-only and cannot consume a long-term account as a validated daily dataset.
+LT3 must establish completed daily availability, point-in-time membership and causal
+price/total-return treatment first. See [corporate-actions.md](corporate-actions.md).

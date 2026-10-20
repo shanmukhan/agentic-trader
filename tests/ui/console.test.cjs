@@ -229,10 +229,34 @@ test('corporate-action review is confirmed with explicit quarantine warning and 
   s.nodes['holding-review'].fire('submit'); await flush();
   assert.equal(s.calls.length, 1);
   assert.match(s.nodes['confirm-title'].textContent, /persistent quarantine/);
+  assert.match(s.nodes['confirm-description'].textContent, /reviewed offline corporate-action batch/);
   s.nodes['confirm-action'].fire('click'); await flush();
   assert.equal(s.calls[1].url, '/api/paper/long-term/reviews');
   assert.deepEqual(JSON.parse(s.calls[1].options.body), { symbol: 'NSE:DEMO', session_date: '2026-10-20', no_corporate_action: false, reference: 'reviewed notice' });
   assert.equal(s.calls[1].options.headers['Content-Type'], 'application/json');
+});
+
+test('long-term claims are disclosed separately from cash and cleared on lock', async () => {
+  const view = deliveryView();
+  Object.assign(view.account.long_term, { receivable: '126.00', unvalued_fractional_claims: 1, income_received: '50.40' });
+  const s = setup(async () => ok(view)); await s.unlock();
+  assert.equal(s.nodes['lt-receivable'].textContent, '₹126.00');
+  assert.equal(s.nodes['lt-fractions'].textContent, '1');
+  assert.equal(s.nodes['lt-income'].textContent, '₹50.40');
+  assert.match(s.nodes['lt-guidance'].textContent, /portfolio value is incomplete/);
+  s.nodes.lock.fire('click');
+  assert.equal(s.nodes['long-term-state'].textContent, '');
+  assert.equal(s.nodes['lt-receivable'].textContent, '');
+  assert.equal(s.nodes['lt-guidance'].textContent, '');
+});
+
+test('long-term guidance explains quarantine resolution and the ordinary next step', async () => {
+  const view = deliveryView(); view.account.long_term.quarantined_symbols = ['NSE:DEMO'];
+  const s = setup(async () => ok(view)); await s.unlock();
+  assert.match(s.nodes['lt-guidance'].textContent, /Stop the service/);
+  assert.match(s.nodes['lt-guidance'].textContent, /cannot remove quarantine/);
+  view.account.long_term.quarantined_symbols = []; await s.instance.refresh();
+  assert.match(s.nodes['lt-guidance'].textContent, /review the current session/);
 });
 
 test('holding exit identifies the symbol and posts no client-supplied quantity only after confirmation', async () => {

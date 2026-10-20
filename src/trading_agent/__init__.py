@@ -1,3 +1,3 @@
 """Paper-only trading application. No live execution adapter is included."""
 
-__version__ = "0.5.0"
+__version__ = "0.6.0"

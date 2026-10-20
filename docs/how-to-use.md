@@ -385,6 +385,31 @@ separate UI defaults to <http://127.0.0.1:8001>. Each horizon has its own virtua
 capital is not shared. Follow [long-term.md](long-term.md) for complete setup, current
 price-basis reviews, typed entry/exit requests, overnight/restart protection, DP fees,
 source-preserving reports and actual acceptance limits. Ordinary closes do not sell
-these holdings. Reported corporate actions quarantine the symbol; adjustments,
-daily long-term strategies, SIP/rebalancing and real settlement remain later work.
+these holdings. Reported corporate actions quarantine the symbol; use the reviewed
+offline adjustment workflow below. Daily long-term strategies, SIP/rebalancing and
+real settlement remain later work.
 Intraday research/automation commands are refused on a long-term config.
+
+## 19. Reviewed corporate actions and cash receipts (LT2)
+
+```sh
+trading-agent corporate-actions-demo --directory data/corporate-actions-first
+# Stop the owning service before the following source-account operations.
+trading-agent --config config/long-term-session.toml long-term-report --output data/before-actions-first
+trading-agent --config config/long-term-session.toml apply-corporate-actions --file /absolute/private/path/reviewed-actions.json
+trading-agent --config config/long-term-session.toml record-corporate-cash --file /absolute/private/path/reviewed-receipt.json
+```
+
+Read [corporate-actions.md](corporate-actions.md) before preparing either financial
+input. It provides complete schemas, ratio/date/evidence rules, quarantine hashes,
+ordered same-date batches, fractional cost/claim treatment, withholding/net receipts,
+idempotent retries, failure/recovery instructions and unsupported cases. An action
+batch never supplies spendable dividend cash. A recorded receipt credits only its
+existing claim, once. Old symbol quotes are invalidated; restart, review the adjusted
+current-session basis and wait for a quote after the application clock. Whole-share
+exits remain latched; unresolved fractions keep portfolio valuation stale. Reports
+now use schema 2 and disclose income, receivables and fractional claims separately.
+
+The standing documentation requirement is recorded in [AGENTS.md](../AGENTS.md):
+every added feature or changed workflow must update this guide and its detailed
+component guide as part of the same implementation.

@@ -92,6 +92,7 @@
       for (const id of ['feed', 'readiness', 'armed']) badge(id, 'Locked');
       el('horizon').textContent = 'Paper account';
       el('long-term').hidden = true; el('long-term-state').textContent = '';
+      ['lt-receivable', 'lt-fractions', 'lt-income', 'lt-guidance'].forEach(id => { el(id).textContent = ''; });
       for (const id of ['review-symbol', 'review-date', 'review-reference']) el(id).value = '';
       el('review-clear').checked = false;
       el('updated').textContent = 'No account data loaded';
@@ -110,6 +111,14 @@
           ' / ' + formatMoney(a.long_term.drawdown_limit) + ' · Delivery fee buffer ' +
           formatMoney(a.delivery_fee_buffer) + ' · Quarantined: ' +
           (a.long_term.quarantined_symbols.join(', ') || 'none');
+        el('lt-receivable').textContent = formatMoney(a.long_term.receivable || '0');
+        el('lt-fractions').textContent = String(a.long_term.unvalued_fractional_claims || 0);
+        el('lt-income').textContent = formatMoney(a.long_term.income_received || '0');
+        el('lt-guidance').textContent = a.long_term.quarantined_symbols.length ?
+          'Action needed: quarantined symbols cannot accept prices or fill orders. Stop the service and follow the reviewed offline adjustment workflow. A clear review alone cannot remove quarantine.' :
+          a.long_term.unvalued_fractional_claims ?
+          'Fractional payout pending: portfolio value is incomplete and new entries are paused. Review and record the cash-in-lieu receipt when available. Whole-share exits still require usable quotes.' :
+          'Before using new prices, review the current session’s price basis. Unpaid dividends become spendable only after a separate reviewed receipt. Queued exits still need fresh quotes and liquidity.';
         if (!el('review-date').value)
           el('review-date').value = new Date(new Date(data.observed_at).getTime() + 19800000).toISOString().slice(0, 10);
       }
@@ -240,7 +249,7 @@
       el('confirm-title').textContent = name === 'review' ? 'Record ' + (body.no_corporate_action ? 'clear review' : 'persistent quarantine') + ' for ' + body.symbol + '?' : name === 'exit' ? 'Queue full paper exit for ' + body.symbol + '?' :
         name === 'arm' ? 'Arm paper automation?' : 'Reset the kill switch?';
       el('confirm-description').textContent = name === 'review' ?
-        (body.no_corporate_action ? 'Confirm that your cited review covers all changes since the last accepted quote. This does not verify real custody or settlement.' : 'This blocks the symbol across sessions. Another review cannot remove it; corporate-action adjustments are not implemented in this milestone.') : name === 'exit' ?
+        (body.no_corporate_action ? 'Confirm that your cited review covers all changes since the last accepted quote, including any applied action batch. This does not verify real custody or settlement.' : 'This blocks the symbol across sessions. Another review cannot remove it; a reviewed offline corporate-action batch is required. Stop the service and follow the corporate-actions usage guide.') : name === 'exit' ?
         'The entire remaining virtual holding will be queued for sale. This request persists across restarts; fresh reviewed quotes and liquidity are required for fills.' : name === 'arm' ?
         'This permits new virtual entries while all server-side readiness and risk checks pass. Protective exits remain active.' :
         'The server must verify a flat account and eligible risk state. This does not rearm automation.';

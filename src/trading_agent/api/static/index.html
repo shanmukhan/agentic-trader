@@ -53,12 +53,18 @@
     <section id="long-term" class="panel" hidden aria-labelledby="long-term-heading">
       <h2 id="long-term-heading">Long-term paper safeguards</h2>
       <p id="long-term-state" class="muted"></p>
-      <p class="notice">Virtual holdings only. Review the raw price basis since the symbol's last accepted quote. Splits, bonuses, dividends, mergers and symbol changes are not applied here. Reporting an action quarantines the symbol persistently.</p>
+      <dl class="claim-metrics">
+        <div><dt>Unpaid dividends</dt><dd id="lt-receivable">—</dd><dd class="claim-note">Included in estimated equity; unavailable to spend.</dd></div>
+        <div><dt>Unvalued fractional claims</dt><dd id="lt-fractions">—</dd><dd class="claim-note">Retained after whole-share exit. Unknown value pauses new entries.</dd></div>
+        <div><dt>Dividend income received</dt><dd id="lt-income">—</dd><dd class="claim-note">Recorded net cash, separate from capital trading P&amp;L.</dd></div>
+      </dl>
+      <p id="lt-guidance" class="notice" role="status"></p>
+      <p class="muted">Virtual holdings only. Review changes since the last accepted quote. Supported share adjustments and cash receipts use the reviewed offline workflow; complex actions remain quarantined.</p>
       <form id="holding-review" class="review-form">
         <label>Registered symbol <input id="review-symbol" placeholder="NSE:SYMBOL" required maxlength="34" pattern="NSE:[A-Z0-9&amp;_.-]+"></label>
         <label>IST session date <input id="review-date" type="date" required></label>
         <label>Review source/reference <input id="review-reference" required minlength="3" maxlength="300" placeholder="Reviewed notice or private evidence reference"></label>
-        <label class="check"><input id="review-clear" type="checkbox"> I reviewed the price basis and confirm no intervening corporate action. Leave unchecked to quarantine.</label>
+        <label class="check"><input id="review-clear" type="checkbox"> I reviewed intervening actions, including applied batches, and confirm the current price basis is clear. Leave unchecked to quarantine.</label>
         <button id="review-submit" type="submit" disabled>Record paper review</button>
       </form>
     </section>

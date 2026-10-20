@@ -22,7 +22,10 @@ class LongTermBook:
         self.engine = engine
 
     def bind(self, tx: sqlite3.Connection, now: datetime) -> None:
+        from trading_agent.corporate_actions.service import validate_calendar
+
         e = self.engine
+        validate_calendar(tx, e.calendar)
         held = list(
             tx.execute(
                 "SELECT p.symbol,i.token FROM positions p "
@@ -89,6 +92,8 @@ class LongTermBook:
         return definition
 
     def reviewed(self, tx: sqlite3.Connection, symbol: str, now: datetime) -> bool:
+        if tx.execute("SELECT 1 FROM meta WHERE key=?", ("lt_quarantine:" + symbol,)).fetchone():
+            return False
         key = review_key(now.astimezone(IST).date().isoformat(), symbol)
         row = tx.execute("SELECT value FROM meta WHERE key=?", (key,)).fetchone()
         return bool(row and HoldingReview.model_validate_json(row[0]).no_corporate_action)
@@ -113,14 +118,20 @@ class LongTermBook:
             quarantine = "lt_quarantine:" + review.symbol
             quarantined = tx.execute("SELECT 1 FROM meta WHERE key=?", (quarantine,)).fetchone()
             if quarantined and review.no_corporate_action:
-                raise ValueError("unresolved corporate action: adjustments are not supported yet")
+                raise ValueError(
+                    "unresolved corporate action: apply a reviewed offline action batch"
+                )
             if not review.no_corporate_action and not quarantined:
                 e.db.set(tx, quarantine, review.model_dump_json())
             key = review_key(review.session_date.isoformat(), review.symbol)
             payload = review.model_dump(mode="json")
             previous_quote = e._quote(tx, review.symbol)
             old = tx.execute("SELECT value FROM meta WHERE key=?", (key,)).fetchone()
-            if not old or json.loads(old[0]) != payload:
+            if (
+                not old
+                or json.loads(old[0]) != payload
+                or (not review.no_corporate_action and not quarantined)
+            ):
                 e.db.set(tx, key, json.dumps(payload, sort_keys=True))
                 e.db.event(
                     tx,
@@ -172,6 +183,12 @@ class LongTermBook:
 
     def before_quote(self, tx: sqlite3.Connection, quote: Quote, now: datetime) -> bool:
         self.roll_day(tx, now)
+        basis = tx.execute(
+            "SELECT value FROM meta WHERE key=?", ("lt_basis_after:" + quote.symbol,)
+        ).fetchone()
+        if basis and quote.exchange_time <= datetime.fromisoformat(basis[0]):
+            self.engine.bad_symbols.add(quote.symbol)
+            return False
         if quote.exchange_time.astimezone(IST).date() != now.astimezone(
             IST
         ).date() or not self.reviewed(tx, quote.symbol, now):
@@ -262,7 +279,15 @@ class LongTermBook:
                 )
 
     def decorate(self, tx: sqlite3.Connection, now: datetime, snapshot: dict[str, Any]) -> None:
+        from trading_agent.corporate_actions.accounting import pending_claims
+
         e = self.engine
+        claims = pending_claims(tx)
+        snapshot["equity"] = str(D(snapshot["equity"]) + D(claims["receivable"]))
+        snapshot["day_pnl"] = str(D(snapshot["equity"]) - D(e.db.get(tx, "day_equity")))
+        snapshot["valuation_fresh"] = (
+            snapshot["valuation_fresh"] and not claims["unvalued_fractional_claims"]
+        )
         reserve = e.charges.dp_sell * e.settings.max_positions
         snapshot["available_cash"] = str(max(D(0), D(snapshot["available_cash"]) - reserve))
         snapshot["delivery_fee_buffer"] = str(reserve)
@@ -280,7 +305,14 @@ class LongTermBook:
                     "SELECT key FROM meta WHERE key GLOB 'lt_quarantine:*' LIMIT 11"
                 )
             ],
-            "corporate_actions_applied": False,
+            **claims,
+            "corporate_actions_applied": bool(
+                tx.execute("SELECT 1 FROM meta WHERE key='corporate_actions_schema'").fetchone()
+            ),
+            "income_received": (
+                tx.execute("SELECT value FROM meta WHERE key='lt_income_received'").fetchone()
+                or ["0"]
+            )[0],
             "settlement_verified": False,
         }
 

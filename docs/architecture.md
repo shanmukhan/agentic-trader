@@ -230,4 +230,30 @@ The private API/console adds horizon-specific review and individual-exit control
 `long-term-report` reads a stopped source account without constructing an execution
 engine; `long-term-demo` owns independent invented accounts. Heavy reconstruction and
 report scans stay off the quote path. See [long-term.md](long-term.md) for supported
-scope and the pending cash/share adjustment, daily strategy and real custody layers.
+scope and the reviewed cash/share adjustment, pending daily strategy and real custody layers.
+
+## LT2 financial-event reconstruction
+
+`corporate_actions/contracts.py` validates bounded explicit input;
+`service.py` performs exclusive offline batch/receipt transactions and calendar/
+price-basis checks. `accounting.py` derives entitlements and reconstructs economics
+in ordered financial-journal sequence using fills plus the new additive
+`corporate_batches`/`corporate_payments` tables. SQLite schema version 1 is retained;
+legacy accounts need no financial migration or policy-hash change. An account with
+LT2 evidence requires this release or later, and missing schema/table/event evidence
+fails closed. Original orders/fills are retained, including their original units.
+
+Materialized claims/basis boundaries/income and two constant-size unpaid-claim caches
+are updated atomically with positions/cash/order cancellation and journal. Startup,
+read-only preflight and reports independently verify them. Heavy history replay and
+input review stay off the quote path. Polling reads the receivable/unknown-count
+caches by primary key. Split/bonus claims partition cost; dividend receivables are
+nonspendable; net receipts transfer or realize claims once. `ledger_results` follows
+share actions when deriving whole-holding capital metrics and separately discloses
+fraction basis; investment income remains outside trade metrics.
+
+`execution/delivery.py` reconstructs quarantine resolutions alongside reviews/fills.
+`LongTermBook` rejects unchanged pre-application quotes, requires a new clear review,
+includes known receivables in equity and treats unknown fractions as stale. It pins
+used action sessions before restart cancellation and retains holding exit identity.
+See [corporate-actions.md](corporate-actions.md) for operational and modeling limits.

@@ -54,6 +54,18 @@ PRAGMA user_version=1;
 """
 
 
+CORPORATE_SCHEMA = """
+CREATE TABLE IF NOT EXISTS corporate_batches (
+    id TEXT PRIMARY KEY, time TEXT NOT NULL, symbol TEXT NOT NULL,
+    request TEXT NOT NULL, payload TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS corporate_payments (
+    id TEXT PRIMARY KEY, time TEXT NOT NULL, claim_id TEXT NOT NULL UNIQUE,
+    request TEXT NOT NULL, payload TEXT NOT NULL
+);
+"""
+
+
 class Database:
     def __init__(self, path: Path, starting_cash: Decimal):
         path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
@@ -86,6 +98,7 @@ class Database:
             raise RuntimeError("unsupported database schema")
         if version == 0:
             self.connection.executescript("BEGIN IMMEDIATE;" + SCHEMA + "COMMIT;")
+        self.connection.executescript(CORPORATE_SCHEMA)
         # Compatible additive index: runtime candidate lookups must not scan quote history.
         self.connection.execute(
             "CREATE INDEX IF NOT EXISTS events_kind_time ON events(kind,time,seq)"
@@ -153,36 +166,13 @@ class Database:
         from trading_agent.execution.delivery import reconcile_delivery
 
         reconcile_delivery(tx)
-        cash = Decimal(Database.get(tx, "initial_cash"))
-        holdings: dict[str, int] = {}
-        costs: dict[str, Decimal] = {}
-        turnovers: dict[str, Decimal] = {}
-        order_fees: dict[str, Decimal] = {}
-        total_fees, realized = Decimal(0), Decimal(0)
-        for row in tx.execute(
-            "SELECT f.*,o.side,o.symbol FROM fills f JOIN orders o "
-            "ON o.id=f.order_id ORDER BY f.seq"
-        ):
-            sign = 1 if row["side"] == "BUY" else -1
-            symbol, qty = row["symbol"], row["quantity"]
-            value, fee = Decimal(row["price"]) * qty, Decimal(row["fees"])
-            if not value.is_finite() or not fee.is_finite() or value <= 0 or fee < 0:
-                raise RuntimeError("invalid persisted fill")
-            old_qty = holdings.get(symbol, 0)
-            old_cost = costs.get(symbol, Decimal(0))
-            if sign == 1:
-                costs[symbol] = old_cost + value + fee
-            else:
-                if qty > old_qty:
-                    raise RuntimeError("sell exceeds persisted holding")
-                basis = old_cost if qty == old_qty else old_cost * Decimal(qty) / old_qty
-                costs[symbol] = old_cost - basis
-                realized += value - fee - basis
-            holdings[symbol] = old_qty + sign * qty
-            cash -= sign * value + fee
-            total_fees += fee
-            turnovers[row["order_id"]] = turnovers.get(row["order_id"], Decimal(0)) + value
-            order_fees[row["order_id"]] = order_fees.get(row["order_id"], Decimal(0)) + fee
+        from trading_agent.corporate_actions.accounting import Ledger
+
+        ledger = Ledger(tx)
+        cash, realized, total_fees = ledger.cash, ledger.realized, ledger.fees
+        turnovers, order_fees = ledger.turnovers, ledger.order_fees
+        holdings = {symbol: position["quantity"] for symbol, position in ledger.positions.items()}
+        costs = {symbol: Decimal(position["cost"]) for symbol, position in ledger.positions.items()}
         positions = tx.execute("SELECT * FROM positions").fetchall()
         actual = {r["symbol"]: r["quantity"] for r in positions}
         if cash != Decimal(Database.get(tx, "cash")) or actual != {
@@ -195,6 +185,15 @@ class Database:
             or any(Decimal(row["cost"]) != costs[row["symbol"]] for row in positions)
         ):
             raise RuntimeError("cost and P&L reconciliation failed")
+        if any(
+            row["opened"] != ledger.positions[row["symbol"]]["opened"]
+            or any(
+                Decimal(row[key]) != Decimal(ledger.positions[row["symbol"]][key])
+                for key in ("stop", "target")
+            )
+            for row in positions
+        ):
+            raise RuntimeError("protective holding metadata differs from ledger")
         if Database.get(tx, "kill") not in ("true", "false"):
             raise RuntimeError("invalid durable kill state")
         reserved = sum(

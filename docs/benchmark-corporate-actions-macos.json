@@ -1,0 +1,16 @@
+{
+  "samples": 2000,
+  "python": "3.13.16",
+  "platform": "macOS-27.0-arm64-arm-64bit-Mach-O",
+  "architecture": "arm64",
+  "p50_ms": 0.20025,
+  "p95_ms": 0.229708,
+  "p99_ms": 0.256375,
+  "max_ms": 0.682333,
+  "synchronous": "FULL",
+  "includes": "quote, reviews, held valuation, risk, durable clock/equity, journal",
+  "excludes": "construction, parsing, callback contention, network/history and Pi",
+  "held_shares": 14,
+  "unpaid_dividend": "14",
+  "corporate_actions": true
+}

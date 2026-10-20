@@ -190,3 +190,32 @@ exit latches survive and are restored on later polling. Restore to a new path wi
 matching horizon/risk/charges and the pinned reviewed calendar. No real custody or
 settlement is inferred from successful SQLite recovery. Full procedures and limits:
 [long-term.md](long-term.md).
+
+## LT2 offline corporate-action operations (0.6.0)
+
+1. Before the first affected ex-date quote, quarantine the symbol with an unchecked
+   current-session review. Stop the service and preserve a consistent backup.
+2. Run `long-term-report --output NEW` without engine recovery. Review the symbol's
+   `quarantine_sha256`, complete issuer notices, virtual entitlement, ex/record and
+   credit/payment dates, ratios, same-date sequence and net deductions.
+3. Follow [corporate-actions.md](corporate-actions.md) to prepare bounded JSON and
+   run `apply-corporate-actions --file FILE` with the exact long-term config. Failed
+   requests roll back; successful batches cancel only the symbol's pending orders,
+   retain exit intent, create claims and invalidate quotes/candles.
+4. Restart, review the adjusted current-session basis and require a strictly later
+   quote than the application clock. Unsupported actions or accepted ex-date prices
+   require preserved evidence/new reviewed account reconstruction, never SQL edits.
+5. Stop the service to record each reviewed `record-corporate-cash --file FILE`.
+   Paid date must be causal; dividend net must equal its frozen entitlement. A
+   receipt ID retry is safe; a second payment ID cannot pay an already paid claim.
+6. Report again and independently reconcile cash, received income, receivables,
+   unknown fractions and adjusted whole-share capital P&L. Unpaid fractions survive
+   liquidation. An unknown fraction value delays portfolio marks/entries; individual
+   usable-quote exits continue. No quote is invented to make a report look complete.
+
+Backups include both new financial tables and claim metadata. Restore with 0.6.0 or
+later. Missing/mismatched ledger/journal/cache/protective evidence fails startup;
+retain failed source/inputs and rebuild a separate corrected paper account. There
+is no arbitrary cash correction, reversal or real custody/payment operation. The
+commands' generic failure output protects private input; inspect the reviewed JSON,
+matching config, calendar, ownership and evidence using the detailed guide.

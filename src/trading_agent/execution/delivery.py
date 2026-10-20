@@ -8,6 +8,7 @@ from typing import Any
 
 from pydantic import Field
 
+from trading_agent.corporate_actions.contracts import ActionBatch, digest
 from trading_agent.execution.costs import delivery_charges
 from trading_agent.market_data.calendar import IST
 from trading_agent.models import DomainModel, Symbol
@@ -73,7 +74,8 @@ def reconcile_delivery(tx: sqlite3.Connection) -> None:
     quarantines: dict[str, Any] = {}
     index = 0
     for event in tx.execute(
-        "SELECT * FROM events WHERE kind IN ('long_term_review','fill') ORDER BY seq"
+        "SELECT * FROM events WHERE kind IN "
+        "('long_term_review','fill','corporate_action_batch') ORDER BY seq"
     ):
         payload = json.loads(event["payload"])
         if event["kind"] == "long_term_review":
@@ -90,6 +92,16 @@ def reconcile_delivery(tx: sqlite3.Connection) -> None:
             if day in sessions and sessions[day] != payload["session"]:
                 raise RuntimeError("changed reviewed session definition")
             sessions[day] = payload["session"]
+        elif event["kind"] == "corporate_action_batch":
+            batch = ActionBatch.model_validate(payload["request"])
+            key = "lt_quarantine:" + batch.symbol
+            if (
+                key not in quarantines
+                or digest(quarantines[key]) != batch.quarantine_sha256
+                or payload["quarantine"] != quarantines[key]
+            ):
+                raise RuntimeError("corporate-action resolution lacks matching quarantine")
+            del quarantines[key]
         else:
             if index >= len(fills):
                 raise RuntimeError("extra delivery fill event")

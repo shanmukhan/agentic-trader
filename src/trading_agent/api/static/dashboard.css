@@ -364,6 +364,16 @@ dialog p {
   gap: 14px;
   margin-top: 18px;
 }
+.claim-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(210px,1fr));
+  gap: 16px;
+  margin: 20px 0;
+}
+.claim-metrics > div { min-width: 0; }
+.claim-metrics dt { color: var(--muted); font-size: .85rem; }
+.claim-metrics dd { margin: 6px 0 0; font-size: 1.35rem; overflow-wrap: anywhere; }
+.claim-metrics .claim-note { color: var(--muted); font-size: .8rem; line-height: 1.5; }
 .review-form label {
   display: flex;
   flex-direction: column;

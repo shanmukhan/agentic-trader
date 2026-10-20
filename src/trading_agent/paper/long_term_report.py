@@ -8,6 +8,8 @@ from pathlib import Path
 from typing import Any
 
 from trading_agent.backtesting.report import journal_digest, ledger_results
+from trading_agent.corporate_actions.accounting import pending_claims
+from trading_agent.corporate_actions.contracts import digest
 from trading_agent.persistence.database import Database
 
 
@@ -19,6 +21,11 @@ def long_term_report(db: Database, output: Path) -> dict[str, Any]:
         if tx.execute("PRAGMA integrity_check").fetchone()[0] != "ok":
             raise RuntimeError("account integrity failure")
         meta = {row[0]: row[1] for row in tx.execute("SELECT key,value FROM meta")}
+        claims_summary = pending_claims(tx)
+        batches = [
+            {"id": row[0], "time": row[1], **json.loads(row[2])}
+            for row in tx.execute("SELECT id,time,payload FROM corporate_batches ORDER BY time,id")
+        ]
         positions = [dict(row) for row in tx.execute("SELECT * FROM positions ORDER BY symbol")]
         sources: Counter[str] = Counter()
         for row in tx.execute("SELECT payload FROM events WHERE kind='quote'"):
@@ -33,7 +40,7 @@ def long_term_report(db: Database, output: Path) -> dict[str, Any]:
         }
     trades, metrics = ledger_results(db)
     report: dict[str, Any] = {
-        "schema_version": 1,
+        "schema_version": 2,
         "mode": "paper",
         "investment_horizon": "long_term",
         "ready_for_live": False,
@@ -46,6 +53,15 @@ def long_term_report(db: Database, output: Path) -> dict[str, Any]:
         "cash": meta["cash"],
         "fees": meta["fees"],
         "realized_pnl": meta["total_realized"],
+        "income_received": meta.get("lt_income_received", "0"),
+        "fraction_realized_pnl": meta.get("lt_fraction_realized", "0"),
+        **claims_summary,
+        "corporate_action_batches": batches,
+        "corporate_claims": {
+            key.removeprefix("lt_claim:"): json.loads(value)
+            for key, value in meta.items()
+            if key.startswith("lt_claim:")
+        },
         "positions": positions,
         "metrics": metrics,
         "last_trusted_equity": meta["lt_last_equity"],
@@ -56,13 +72,21 @@ def long_term_report(db: Database, output: Path) -> dict[str, Any]:
             for key, value in meta.items()
             if key.startswith("lt_quarantine:")
         },
+        "quarantine_sha256": {
+            key.removeprefix("lt_quarantine:"): digest(json.loads(value))
+            for key, value in meta.items()
+            if key.startswith("lt_quarantine:")
+        },
         "dp_days": sum(key.startswith("lt_dp:") for key in meta),
         "incident_counts": incidents,
         "journal_sha256": journal_digest(db),
         "limitations": [
             "Virtual holdings only; real custody and settlement are unverified.",
             "Last trusted equity is a past observation, not an official closing valuation.",
-            "Corporate actions are not applied; reported actions quarantine the symbol.",
+            "Only explicitly reviewed offline split/bonus/dividend batches are applied.",
+            "Unpaid dividends are nonspendable; fractional claims have no invented value.",
+            "Trade metrics exclude dividend income and separately reported fraction receipts.",
+            "Share credit/entitlement assertions do not prove real demat or bank balances.",
             "Costs are estimates; personal taxes, AMC and unusual settlements are excluded.",
             "No validated daily strategy, long-term ML or automatic rebalancing is supplied.",
         ],
@@ -77,6 +101,9 @@ def long_term_report(db: Database, output: Path) -> dict[str, Any]:
         "PAPER ONLY. Live/external/settlement acceptance: false.\n\n"
         + f"Cash: {report['cash']}; realized P&L: {report['realized_pnl']}; "
         + f"fees: {report['fees']}.\n\n"
+        + f"Dividend income received: {report['income_received']}; known unpaid receivables: "
+        + f"{report['receivable']}; unvalued fractional claims: "
+        + f"{report['unvalued_fractional_claims']}.\n\n"
         + f"Open holdings: {len(positions)}; pending orders: {metrics['pending_orders']}; "
         + f"DP symbol/days: {report['dp_days']}.\n\n"
         + "## Measurement limits\n\n"

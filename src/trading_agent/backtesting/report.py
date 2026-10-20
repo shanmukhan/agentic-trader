@@ -8,6 +8,7 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
+from trading_agent.corporate_actions.accounting import steps
 from trading_agent.persistence.database import Database
 
 D = Decimal
@@ -48,10 +49,22 @@ def ledger_results(db: Database) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     trades: list[dict[str, Any]] = []
     active: dict[str, dict[str, Any]] = {}
     with db.transaction() as tx:
-        for row in tx.execute(
-            "SELECT f.*,o.symbol,o.side,o.reason FROM fills f "
-            "JOIN orders o ON o.id=f.order_id ORDER BY f.seq"
-        ):
+        for kind, row in steps(tx):
+            if kind == "corporate_cash_receipt":
+                continue  # Separate investment-income/fraction results appear in the LT report.
+            if kind == "corporate_action_batch":
+                result = json.loads(row["payload"])["result"]
+                trade = active.get(row["symbol"])
+                if trade:
+                    trade["corporate_share_delta"] = trade.get("corporate_share_delta", 0) + (
+                        result["after"]["quantity"] - result["before"]["quantity"]
+                    )
+                    trade["remaining"] = result["after"]["quantity"]
+                    trade["_remaining_basis"] = D(result["after"]["cost"])
+                    trade["fraction_basis_transferred"] = trade.get(
+                        "fraction_basis_transferred", D(0)
+                    ) + sum((D(claim["basis"]) for claim in result["claims"]), D(0))
+                continue
             symbol, qty = row["symbol"], row["quantity"]
             notional, fee = D(row["price"]) * qty, D(row["fees"])
             if row["side"] == "BUY":
@@ -66,21 +79,40 @@ def ledger_results(db: Database) -> tuple[list[dict[str, Any]], dict[str, Any]]:
                         "sell_notional": D(0),
                         "fees": D(0),
                         "entry_intent": row["order_id"],
+                        "_remaining_basis": D(0),
+                        "_capital_realized": D(0),
                     },
                 )
                 trade["quantity"] += qty
                 trade["remaining"] += qty
                 trade["buy_notional"] += notional
+                trade["_remaining_basis"] += notional + fee
             else:
                 if symbol not in active or qty > active[symbol]["remaining"]:
                     raise RuntimeError("report sell exceeds filled position")
                 trade = active[symbol]
+                basis = (
+                    trade["_remaining_basis"]
+                    if qty == trade["remaining"]
+                    else trade["_remaining_basis"] * D(qty) / trade["remaining"]
+                )
+                trade["_remaining_basis"] -= basis
+                trade["_capital_realized"] += notional - fee - basis
                 trade["remaining"] -= qty
                 trade["sell_notional"] += notional
                 trade["exit_time"], trade["exit_reason"] = row["time"], row["reason"]
             trade["fees"] += fee
             if trade["remaining"] == 0:
-                trade["net_pnl"] = trade["sell_notional"] - trade["buy_notional"] - trade["fees"]
+                trade["net_pnl"] = (
+                    trade["sell_notional"]
+                    - trade["buy_notional"]
+                    - trade["fees"]
+                    + trade.get("fraction_basis_transferred", D(0))
+                )
+                if "corporate_share_delta" in trade:
+                    trade["net_pnl"] = trade["_capital_realized"]
+                trade.pop("_remaining_basis")
+                trade.pop("_capital_realized")
                 trades.append(trade)
                 del active[symbol]
         orders = tx.execute("SELECT * FROM orders ORDER BY created,id").fetchall()

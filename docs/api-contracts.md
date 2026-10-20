@@ -181,7 +181,8 @@ private artifact/measurement limits are in [acceptance.md](acceptance.md).
 account. `config/long-term.toml` supplies the dedicated 8001 listener and engineering
 risk defaults. Status/console snapshots add `investment_horizon`. Long-term snapshots
 also expose `delivery_fee_buffer` and `long_term` observed peak/drawdown/reference,
-quarantine names (at most eleven in the console) and false adjustment/settlement flags.
+quarantine names (at most eleven in the console) and adjustment/settlement flags.
+The adjustment flag records applied paper batches; settlement always remains false.
 Full quarantine history is available in the account report. Available cash excludes
 the delivery entry buffer; cash/fees remain actual simulated ledger values.
 
@@ -196,7 +197,8 @@ fields return 422. A nonexistent/closed holding exit returns 404. A successful e
 response has `exit_queued: true` and `order`; it is not a fill. A successful review
 returns its record and paper/adjustment flags, not proof of external verification.
 Clear reviews are idempotent by unchanged payload; changes append audit evidence.
-A false review permanently quarantines that symbol in LT1 and cancels pending buys.
+A false review quarantines that symbol and cancels pending buys. A clear review
+cannot remove it; the reviewed offline LT2 workflow can resolve a supported action.
 
 Manual long-term entries use the existing Candidate/intents schema and independent
 fee-aware sizing. Intraday automatic rules/models cannot be attached to this horizon.
@@ -209,3 +211,30 @@ Legacy intraday policy hashes remain byte-identical, including existing model ar
 long-term account, reconciles without engine recovery/cancellation and emits private
 JSON/Markdown/trades plus a final hash manifest. All live/external/settlement acceptance
 flags remain false. Read [long-term.md](long-term.md) for full command and simulation limits.
+
+## LT2 offline corporate-action contracts (0.6.0)
+
+`apply-corporate-actions --file FILE` accepts `ActionBatch`: stable `batch_id`, symbol,
+current `quarantine_sha256`, aware `reviewed_at`, reference, literal true
+`covers_all_actions` and 1–20 ordered split/bonus/dividend actions. Shares require
+strict integer ratios/credit date; dividends require exact per-share amount, total
+withholding and payment date. Every action has its own ID, ex/record dates, aware
+announcement and evidence reference. `record-corporate-cash --file FILE` accepts
+`CashReceipt`: stable payment/claim IDs, paid date, exact net amount, aware review
+and reference. See [corporate-actions.md](corporate-actions.md) for full schemas.
+
+Both commands require `--config LONG_CONFIG`, an existing long-term account, matching
+policy and exclusive ownership. Input is UTF-8, nonsymlinked, bounded to 64 KiB, with
+duplicate keys/extra fields rejected. They return `paper_only` and `idempotent` plus
+their durable result. Matching canonical retries append no events; conflicting IDs,
+double payment, future/unsupported/context-invalid requests fail with CLI exit 1.
+Failure output remains generic/redacted; review input/evidence and the runbook.
+No browser upload form or financial-action HTTP endpoint was added.
+
+Snapshots' `long_term` adds `receivable`, `unvalued_fractional_claims` and
+`income_received`; equity includes known unpaid net dividends while available cash
+excludes them. Unknown fractional claims make `valuation_fresh` false. Account
+`realized_pnl` includes settled fraction capital P&L and excludes dividend income.
+`long-term-report` schema 2 adds complete batches/claims, quarantine hashes, received
+income and fractional realized P&L. The hash-manifest format remains schema 1.
+`corporate-actions-demo --directory NEW` produces only invented isolated evidence.

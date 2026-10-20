@@ -208,3 +208,25 @@ real order or custody action was attempted. Mobile/actual-device acceptance rema
 pending. Original-account read-only checks and final quality/build/audit results are
 recorded in [CHANGELOG.md](CHANGELOG.md). See [long-term.md](long-term.md) for exact
 supported behavior and the still-missing adjustment/research/settlement milestones.
+
+## LT2 corporate-action validation (0.6.0)
+
+Current combined result: **387 Python tests, 19 JavaScript tests, 92% Python coverage**.
+New tests cover integral split/bonus and conservative tick levels, unchanged basis,
+ordered split/bonus/dividend quantities, nonspendable net entitlements, exact and
+zero receipts, whole-share sale before payment, retained rational fractional claims,
+separate income/capital P&L and idempotent retries. Failure cases include ambiguous/
+oversized/symlink input, strict flags/ratios, future dates, conflicting IDs, duplicate
+payment, accepted ex-date quotes, fractional chains and changed used calendar.
+
+Fault tests roll back action and receipt mutations after journal write; corruption
+checks cover tables/events/claims/caches/receipts/cash/holding protections. Restart
+requeues latched exits for adjusted shares; backup reopens with claims intact.
+Functional CLI tests exercise isolated lifecycle, offline ownership, adjustment/
+receipt/report flow and source preservation. JavaScript adds separate claim display
+and updated quarantine confirmation. The direct and CLI invented lifecycle verifies
+₹25,029.42 final cash = seed + capital realized P&L + received dividend income.
+
+The populated unpaid-dividend benchmark records p99 **0.2564 ms** on this Mac;
+network, callback contention and actual Pi/mobile/custody acceptance remain excluded.
+See [corporate-actions.md](corporate-actions.md) and the change log for final checks.

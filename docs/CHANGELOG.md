@@ -1,5 +1,63 @@
 # Change log
 
+## 2026-10-21 — LT2 reviewed paper corporate actions (0.6.0)
+
+Added exclusive offline `apply-corporate-actions`, `record-corporate-cash` and
+isolated `corporate-actions-demo` commands. Strict bounded UTF-8 input rejects
+ambiguous/duplicate fields, extra fields, nonfinite/subpaisa money, invalid ratios,
+naive/future dates and unsupported context. Batches bind the current quarantine
+hash, explicit complete coverage, stable issuer/batch IDs and sourced ex-date sessions.
+Accepted ex-date quotes/fills and retroactive/same-date follow-up batches are refused.
+
+Added increasing split/bonus quantities with original holding identity, total cost
+conservation, tick-rounded protective levels and affected-order cancellation while
+retaining durable exits. Exact rational fractional claims retain allocated basis
+rounded down to paise, with the holding retaining the exact residual. Unknown
+fraction values pause new entries/portfolio marks without erasing claims on sale.
+Fraction chains and unsupported issuer events remain blocked rather than guessed.
+
+Added frozen gross/deduction/net dividend receivables, nonspendable until an exact
+reviewed net receipt, plus separate cash-in-lieu settlement and received investment
+income. Atomic additive financial tables and journal/materialized changes preserve
+original orders/fills. Independent ordered reconstruction verifies quantities, cash,
+cost, adjusted protections, claims, receipts, basis boundaries and primary-key
+receivable caches. Canonical retries write nothing; an already paid claim cannot
+be credited with another payment ID. Backups preserve all evidence.
+
+Updated report schema to 2 with full batches/claims/quarantine hashes, separate
+income/fraction P&L and adjusted whole-share capital metrics. Console claim cards
+explain spendability, incomplete valuations and the next required action; quarantine
+confirmation points to the offline workflow. Values/guidance clear on Lock.
+Added the detailed corporate-action usage guide and updated main/long-term usage,
+plan/specification, architecture, API, risk, runbook, threat, acceptance, research,
+performance and testing Markdown. `AGENTS.md` records the user's standing
+usage/component-documentation, financial-test and clear accessible UI requirements.
+
+Validation:
+
+- **387 Python tests and 19 JavaScript tests passed**, **92% Python coverage**.
+  New action contracts **95%**, accounting reconstruction **90%**, offline service
+  **92%**, direct lifecycle drill **100%**; legacy suites remain passing.
+- Invented split/dividend/bonus/fraction/exit/receipt drill: final cash **₹25,029.42**,
+  realized capital P&L **−₹20.98**, received dividend income **₹50.40**, no holdings or
+  claims left. These are software fixtures, not market-return evidence.
+- 2,000-quote Mac benchmark with fourteen held shares/₹14 unpaid dividend:
+  p50 **0.2003 ms**, p95 **0.2297 ms**, p99 **0.2564 ms**. SQLite WAL/FULL unchanged;
+  parsing/network/contention/history/action replay/Pi are excluded.
+- Ruff lint/format, mypy, secret-pattern/Markdown-link checks, frozen offline lock,
+  dependency audit (no known vulnerabilities), wheel/source builds and extracted
+  package imports/assets passed. No dependency was added.
+- Original account read-only preflight still reconciles **₹25,000.00**, zero fees,
+  no positions/pending orders and matching legacy policy/horizon. No recovery ran.
+- Isolated responsive LT2 preview runs locally with invented unpaid/fraction claims.
+  Browser visual inspection was blocked by pending Accessibility/Screen Recording
+  permission; JavaScript workflow checks passed. Actual handset acceptance remains open.
+
+Real custody/settlement, bank verification, statutory tax lots, complex actions,
+corrections/reversals/deposits and validated daily strategies remain excluded.
+Version 0.6.0 does not deliver the original live-adapter phase. The next engineering
+item is LT3 daily research/portfolio management, with all external/live gates retained.
+
 ## 2026-10-20 — LT1 long-term paper foundations (0.5.0)
 
 Expanded the user-requested plan to include long-term NSE cash-equity paper holdings.

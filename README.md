@@ -43,7 +43,7 @@ controls. The [acceptance guide](docs/acceptance.md) covers `preflight --strict`
 private diagnostic evidence and remaining broker/device work. Node 24 is used only
 for JavaScript tests; serving the console needs no Node or frontend build.
 
-Local validation: **328 Python tests and 17 JavaScript tests passed; 92% Python coverage**, with lint/type checks, dependency
+Local validation: **387 Python tests and 19 JavaScript tests passed; 92% Python coverage**, with lint/type checks, dependency
 audit and builds passing. Details are in the change log. Real Kite credentials and
 Raspberry Pi deployment remain unverified.
 
@@ -66,8 +66,11 @@ Phase 4 adds opt-in supervised intraday paper-feed automation and operations rep
 Version 0.5.0 adds LT1 overnight paper holdings, delivery-cost/DP accounting, persistent
 protective exits, price-basis review/quarantine and portfolio drawdown. Read the
 [long-term usage guide](docs/long-term.md) for the separate config, localhost:8001 UI,
-commands, limits and remaining milestones. Corporate-action adjustments, daily
-long-term strategies/ML, SIP/rebalancing and actual custody/settlement are pending.
+commands, limits and remaining milestones. Version 0.6.0 adds LT2 reviewed split/bonus
+adjustments, dividend/fraction claims and idempotent cash receipts. Follow the
+[corporate-action usage guide](docs/corporate-actions.md) and try
+`trading-agent corporate-actions-demo --directory data/corporate-actions-first`.
+Daily long-term strategies/ML, SIP/rebalancing and actual custody/settlement are pending.
 Each account has its own virtual capital; combined allocation is not implemented.
 Real-feed/target-device acceptance and live execution remain later milestones in
 the [original specification](zerodha_ai_trading_agent_project_spec.md).

@@ -220,18 +220,38 @@ charge DP only on actual fills; block unaffordable exit fees without inventing c
 reject a restarted selected feed that omits a held symbol; quarantine known corporate
 actions instead of treating an unadjusted price jump as ordinary market P&L.
 
+## LT2 delivered — reviewed corporate actions, version 0.6.0
+
+| Work item | Implementation / evidence |
+|---|---|
+| Reviewed inputs | Bounded strict JSON, stable action/batch/receipt IDs, sourced ex-date sessions, explicit chronology and quarantine hash/complete-coverage assertion |
+| Share ledger | Increasing splits and bonuses, conservative tick-adjusted protections, original holding identity/cost conservation and affected-order cancellation |
+| Fractional handling | Exact rational claim, pro-rata basis rounded down to paise with exact holding residual, unknown valuation retained after whole-share exit, explicit cash-in-lieu receipt |
+| Dividend ledger | Frozen gross/deduction/net receivable, nonspendable before payment, exact once-only net cash receipt and separately reported investment income |
+| Integrity/recovery | Additive tables, atomic journal/materialized accounting, independent ordered fill/action/receipt reconstruction, cache/basis/protection verification and backup/restart tests |
+| Operator workflow | Exclusive offline CLI, current-session review and post-application quote required on resume; existing protective exits retain their latch |
+| Reports/console | Schema-2 evidence with claims/batches/quarantine hashes/income, adjusted whole-share metrics and separate console claim summary |
+| Demonstration/performance | Invented split→dividend→bonus/fraction→exit→receipt lifecycle and a 2,000-quote populated unpaid-dividend benchmark, p99 0.2564 ms on this Mac |
+| Standing requirement | [AGENTS.md](../AGENTS.md) records the user's instruction to update usage and component guides with every feature/workflow change |
+
+Enhancements: apply actions only before the account crosses the first affected
+ex-date price/trade basis; never infer a payment, fraction value or settled eligibility;
+freeze explicit same-date action order; reject unsupported fraction chains and
+reverse/complex issuer events rather than silently losing claims. Full schemas,
+commands, retry/failure behavior and exclusions are in [corporate-actions.md](corporate-actions.md).
+
 ### Extended long-term roadmap
 
 | Milestone | Required implementation / acceptance | Status |
 |---|---|---|
 | LT1: overnight paper foundations | Lifecycle, delivery costs, reviews, risk, console, evidence and tests | Engineering delivered |
-| LT2: corporate actions and cash/share ledger | Reviewed split/bonus/dividend entitlements and effective/payment dates, integral/fractional handling, atomic idempotency, independent reconstruction and recovery | Next long-term code milestone |
-| LT3: daily research and portfolio management | Completed daily price/total-return data, point-in-time universe, causal strategy/ML validation, SIP/lot additions, rebalancing and cross-account allocation | Pending |
+| LT2: corporate actions and cash/share ledger | Reviewed split/bonus/dividend entitlements and effective/payment dates, integral/fractional handling, atomic idempotency, independent reconstruction and recovery | Supported paper engineering delivered; complex actions/tax lots/custody remain excluded |
+| LT3: daily research and portfolio management | Completed daily price/total-return data, point-in-time universe, causal strategy/ML validation, SIP/lot additions, rebalancing and cross-account allocation | Next long-term code milestone |
 | LT4: actual read-only holdings and supervised acceptance | Reviewed custody/sellable holdings/settlement reconciliation, calibrated costs/fills and sustained actual device/feed evidence | Pending external access and engineering |
 | Live infrastructure / pilot | Existing separate empirical, compliance, adapter/reconciliation and explicit approval gates | Pending; execution unavailable |
 
-LT1 reviews are operator assertions, not verified corporate-action feeds. Actual
-share/cash adjustments, real settlement, income tax/AMC, automatic long-term signals,
+Reviews and LT2 inputs are operator assertions, not verified corporate-action feeds.
+Real settlement/custody, income tax/AMC, automatic long-term signals, complex actions,
 lot/tax management and combined capital coordination are not implemented. Preserved
 overnight state alone is not full investment-platform or production readiness.
 

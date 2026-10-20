@@ -135,3 +135,18 @@ ML/portfolio validation, account-specific costs and combined capital allocation.
 Operator no-action reviews and synthetic drills cannot satisfy those gates.
 The [extended roadmap](implementation-plan.md) identifies LT2–LT4 and retains the
 original future live approval/validation boundary. See [long-term.md](long-term.md).
+
+## LT2 paper corporate-action acceptance (0.6.0)
+
+Engineering tests cover reviewed split/bonus quantities, fractional basis/claims,
+dividend withholding/receivables, later sale/payment, exact once-only receipts,
+failed-write rollback, corruption, restart/exit quantity, used-calendar checks,
+read-only preflight reconstruction, CLI ownership and backup/restore. The invented
+full lifecycle ends at ₹25,029.42 with no open holding or claim. This is software
+behavior evidence, not verified broker/registrar/bank or tax/settlement evidence.
+
+For real read-only acceptance, retain actual issuer notices, correct ex/record/
+credit/payment dates, reviewed net deductions and custody/receipt reconciliation.
+Test unsupported/fractional combinations by leaving quarantine unresolved. LT2
+supports only the documented paper action subset and does not satisfy LT3 strategy
+or LT4 custody/device/feed gates. See [corporate-actions.md](corporate-actions.md).

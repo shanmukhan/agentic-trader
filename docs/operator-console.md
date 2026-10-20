@@ -106,8 +106,9 @@ badge identifies the account. Its panel shows observed peak/drawdown, entry fee 
 and up to eleven quarantine names; use the report for full quarantine history.
 A symbol/date/source form records the raw-price review, with a confirmation dialog.
 An unchecked no-action attestation requests a persistent quarantine and its dialog
-warns that another review cannot clear it. Known actions require the later adjustment
-workflow. Review fields/details clear on Lock; stale displays block review submission.
+warns that another review cannot clear it. Supported known actions require the
+[offline adjustment workflow](corporate-actions.md). Review fields/details clear on
+Lock; stale displays block review submission.
 
 Each long-term holding has **Queue full paper exit** with symbol-specific confirmation.
 It sends only the symbol, remains protective through partial fills/restarts and never
@@ -116,3 +117,17 @@ broker trading, account conversion or automatic long-term signal control was add
 Desktop Safari layout/horizon/buffer/review form was visually checked on an isolated
 flat account with no feed or orders; actual handset verification remains pending.
 Read [long-term.md](long-term.md) before using the new controls.
+
+In 0.6.0 the panel also displays known unpaid dividends, unvalued fractional-claim
+count and dividend income already received. Unpaid entitlements do not enlarge the
+available-cash card. Unknown fraction value makes portfolio estimates stale; a
+whole-share exit does not erase that claim. Applying batches/receipts requires the
+service stopped and reviewed CLI input. On resume, submit a new clear review
+covering the applied action and wait for a post-application usable quote. The
+quarantine confirmation now points to that workflow. Lock clears the claim summary.
+JavaScript tests verify these displays and confirmation text; handset visual/device
+acceptance remains pending.
+
+LT2 claim values use separate labeled cards with plain-language cash/valuation notes.
+A status message explains whether the next step is quarantine resolution, a fractional
+receipt or the ordinary session review. Labels and guidance clear when the UI locks.

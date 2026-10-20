@@ -146,3 +146,25 @@ UI reviews and exits require confirmation, use text rendering and do not persist
 credentials. Review references live in private evidence: never put secrets in them.
 No broker order method, custody synchronization, settlement permission, public listener
 or actual cash/share adjustment capability was added. See [long-term.md](long-term.md).
+
+## LT2 reviewed financial mutations (0.6.0)
+
+Exclusive local offline commands now adjust supported *paper* shares and issuer
+claims; they expose no new HTTP mutation route, network client or real-money scope.
+Input is UTF-8, regular/nonsymlinked, bounded to 64 KiB, extra/duplicate-key rejecting,
+strict for ratios/coverage, aware and causal for dates, exact for money. Policy,
+horizon, original price/trade basis and current quarantine hash must match. The
+complete-coverage assertion is an operator trust boundary, not verified issuer data.
+
+Stable IDs, unique claim payment, atomic ledger/journal/materialized writes and
+independent reconstruction prevent accidental duplicate credits, missing fractional
+basis and orphaned payment state. Action calendar evidence is pinned before recovery.
+Known dividend claims are nonspendable and unknown fractions retain stale valuation.
+Unresolved fraction chains and unsupported issuer events fail rather than silently
+creating shares, receipt values or settled eligibility. Hashes detect inconsistency;
+a malicious filesystem owner can rewrite evidence and remains outside this model.
+
+Keep reviews, input files and reports private and free of credentials/account IDs.
+Old versions cannot be used on an LT2 account; preserve backups and use this release
+or later. These features do not synchronize demat/bank state or authorize live use.
+See [corporate-actions.md](corporate-actions.md).

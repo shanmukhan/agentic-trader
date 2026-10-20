@@ -15,6 +15,40 @@ NOW = datetime(2026, 10, 20, 4, 30, tzinfo=UTC)  # 10:00 IST
 TOKEN = "test-operator-credential-" + "a" * 32
 
 
+@pytest.fixture
+def corporate_account(long_term_factory):
+    from trading_agent.execution.delivery import HoldingReview
+
+    engine = long_term_factory()
+    engine.calendar.sources = {
+        day: "invented corporate-action session" for day in engine.calendar.sessions
+    }
+    engine.review_holding(
+        HoldingReview(
+            symbol="NSE:DEMO",
+            session_date=NOW.date(),
+            no_corporate_action=True,
+            reference="invented pre-action basis",
+        ),
+        NOW,
+    )
+    engine.ingest(quote(), NOW)
+    order = engine.submit(candidate(stop="490", target="600"), NOW)
+    engine.ingest(quote(1), NOW + timedelta(seconds=1))
+    assert order["quantity"] == 14
+    tomorrow = NOW + timedelta(days=1)
+    engine.review_holding(
+        HoldingReview(
+            symbol="NSE:DEMO",
+            session_date=tomorrow.date(),
+            no_corporate_action=False,
+            reference="invented action notice; awaiting reviewed adjustment",
+        ),
+        tomorrow,
+    )
+    return engine
+
+
 def quote(
     second=0,
     *,

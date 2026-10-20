@@ -154,3 +154,21 @@ indexed metadata keys and bounded holdings; startup/report delivery reconstructi
 scans history separately. Source/report scans can still consume I/O and are not part
 of this latency claim. Reproduce with `python scripts/benchmark_long_term.py --samples
 2000`; CI runs 1,000 observations and the separate synthetic long-term drills.
+
+## LT2 quote path with unpaid dividend (0.6.0)
+
+The [captured measurement](benchmark-corporate-actions-macos.json) uses 2,000 invented
+observations, fourteen held shares and a ₹14 unpaid net dividend. Mac ARM64/Python
+3.13.16, SQLite WAL/FULL: p50 **0.2003 ms**, p95 **0.2297 ms**, p99 **0.2564 ms**,
+maximum **0.6823 ms**. This is a separate local sample, not proof of improvement or
+an external service-level guarantee. It excludes object construction, parsing,
+callback contention, network/history, action application/reconstruction and Pi.
+
+```sh
+.venv/bin/python scripts/benchmark_long_term.py --samples 2000 --corporate-actions
+```
+
+Offline action/receipt review and startup reconciliation may scan history; they do
+not run inside quote callbacks. Snapshots read two atomic primary-key caches for
+known receivable/unknown-fraction count. A SQL-trace test verifies that snapshot
+polling does not scan financial/event/action history. Durability was not relaxed.

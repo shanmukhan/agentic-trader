@@ -100,10 +100,22 @@ def parser() -> argparse.ArgumentParser:
         "long-term-demo", help="isolated overnight paper and recovery drill"
     )
     long_demo.add_argument("--directory", type=Path, default=Path("data/long-term-demo"))
+    corporate_demo = commands.add_parser(
+        "corporate-actions-demo", help="invented split/bonus/dividend and receipt lifecycle"
+    )
+    corporate_demo.add_argument(
+        "--directory", type=Path, default=Path("data/corporate-actions-demo")
+    )
     long_report = commands.add_parser(
         "long-term-report", help="preserve source delivery account work"
     )
     long_report.add_argument("--output", type=Path, required=True)
+    for name, help_text in (
+        ("apply-corporate-actions", "offline reviewed paper share/dividend entitlements"),
+        ("record-corporate-cash", "offline reviewed paper entitlement cash receipt"),
+    ):
+        action = commands.add_parser(name, help=help_text)
+        action.add_argument("--file", type=Path, required=True)
     paper_evidence = commands.add_parser(
         "paper-report", help="source-preserving operations evidence"
     )
@@ -173,6 +185,31 @@ def execute(args: argparse.Namespace) -> Any:
         }
     # Validate mode even for demonstrations and broker-only commands.
     settings = Settings.load(args.config)
+    if args.command == "corporate-actions-demo":
+        from trading_agent.corporate_actions.demo import corporate_actions_demo
+
+        return corporate_actions_demo(args.directory)
+    if args.command in {"apply-corporate-actions", "record-corporate-cash"}:
+        from trading_agent.corporate_actions.contracts import ActionBatch, CashReceipt
+        from trading_agent.corporate_actions.service import (
+            apply_batch,
+            load_request,
+            record_receipt,
+        )
+
+        if settings.investment_horizon != "long_term" or not settings.database.is_file():
+            raise ValueError("corporate actions require an existing long-term paper account")
+        contract = ActionBatch if args.command == "apply-corporate-actions" else CashReceipt
+        request = load_request(args.file, contract)
+        source = Database(settings.database, settings.starting_cash)
+        try:
+            if isinstance(request, ActionBatch):
+                return apply_batch(
+                    source, settings, SessionCalendar.load(settings.calendar), request, clock()
+                )
+            return record_receipt(source, settings, request, clock())
+        finally:
+            source.close()
     if settings.investment_horizon == "long_term" and (
         args.command
         in {

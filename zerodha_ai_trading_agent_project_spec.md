@@ -1,10 +1,10 @@
 # Zerodha AI Equity Trading Agent — intraday and long-term paper accounts
 
-**Project specification:** v1.6
+**Project specification:** v1.7
 
 **Prepared:** 20 October 2026
 
-**Status:** Intraday Phases 1–4 engineering and long-term LT1 delivered; empirical acceptance and later long-term/live milestones pending
+**Status:** Intraday Phases 1–4 and supported long-term LT1–LT2 paper engineering delivered; empirical acceptance and later long-term/live milestones pending
 
 **Safety:** Paper only. No live trading, real orders or funds transfers in the implemented phases.
 
@@ -471,9 +471,23 @@ reports, deterministic drills and unit/functional tests support operator review.
 
 The [long-term guide](docs/long-term.md) specifies supported behavior, independent
 virtual capital, accounting, setup and missing work. The extended roadmap in
-[implementation-plan.md](docs/implementation-plan.md) schedules LT2 corporate-action
-cash/share adjustments, LT3 daily research/ML/portfolio allocation and LT4 actual
+[implementation-plan.md](docs/implementation-plan.md) records supported LT2 corporate-action
+cash/share adjustments and schedules LT3 daily research/ML/portfolio allocation and LT4 actual
 custody/settlement/supervised evidence. Current intraday rule/ML commands cannot be
-used as approved long-term strategies. No actual settlement, dividends/splits,
+used as approved long-term strategies. No actual custody/settlement, bank payment,
 SIP/rebalancing, combined account capital cap, live order or broker holdings sync is
 claimed. These scope changes do not imply profitability or completed production readiness.
+
+## 17. Reviewed paper corporate actions — LT2, version 0.6.0
+
+The [corporate-action guide](docs/corporate-actions.md) defines exclusive offline
+split/bonus/dividend batches, sourced explicit dates, complete ordered review and
+quarantine hash binding. Integral shares and rational fractional claims partition
+capital cost; unsupported actions and unresolved fraction chains remain blocked.
+Net dividend claims are nonspendable until a causal reviewed receipt. Separate
+fraction receipts realize capital P&L; dividend income is reported separately.
+Atomic additive tables, journal agreement, independent ordered reconstruction,
+constant-size quote-path caches, adjusted holding protections and retained exit
+intent extend recovery, reporting and tests. No old quote or actual payment is
+invented. Usage/component documentation must change with features/workflows;
+the user's standing instruction is recorded in [AGENTS.md](AGENTS.md).
