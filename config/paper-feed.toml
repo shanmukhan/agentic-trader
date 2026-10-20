@@ -1,0 +1,8 @@
+# Operations limits only. Economic risk stays in the selected paper account config.
+history_retry_seconds = 5
+history_spacing_ms = 400
+telemetry_seconds = 60
+processing_budget_ms = 50
+max_model_age_days = 30
+evidence_min_sessions = 20
+evidence_min_trades = 30

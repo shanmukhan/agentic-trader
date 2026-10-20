@@ -117,3 +117,34 @@ These checks need real hardware/account access and remain explicitly unverified.
 The final local command results and any limitations are recorded in
 [CHANGELOG.md](CHANGELOG.md). A dependency scan is checked at implementation time;
 repeat it before deployment and every dependency update.
+
+## Phase 4 automated acceptance
+
+Added supervised startup/arming/history readiness, disabled-entry backfill, causal
+later-quote fills, history deduplication, independent risk rejection, manual-controller
+bypass refusal and ranked multi-symbol position admission tests. Interruption cases
+cover disconnect, watchdog silence, first resumed quote without an intervening tick,
+conflicting/volume-regressed data and stale exchanges. Holdings stay open until valid
+liquidation data returns; kills persist.
+
+History tests cover missing/flagged/future/revised/foreign-symbol candles, model age,
+synthetic connected-model rejection, calendar/cutoff changes, clock regression and
+storage failure. Restart tests preserve pending entries during identity rejection,
+then verify cancellation and disarmed rewarm under the correct controller. Concurrency,
+connection generations, retry cadence, first-bar request ranges, monotonic rate pacing
+and worker shutdown are tested.
+
+Functional API cases verify authenticated arm/disarm, Origin protections, readiness
+without nested transactions, manual-intent rejection, kill/reset independence and
+background stale-feed disarming. CLI cases exercise model-bound initialization,
+option requirements, source-preserving reports and all four synthetic fault drills.
+Metrics tests verify bounded windows and cumulative budget counts. Reports reconcile
+money and retain unfinished exposure and crash limitations.
+
+Combined local result: **259 tests passed; 92% coverage**. Paper runtime reached 91%,
+service 90%, reports/demo 93%, metrics 100%, independent execution 93%. These use
+invented data or mocked read-only broker responses and do not establish feed access,
+empirical fills, full-session coverage, hardware recovery or live readiness. CI runs
+the drills and populated-account benchmark.
+Additional cases preserve observed candle receipt/connection clocks on export,
+reject missing clocks/overrides, and cancel pending buys at model-age expiry.

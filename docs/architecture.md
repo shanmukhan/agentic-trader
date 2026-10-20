@@ -4,9 +4,9 @@ The application is a Python 3.13 modular monolith. `main.py` owns startup, CLI a
 shutdown. HTTP/WebSocket market data flows through `broker/readonly_kite.py`, typed
 models, the paper risk/execution boundary and SQLite. Stream candles are persisted
 separately after quote processing. Candle-write failure latches a fault and disconnects
-the feed. The connected service's strategy is operator supplied; ML-dependent
-service intents remain blocked. Phases 2–3 use rules and optional calibrated ML
-only in isolated offline research.
+the feed. The default service accepts operator intents. Phase 4 additionally binds
+a dedicated account to explicitly configured rules/model and supervised entry controls.
+Phases 2–3 retain isolated offline research.
 
 ```mermaid
 flowchart LR
@@ -78,8 +78,8 @@ missing intervals are flagged. Volume deltas across boundary ticks are assigned 
 the new bucket; exact exchange OHLCV should use verified historical candles. A stream
 disconnect clears builders, preventing outage-spanning candles from looking complete.
 Indicators reject incomplete/flagged/gapped input, use session-local VWAP, EMA and
-Wilder ATR, and reset on the next local date. Connected-feed automatic model/rule
-signals remain deferred; optional models add a gate to offline research execution.
+Wilder ATR, and reset on the next local date. Supervised feed signals use completed
+historical bars in Phase 4; optional models add an independent execution gate.
 
 Journal growth is linear in accepted quote events. Current records have indexed
 lookups and at most ten streaming instruments and two held positions by default.
@@ -113,9 +113,9 @@ An external verified candle file can replace research candle inputs without chan
 the source ledger. Manifests are written last, so failed exports are not loadable.
 The offline exporter may sort/scan substantial data; it is not run on the feed path.
 
-`main.py` exposes separate research commands. The connected service still requires
-operator intents; automatic rule execution on the feed is deferred to paper-feed
-validation. No schema migration or existing policy-hash change was needed.
+`main.py` exposes separate research commands. Default services retain operator
+intents; dedicated supervised services are described below. No existing economic
+policy-hash encoding changed.
 
 ## Phase 3 labels, fitting and inference
 
@@ -149,3 +149,40 @@ immediate submission behavior. Model decisions, vectors and scores are auditable
 No new database schema or live endpoint is needed. The shared policy fingerprint
 preserves the original economic hash encoding. Heavy dependencies are optional
 training extras; connected runtime imports no training code. See [ml-research.md](ml-research.md).
+
+## Phase 4 supervised feed pipeline
+
+`paper/runtime.py` serializes quote processing, history evaluation, supervision and
+watchdog actions using the existing engine lock. It starts disarmed, warms from
+current-session history with `ENTRIES_DISABLED`, requires every reviewed symbol to
+be ready, then ranks one observed candle batch before independent risk admission.
+Missing/stale/invalid input disarms and cancels pending buys. Stale holdings or
+disconnects queue durable kill exits; later valid quotes still supply fills.
+
+`paper/service.py` isolates paced history HTTP from the quote callback and execution
+lock. Full current-session five-minute responses are validated before evaluation.
+The last-completed boundary and connection generation reject incomplete or obsolete
+work. Active stream bars are not mixed into authoritative signal history. Protective
+execution continues while history waits. Monotonic request spacing respects the
+configured broker budget; late candle signals are skipped instead of backdated.
+
+Dedicated metadata binds runtime/rule version, complete strategy/feed policy, catalog,
+model and synthetic mode. Used session definitions are pinned by date. The broker
+checks automation identity before restart cancellation and requires the controller
+on new submissions. Manual startup or changed policy cannot remove the gate.
+`paper-init` binds a new account without assigning a conflicting manual model identity.
+Proposal caps derive from durable indexed events, including rejected proposals.
+
+Bounded timing rings retain 512 observations per stage plus cumulative counts/maxima/
+budget exceedances. Periodic telemetry journals capture timings and observed per-run
+equity/drawdown; missing crash samples are disclosed. `paper/report.py` reads storage
+without broker recovery and derives net trades, incidents and preliminary gates.
+It cannot attest real hardware or enable live execution.
+
+Schema v1 gains the compatible additive `events_kind_time` index, preventing proposal
+lookups from scanning quote history. It changes no ledger or economic-policy hash.
+See [paper-feed.md](paper-feed.md) for operations and measurement limits.
+Supervised source export also preserves first candle observation clocks and recorded
+connection changes. Delayed bars sort by actual availability, missing clocks fail,
+and unclocked external overrides are refused; manual-source close assumptions remain
+explicitly separate.

@@ -20,7 +20,7 @@ can produce larger simulated losses than a stop budget.
 | Spread | At most 30 bps; positive bid and ask depth for entries |
 | Slippage | Five bps adverse, rounded adversely to instrument tick |
 | Latency / TTL | 100 ms simulated minimum / 30 s unfilled entry expiry |
-| Model | Service rejects ML-dependent intents; verified offline models can only add rejection gates |
+| Model | Unconfigured ML is rejected; verified models only add gates, including supervised age/availability |
 
 ## Sizing and reservations
 
@@ -111,5 +111,26 @@ vector under an existing intent raises a conflict instead of rescoring its order
 Training labels use separate feasible-trade accounts and actual simulated costs;
 they exclude bad/incomplete paths. Selected label P&L does not account for concurrent
 portfolio competition. Walk-forward/holdout gates and later scored replays provide
-research diagnostics only. No automatic feed strategy, live readiness or financial
-authorization follows. See [ml-research.md](ml-research.md) for label semantics and limits.
+research diagnostics only. No live readiness or financial authorization follows.
+Supervised paper deployment requires the separate Phase 4 controls. See
+[ml-research.md](ml-research.md) for label semantics and limits.
+
+## Phase 4 supervised controls
+
+Dedicated accounts bind the exact automation/rule/catalog/model/feed policy and
+cannot restart as manual accounts. `AUTOMATION_CONTROLLER_REQUIRED` rejects
+controller-free submissions. Used calendar dates are pinned; proposal caps survive
+history reload/restart through durable journal counts. Existing economic limits,
+fees, sizing, reservations, stops and targets remain independent.
+
+Startup and every new session require explicit arming after all universe quotes
+and current completed history are ready. Backfill cannot replay missed trades.
+Disconnects, stale quotes, bad history and quality failures disarm and cancel pending
+buys. Stale holdings or disconnects queue durable kill exits; absent data never
+fabricates liquidation. Kill/reset/reconnect do not rearm. Models must pass loader
+gates, be non-synthetic, available by decision time and within the default thirty-day
+validation age. Manual entries are disabled on supervised services.
+
+Disarm preserves protective handling of filled positions; flatten/kill separately
+request exits. Operational reports expose incidents and preliminary evidence gates,
+and always retain false live readiness/external acceptance. See [paper-feed.md](paper-feed.md).

@@ -37,9 +37,11 @@ class PaperBroker:
         recovery_time: datetime | None = None,
         *,
         model: "ResearchModel | None" = None,
+        automation: str | None = None,
     ):
         self.db, self.settings, self.calendar = db, settings, calendar
         self.model = model
+        self.automation = automation
         self.charges = Charges()
         self.lock = threading.RLock()
         self.connected = False  # explicitly NOT restored; reconnect must provide fresh data
@@ -79,6 +81,20 @@ class PaperBroker:
                 raise ValueError("cannot attach a model to an existing unscored account")
             db.set(tx, "model_version", model_version)
             db.set(tx, "model_gate_schema", "1")
+            auto_row = tx.execute("SELECT value FROM meta WHERE key='automation_hash'").fetchone()
+            auto_events = tx.execute(
+                "SELECT 1 FROM events WHERE kind='automation_start' LIMIT 1"
+            ).fetchone()
+            if bool(auto_row) != bool(auto_events):
+                raise RuntimeError("missing account automation fingerprint")
+            if auto_row and auto_row[0] != automation:
+                raise ValueError("automation changed or removed; use the bound paper controller")
+            if (
+                not auto_row
+                and automation
+                and tx.execute("SELECT 1 FROM orders LIMIT 1").fetchone()
+            ):
+                raise ValueError("automation requires an unused dedicated paper account")
             # Pending orders from a dead process are cancelled before processing new signals.
             for row in tx.execute(f"SELECT * FROM orders WHERE {PENDING}").fetchall():
                 self._cancel(tx, row, stamp(recovery_time or datetime.now(UTC)), "RESTART_RECOVERY")
@@ -251,7 +267,12 @@ class PaperBroker:
         return reasons
 
     def submit(
-        self, candidate: Candidate, now: datetime, *, features: "FeatureVector | None" = None
+        self,
+        candidate: Candidate,
+        now: datetime,
+        *,
+        features: "FeatureVector | None" = None,
+        automation: str | None = None,
     ) -> dict[str, Any]:
         now = utc(now)
         normalized = candidate.model_dump(mode="json")
@@ -272,6 +293,8 @@ class PaperBroker:
                 self._roll_day(tx, now)
                 quote = self._quote(tx, candidate.symbol)
                 reasons = self._entry_reasons(tx, quote, now)
+                if self.automation and automation != self.automation:
+                    reasons.append("AUTOMATION_CONTROLLER_REQUIRED")
                 age = (now - candidate.decision_time).total_seconds()
                 if not 0 <= age <= self.settings.max_quote_age_seconds:
                     reasons.append("STALE_OR_FUTURE_DECISION")

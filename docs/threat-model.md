@@ -88,3 +88,23 @@ market data remains outside that guarantee. The `synthetic` declaration is not
 authenticated. Protect/review datasets, configuration and artifacts. Synthetic
 override never disables metric, context, risk or temporal checks and is refused
 against non-synthetic data. No network model download or service upload is added.
+
+## Phase 4 supervised feed boundary
+
+Automation is explicit, private and paper only. Authenticated arm/disarm controls
+use the existing Bearer/Origin/Host protections. Accounts bind configuration, universe,
+model and runtime identity, and cannot drop the controller through normal restart.
+The broker also requires its controller identity on new submissions. Direct Python
+code and a malicious local administrator remain trusted-process boundaries.
+
+History I/O runs outside quote/execution locks, with bounded universe, paced requests,
+retry cadence, completed-time checks and reconnect-generation rejection. Changed
+history revisions fault the runtime. No broker order route or executable model load
+is introduced. Fault handling blocks entries even when storage cannot journal the
+failure. Disconnect/staleness cancels buys and preserves unresolved liquidation.
+
+Periodic metrics retain recent windows plus cumulative counts, maxima and exceedances;
+reports explicitly disclose missing crash measurements and incomplete coverage.
+Synthetic drills cannot pass provenance/sample/model evidence gates. No report can
+enable live execution or attest empirical broker/device acceptance. No external
+alert is sent; supervision remains the operator dashboard and local journal/logs.

@@ -5,9 +5,9 @@ Prepared 20 October 2026. This is the execution record for the original
 
 ## Implemented scope
 
-The repository delivers Phase 1 infrastructure, Phase 2 strategy research and Phase 3
-offline calibrated ML using the same virtual broker/risk mechanics. Rules and models
-run in isolated offline accounts. No live adapter, automatic connected-feed strategy, profitability
+The repository delivers Phases 1–3 infrastructure/research and Phase 4 supervised
+paper-feed engineering using the same virtual broker/risk mechanics. Rules/models
+run offline or on explicitly configured dedicated paper accounts. No live adapter, profitability
 or compliance readiness is implied. External account creation, entitlement checks
 and OS service installation require real credentials/hardware and are not fabricated.
 
@@ -133,7 +133,41 @@ Enhancements to the Phase 3 plan:
 
 Synthetic end-to-end verification uses sixty training/validation sessions followed
 by ten unseen invented sessions. It establishes software behavior only. There is no
-empirically accepted market model, connected strategy automation or live readiness.
+empirically accepted market model or live readiness.
+
+## Phase 4 engineering delivered — version 0.4.0
+
+| Work item | Implementation / evidence |
+|---|---|
+| Supervised feed | Explicit `serve --stream --automate`, authenticated arm/disarm, universe-wide readiness and disarmed startup/restart/session |
+| Safe account setup | `paper-init` checks profile/catalog and exclusively creates/binds a new account without conflicting manual model initialization |
+| Causal history | Separate paced worker loads full completed current-session 5m data; incomplete/revised/obsolete responses fail and missed signals are not replayed |
+| Independent execution | Same fee/depth/latency/sizing/kill broker, controller-bound submissions, durable proposal caps, model age/availability |
+| Recovery | Disconnect/staleness cancels buys and disarms; stale holdings queue durable exits, without fake closes or automatic rearming |
+| Policy continuity | Runtime/catalog/model/strategy/feed identities and used calendar definitions pinned; changed/removed automation fails before recovery |
+| Observability | Recent timing windows, cumulative counts/maxima/exceedances, periodic status and observed per-run drawdown |
+| Evidence | Source-preserving `paper-report`, net trades, incidents, clean-run/sample/model/latency gates; external/live flags always false |
+| Drills | Synthetic partial fills, disconnect with holdings, silence and unclean pending-entry restart with separate ledgers/reports |
+| Performance | Additive event-kind/time index, populated benchmark and test proving history network waits release the execution lock |
+| Captured research data | Exports preserve first observed candle/connection clocks; missing clocks and unclocked supervised overrides fail |
+| Verification/docs | Unit/concurrency/functional API/CLI tests, CI drills and complete [paper-feed guide](paper-feed.md) |
+
+Enhancements to the Phase 4 plan:
+
+1. Supervised arming replaces resumption of old entry authority after restart or
+   reconnect. Protective handling continues independently while entries are disarmed.
+2. Authoritative completed historical candles avoid unknown first-bar volume and
+   partial-bar/history mixing. Backfill warms features without replaying missed trades.
+3. History HTTP/rate pacing stays outside the quote/risk lock. Responses from obsolete
+   connections are discarded, the whole universe is required and late signals are skipped.
+4. Accounts bind their controller/model before recovery. Durable proposal counts
+   survive rewarm/restart; model/rule changes use a new account.
+5. Engineering evidence remains separate from empirical acceptance. Reports disclose
+   recent-window quantiles, lost crash samples and unresolved exposure. No report can
+   authorize live execution.
+
+Actual feed duration, fill calibration, entitlement and Pi reboot/storage/power-loss
+drills remain external acceptance work. Synthetic tests deliver the code milestone only.
 
 ## Remaining milestones and acceptance gates
 
@@ -143,7 +177,7 @@ empirically accepted market model, connected strategy automation or live readine
 | Target-device operations | ARM64 Pi dependency installation, reboot/launchd/systemd/power-loss drill, disk monitoring |
 | Empirical strategy validation | Actual matching raw candle/quote data, point-in-time universe/corporate-action review, calibrated fees/depth and retained unfavorable experiments |
 | Empirical ML acceptance | Implemented Phase 3 workflow must pass on reviewed real data, with exclusion/selection/cost assumptions retained and later portfolio validation |
-| Extended paper validation (Phase 4) | Sustained actual feed, calibrated fill/cost assumptions, outage drills and latency distribution with positions |
+| Phase 4 external acceptance | Sustained actual supervised feed, calibrated fills/costs, full-session coverage review and target-device recovery/latency |
 | Future live (Phases 5–6) | Separate explicit approval, current compliance and broker rules, separate reviewed adapter/reconciliation |
 
 The code is portable by design, but local tests on this Mac are not a Raspberry Pi

@@ -22,3 +22,5 @@ jobs:
       - run: uv run python scripts/benchmark_strategy.py --samples 1000
       - run: uv run trading-agent ml-demo --directory data/ci-ml
       - run: uv run python scripts/benchmark_ml.py --model data/ci-ml/model --allow-synthetic-model --samples 1000
+      - run: uv run trading-agent paper-demo --directory data/ci-paper
+      - run: uv run python scripts/benchmark_paper.py --samples 1000

@@ -119,6 +119,30 @@ means the replay overlaps model fitting/validation/embargo; supply a later datas
 gates. A model-version account mismatch requires a new account. Do not erase metadata
 or restart a scored account as rule-only to remove its gate.
 
-Phase 4 still needs actual paper-feed integration, retained empirical validation,
-deployment latency/load and outage/recovery drills. No model from these commands is
-automatically attached to `serve`.
+Phase 4 engineering now supplies opt-in supervised integration. Retained empirical
+validation, deployment latency/load and actual outage/recovery drills remain pending.
+Models attach only through an explicit dedicated account and configured service.
+
+## Supervised paper service
+
+Follow [paper-feed.md](paper-feed.md) for `paper-init`, opt-in `serve --automate`,
+authenticated arming and `paper-report`. Use a new dedicated account, reviewed
+tokens/calendar and either an explicit rule-only baseline or an approved non-synthetic
+model. Service-manager restarts always remain disarmed. Keep training off this process.
+
+If readiness reports history gaps, wait for the paced current-session backfill;
+never mark active/local approximated bars complete. Broker history failures disarm
+and retry; late signals are skipped. A changed historical revision or used calendar
+date requires review rather than silent replacement. Coordinate shared API request load.
+
+Disconnect/stale quotes cancel pending entries and disarm. Holdings trigger durable
+kill exits, which remain unfilled until valid quotes/depth arrive. After recovery,
+verify flatness and history, explicitly reset an eligible kill, then arm separately.
+Disarm alone preserves protective handling of filled positions. Shutdown cancels
+entries and retains unresolved positions; verify actual flatness before stopping.
+
+Dedicated accounts refuse manual broker startup and changed identities. Use the
+running authenticated API for status. After stopping, `paper-report` performs
+integrity/accounting checks without recovery/cancellation. Preserve partial/failed
+folders, source ledger and last telemetry. A crash can lose recent timing samples;
+reports cannot certify full-day coverage, real hardware recovery or live readiness.

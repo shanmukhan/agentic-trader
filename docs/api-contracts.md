@@ -110,9 +110,38 @@ exchange timestamp than the order's decision/creation time.
   `--allow-synthetic-model` is offline-only, requires `--model`, and relaxes only
   provenance. Synthetic models cannot score non-synthetic data.
 
-There is no new HTTP route, quantity field, model upload, model deployment or live
-operation. Model-bound research journals add `model_decision` (artifact ID, features,
+Phase 3 added no HTTP route, quantity field, model upload or live operation.
+Model-bound research journals add `model_decision` (artifact ID, features,
 reasons). `decisions.jsonl` adds probability, same-time rank, vector and model hash.
 The broker recomputes the gate rather than trusting a reported probability.
 Strict feature/sample/artifact/report contracts and new reason codes are detailed
 in [ml-research.md](ml-research.md) and [risk-policy.md](risk-policy.md).
+
+## Phase 4 supervised paper contracts
+
+`paper-init (--rule-only | --model PATH)` creates a new private dedicated account,
+checks the read-only catalog/profile and binds automation. It requires configured
+reviewed tokens and an operator token; existing paths are refused. `serve --stream
+--automate (--rule-only | --model PATH)` starts that account disarmed. Both commands
+accept `--strategy` and `--feed-policy`; context changes require a new account.
+Connected models must pass validation and be non-synthetic; no override exists.
+
+Authenticated routes use the same Host/Origin/Bearer protections:
+
+| Method/path | Behavior |
+|---|---|
+| `GET /api/paper/automation` | Enabled/armed state, reasons, counters, bounded timing windows, last candles and snapshot; disabled object for manual services |
+| `POST /api/paper/automation/arm` | Arm after all current data/session/model/kill/fault prerequisites pass; 409 with reasons otherwise |
+| `POST /api/paper/automation/disarm` | Cancel pending entries; preserve protective handling of holdings |
+
+Manual entry intents return 409 on automated services. The broker independently
+rejects controller-free submissions with `AUTOMATION_CONTROLLER_REQUIRED`.
+Kill/flatten disarm; reset does not rearm. `/ready` requires armed automation and
+all universe data when configured. `/health` remains liveness; no live route exists.
+
+`paper-demo --directory NEW_PATH` runs synthetic drills. `paper-report --output
+NEW_PATH` reconciles source storage without broker recovery and writes JSON/Markdown,
+trades and a completion marker. Stop the source service first for its ownership lock.
+Journal additions: `automation_start/stop/state/candidate/fault`, `feed_connection`,
+`feed_evaluation`, `history_failure`, `paper_telemetry`. Reports disclose percentile
+windows and missing crash measurements; see [paper-feed.md](paper-feed.md).

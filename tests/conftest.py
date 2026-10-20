@@ -145,3 +145,58 @@ def research_model(ml_demo):
         charges_version=Charges().version,
         allow_synthetic=True,
     )
+
+
+@pytest.fixture
+def paper_factory(tmp_path):
+    from trading_agent.paper.config import FeedSettings, feed_identity
+    from trading_agent.paper.demo import INSTRUMENT, WARM
+    from trading_agent.paper.runtime import PaperFeed
+    from trading_agent.strategy.rules import StrategySettings
+
+    databases = []
+
+    def make(
+        *,
+        strategy=None,
+        config=None,
+        model=None,
+        synthetic=True,
+        instruments=None,
+        now=WARM,
+        **overrides,
+    ):
+        settings = Settings(
+            database=tmp_path / f"paper-{len(databases)}.sqlite3",
+            operator_token=SecretStr(TOKEN),
+            **overrides,
+        )
+        strategy, config = strategy or StrategySettings(), config or FeedSettings()
+        catalog = instruments or [INSTRUMENT]
+        _, signature = feed_identity(
+            catalog, strategy, config, model.version if model else None, synthetic
+        )
+        db = Database(settings.database, settings.starting_cash)
+        databases.append(db)
+        calendar = SessionCalendar(
+            {
+                date(2026, 10, 20): (time(9, 15), time(15, 30)),
+                date(2026, 10, 21): (time(9, 15), time(15, 30)),
+            }
+        )
+        engine = PaperBroker(
+            db, settings, calendar, recovery_time=now, model=model, automation=signature
+        )
+        engine.register(catalog)
+        return PaperFeed(
+            engine,
+            instruments=catalog,
+            strategy=strategy,
+            settings=config,
+            now=now,
+            synthetic=synthetic,
+        )
+
+    yield make
+    for db in databases:
+        db.close()

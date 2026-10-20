@@ -141,12 +141,18 @@ order and calendar references are retained. Replay/mixed/unknown quote origins
 remain synthetic; only exclusively `kite`-labelled quotes permit a non-synthetic
 declaration. The exporter does not independently authenticate that provenance.
 
-For stream candles with initial-volume/gap flags, provide a separately verified raw
+For legacy manual-source stream candles with initial-volume/gap flags, provide a separately verified raw
 historical Candle JSONL file with `--candles PATH`. Do not clear quality flags or
 overwrite ledger tables. The override must be sorted/unique by `start,symbol` and
 completed; it is copied into the bundle. Produce it through the existing read-only
 historical adapter after manual login, serializing each candle's `model_dump_json()`.
 Respect current API entitlements/rate limits and the documented request ranges.
+
+Supervised Phase 4 sources instead preserve first recorded candle receipt times
+and connection events, including late backfill and outages. Missing observation
+records fail rather than assuming close availability. External candle overrides
+are refused for these accounts. Offline export sorts delayed bars by availability,
+then bar time/symbol within ties; source orders and journal remain unchanged.
 
 A mid-session feed capture cannot establish full-session strategy history. The
 exporter cannot recover absent quotes or feed connection events, validate corporate
@@ -209,3 +215,7 @@ processed. The independent broker rechecks model context and risk. Model/feature
 hashes, probabilities, ranks and risk reasons extend `decisions.jsonl`. Data must
 start after completion of the model's validation data/session plus embargo. The full model usage
 and artifact contracts are in [ml-research.md](ml-research.md).
+
+For later supervised feed validation, use a separate dedicated account and the
+[Phase 4 guide](paper-feed.md). Backtest output is not automatically attached to a
+connected service or treated as operational approval.

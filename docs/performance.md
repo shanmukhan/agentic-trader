@@ -93,3 +93,31 @@ locked dependencies and runs separately. Label generation uses isolated durable
 paper accounts and can be storage intensive; it is intentionally outside the feed
 path. Sample loading is bounded at one million rows and fitting remains in memory;
 partition larger research datasets explicitly rather than exhausting the device.
+
+## Phase 4 populated paper pipeline
+
+Run `.venv/bin/python scripts/benchmark_paper.py --samples 2000 --output benchmark.json`.
+The [populated Mac baseline](benchmark-paper-macos.json) uses Python 3.13.16 and
+SQLite WAL/FULL with one synthetic instrument, nineteen partial entry fills and
+a nineteen-share holding during most of the timed workload:
+
+| Path | p50 | p95 | p99 |
+|---|---:|---:|---:|
+| Quote/risk/accounting/performance with periodic telemetry | 0.1990 ms | 0.2279 ms | 0.4791 ms |
+
+The timer includes supervision, valuation, durable risk/fill writes, observed
+performance and periodic telemetry. It excludes object construction, socket parsing,
+callback contention, history HTTP, network and actual Pi behavior. This is not
+empirical fill or target-device evidence. Measure the intended universe/device
+against the provisional 50 ms local processing budget.
+
+History waits/pacing run outside the quote lock. Local signal batches still serialize
+with execution; incomplete/late responses cannot generate usable entries. A concurrency
+test holds HTTP open while a quote processes. The additive event-kind/time index
+prevents proposal caps from scanning the quote journal. Durability is unchanged.
+
+Runtime percentiles use the latest 512 observations per stage plus cumulative counts,
+maxima and exceedances. Reports check retained local p99 and cumulative fraction
+above budget; these are not global quantiles. Telemetry can miss crash observations,
+and per-run observed drawdown is not a complete cross-restart equity path.
+See [paper-feed.md](paper-feed.md).

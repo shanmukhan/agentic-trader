@@ -1,5 +1,75 @@
 # Change log
 
+## 2026-10-20 — Phase 4 supervised paper-feed engineering (0.4.0)
+
+Added explicitly enabled supervised paper automation, authenticated arm/disarm and
+universe-wide readiness to the private console/API. Startup, restart, reconnect and
+new sessions remain disarmed. Backfill warms features with entries disabled and
+does not replay missed signals. Manual entry intents are disabled on dedicated
+automated services; existing protective controls and independent risk remain active.
+
+Added `paper-init` for exclusive creation and read-only catalog/profile checking,
+binding the selected model/rule policy before any manual model identity is assigned.
+Accounts pin runtime/rule/strategy/feed policy, universe, model and synthetic mode;
+used calendar definitions are pinned by date. Removed/changed automation is rejected
+before pending-entry recovery. Controller-free submissions fail at the broker.
+Durable proposal counts survive history reload and restart, including rejected orders.
+
+Added a separate history worker with monotonic request spacing, bounded retry cadence,
+completed-session response checks and connection-generation invalidation. HTTP waits
+release the quote/risk lock. The worker uses authoritative completed historical 5m
+bars, avoiding unknown initial streamed volume/partial-bar mixing; slow or missing
+history skips entries. Default 400 ms request spacing respects the documented
+historical request budget. No network operation was added to the execution adapter.
+
+Disconnect/staleness disarms and cancels pending buys before resumed data can fill
+them. Stale holdings or disconnects queue durable kill exits; unavailable data never
+fabricates liquidation. Reconnect/reset does not rearm. Models retain Phase 3 loader
+gates and additionally require non-synthetic provenance, current availability and
+the configured validation age, including cancellation before pending buys fill after
+expiry. No synthetic override exists on the connected service.
+
+Added bounded timing rings and cumulative counts/maxima/budget exceedances, periodic
+journal telemetry and observed per-run equity/drawdown. Added source-preserving
+`paper-report` with reconciliation, net trades, incidents, clean-run/sample/model/
+latency gates and explicit measurement limits. Recent windows are not represented
+as global quantiles; crash losses in telemetry and incomplete coverage are disclosed.
+External acceptance and live readiness always remain false.
+
+Added `paper-demo` with independent partial-fill, disconnect-with-holdings, silent-feed
+and unclean-restart accounts/evidence. Added a populated durable pipeline benchmark,
+CI commands and complete corresponding plan/specification/usage/architecture/API/
+risk/security/runbook/performance/testing Markdown. Added the compatible schema-v1
+event-kind/time index for fast durable proposal-cap lookups. Economic hashes, money
+semantics and WAL/FULL durability are preserved; no dependency was added.
+
+### Phase 4 validation
+
+- **259 tests passed**, including all 215 previous regressions and 44 new unit,
+  integration/concurrency and functional cases. Coverage: **92% overall**, paper
+  runtime **91%**, service **90%**, reports/demo **93%**, metrics **100%** and
+  independent paper broker **93%**.
+- Ruff lint/format, mypy, secret-pattern and Markdown-link checks, frozen lock
+  verification and wheel/source builds passed. Dependency audit found no known
+  vulnerabilities; no advisory was ignored.
+- Synthetic partial-fill cash reconciled to ₹25,023.24; disconnected/silent recovery
+  accounts to ₹24,959.48; cancelled unclean-restart account stayed ₹25,000. Each starts
+  independently at ₹25,000. These invented outcomes have no market interpretation.
+- The 2,000-observation populated Mac benchmark measured p99 **0.4791 ms**, including
+  nineteen partial buys, a nineteen-share holding, risk/accounting/performance and
+  periodic durable telemetry. Network, parsing, callback contention, history I/O and
+  Pi behavior are excluded. No durability setting was weakened.
+- Original service-account integrity/accounting checks passed; it remains flat at
+  **₹25,000.00**, with zero fees/reservations and no feed connection.
+
+No real broker connection, order, deployment or funds transfer was attempted.
+Supervised-source research exports preserve first observed candle availability and
+recorded connection changes. Missing observation clocks or external unclocked candle
+overrides are refused, preventing backfills from being treated as known at close.
+Actual entitlement/feed duration, fill/cost calibration, market/model acceptance,
+target-device latency and physical recovery drills remain pending. Future live
+infrastructure still requires separate explicit approval.
+
 ## 2026-10-20 — Phase 3 chronological ML research (0.3.0)
 
 Added a versioned twelve-feature causal schema with finite values, completed-time

@@ -1,0 +1,12 @@
+{
+  "python": "3.13.16",
+  "platform": "macOS-27.0-arm64-arm-64bit-Mach-O",
+  "durability": "SQLite WAL + synchronous=FULL",
+  "samples": 2000,
+  "partial_fill_count": 19,
+  "held_quantity": 19,
+  "p50_ms": 0.198958,
+  "p95_ms": 0.227875,
+  "p99_ms": 0.479084,
+  "limitations": "Synthetic one-symbol paper pipeline with a populated account; includes quote/risk/accounting, observed performance and periodic telemetry commits. Excludes object construction, socket parsing, callback contention, history HTTP, network and target-device behavior. No empirical fill calibration."
+}

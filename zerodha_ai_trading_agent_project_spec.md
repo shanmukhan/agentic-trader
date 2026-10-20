@@ -1,10 +1,10 @@
 # Zerodha AI Intraday Equity Trading Agent
 
-**Project specification:** v1.3
+**Project specification:** v1.4
 
 **Prepared:** 20 October 2026
 
-**Status:** Phases 1–3 implemented; empirical broker/device/strategy/model acceptance pending
+**Status:** Phases 1–4 engineering implemented; empirical broker/device/strategy/model acceptance pending
 
 **Safety:** Paper only. No live trading, real orders or funds transfers in the implemented phases.
 
@@ -40,7 +40,11 @@ research. Model availability includes validation plus embargo, and model approva
 cannot override the independent risk engine. See [the ML guide](docs/ml-research.md).
 Synthetic fixtures verify behavior; no market model is empirically accepted.
 
-Automatic rule/model use on the connected feed and live phases remain future work.
+Phase 4 adds explicitly configured supervised paper-feed rules/models, dedicated
+account initialization, authenticated arming, paced independent history loading,
+stale/disconnect/restart controls, telemetry/reports and fault drills. See
+[the supervised guide](docs/paper-feed.md). It does not establish real-feed or
+target-device acceptance. Live phases require separate explicit approval.
 Implementation does not imply real-market profitability or broker/device readiness.
 
 ## 1. Project charter
@@ -413,7 +417,8 @@ installation/reboot and target-device checks remain unchecked until performed.
 
 The connected service retains an unavailable-model gate. Phase 3 implements offline
 training/calibration/validation and scored research with independent risk checks.
-Empirical validation and connected paper-feed model deployment remain later acceptance work.
+Phase 4 supports supervised paper deployment with approved non-synthetic models or
+an explicit rule baseline. Empirical broker/device acceptance remains pending.
 
 ## 14. Initial developer tasks (implementation order)
 

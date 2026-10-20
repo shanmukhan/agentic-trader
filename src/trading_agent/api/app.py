@@ -4,7 +4,7 @@ import threading
 from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
-from typing import Annotated, Any
+from typing import TYPE_CHECKING, Annotated, Any
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse
@@ -12,6 +12,9 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from trading_agent.execution.paper_broker import IntentConflict, PaperBroker
 from trading_agent.models import Candidate
+
+if TYPE_CHECKING:
+    from trading_agent.paper.runtime import PaperFeed
 
 DASHBOARD = """<!doctype html><html lang="en"><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -24,10 +27,12 @@ background:#1c2938;padding:1rem}small{color:#b1c9df}</style>
 <button id="refresh">Unlock / refresh</button></p>
 <p><button id="kill">Activate kill switch</button><button id="flatten">Queue flatten</button>
 <button id="reset">Reset kill switch</button></p>
+<p><button id="arm">Arm paper automation</button><button id="disarm">Disarm entries</button></p>
 <small>Exits require fresh quotes and liquidity. A queued exit is not a completed fill.
 The token stays in this page's memory; close the page to clear it.</small>
 <p id="message" role="status"></p><h2>Account / risk</h2><pre id="status">Locked</pre>
 <h2>Paper orders</h2><pre id="orders">Locked</pre>
+<h2>Paper automation / telemetry</h2><pre id="automation">Locked</pre>
 <script src="/dashboard.js"></script></html>"""
 
 JAVASCRIPT = """let token='';
@@ -41,6 +46,8 @@ async function refresh(){try{
  document.getElementById('status').textContent=JSON.stringify(await call('/api/status'),null,2);
  const orders=await call('/api/paper/orders');
  document.getElementById('orders').textContent=JSON.stringify(orders,null,2);
+ document.getElementById('automation').textContent=JSON.stringify(
+ await call('/api/paper/automation'),null,2);
  document.getElementById('message').textContent='Updated '+new Date().toLocaleTimeString();
 }catch(error){document.getElementById('message').textContent=error.message;}}
 document.getElementById('refresh').onclick=()=>{if(document.getElementById('token').value)
@@ -48,6 +55,9 @@ token=document.getElementById('token').value;
 document.getElementById('token').value='';refresh();};
 for(const name of ['kill','flatten','reset'])document.getElementById(name).onclick=async()=>{
 try{await call('/api/control/'+name,'POST');await refresh();}
+catch(error){document.getElementById('message').textContent=error.message;}};
+for(const name of ['arm','disarm'])document.getElementById(name).onclick=async()=>{
+try{await call('/api/paper/automation/'+name,'POST');await refresh();}
 catch(error){document.getElementById('message').textContent=error.message;}};
 setInterval(()=>{if(token)refresh();},3000);
 """
@@ -58,14 +68,19 @@ def create_app(
     clock: Callable[[], datetime] = lambda: datetime.now(UTC),
     stream: Any = None,
     background: bool = True,
+    automation: "PaperFeed | None" = None,
 ) -> FastAPI:
     stopped = threading.Event()
 
     def watchdog() -> None:
         while not stopped.wait(1):
             try:
-                if not engine.faulted:
-                    engine.poll(clock())
+                with engine.lock:
+                    if not engine.faulted:
+                        if automation:
+                            automation.tick(clock())
+                        else:
+                            engine.poll(clock())
             except Exception:
                 engine.faulted = True
                 engine.set_connected(False)
@@ -84,6 +99,9 @@ def create_app(
             stopped.set()
             if stream:
                 stream.close()
+            if automation and not automation.closed:
+                with engine.lock:
+                    automation.close(clock())
             if background:
                 worker.join(timeout=5)
             engine.set_connected(False)
@@ -133,6 +151,8 @@ def create_app(
     async def safe_error(request: Request, exc: Exception) -> JSONResponse:
         engine.faulted = True
         engine.set_connected(False)
+        if automation:
+            automation.fail(clock())
         logging.getLogger(__name__).error("operator request failed; entries blocked")
         return JSONResponse(
             {"detail": "internal failure; entries blocked; inspect local journal"}, 503
@@ -153,10 +173,17 @@ def create_app(
     @app.get("/ready")
     def ready() -> JSONResponse:
         now = clock()
-        with engine.lock, engine.db.transaction() as tx:
-            snapshot = engine._snapshot(tx, now)
-            quotes = [engine._quote(tx, row[0]) for row in tx.execute("SELECT symbol FROM quotes")]
-            can_enter = bool(quotes) and any(not engine._entry_reasons(tx, q, now) for q in quotes)
+        with engine.lock:
+            with engine.db.transaction() as tx:
+                snapshot = engine._snapshot(tx, now)
+                quotes = [
+                    engine._quote(tx, row[0]) for row in tx.execute("SELECT symbol FROM quotes")
+                ]
+                can_enter = bool(quotes) and any(
+                    not engine._entry_reasons(tx, q, now) for q in quotes
+                )
+            if automation:
+                can_enter = can_enter and automation.armed and not automation.readiness(now)
         return JSONResponse(
             {
                 "ready": can_enter,
@@ -178,6 +205,8 @@ def create_app(
 
     @app.post("/api/paper/intents", dependencies=[Depends(authorized)])
     def submit(candidate: Candidate) -> dict[str, Any]:
+        if automation:
+            raise HTTPException(409, "manual entry intents disabled on automated paper accounts")
         try:
             return engine.submit(candidate, clock())
         except IntentConflict as exc:
@@ -192,12 +221,18 @@ def create_app(
 
     @app.post("/api/control/kill", dependencies=[Depends(authorized)])
     def kill() -> dict[str, bool]:
-        engine.kill(clock())
+        with engine.lock:
+            if automation:
+                automation.disarm(clock(), "OPERATOR_KILL")
+            engine.kill(clock())
         return {"kill": True}
 
     @app.post("/api/control/flatten", dependencies=[Depends(authorized)])
     def flatten() -> dict[str, bool]:
-        engine.flatten(clock())
+        with engine.lock:
+            if automation:
+                automation.disarm(clock(), "OPERATOR_FLATTEN")
+            engine.flatten(clock())
         return {"kill": True, "exits_queued": True}
 
     @app.post("/api/control/reset", dependencies=[Depends(authorized)])
@@ -207,5 +242,28 @@ def create_app(
         except ValueError as exc:
             raise HTTPException(409, str(exc)) from None
         return {"kill": False}
+
+    @app.get("/api/paper/automation", dependencies=[Depends(authorized)])
+    def automation_status() -> dict[str, Any]:
+        with engine.lock:
+            return automation.status(clock()) if automation else {"enabled": False, "armed": False}
+
+    @app.post("/api/paper/automation/arm", dependencies=[Depends(authorized)])
+    def arm() -> dict[str, Any]:
+        if not automation:
+            raise HTTPException(409, "paper automation is not configured")
+        try:
+            with engine.lock:
+                return automation.arm(clock())
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)) from None
+
+    @app.post("/api/paper/automation/disarm", dependencies=[Depends(authorized)])
+    def disarm() -> dict[str, Any]:
+        if not automation:
+            raise HTTPException(409, "paper automation is not configured")
+        with engine.lock:
+            automation.disarm(clock())
+            return automation.status(clock())
 
     return app

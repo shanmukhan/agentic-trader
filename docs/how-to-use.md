@@ -2,8 +2,9 @@
 
 ## 1. Scope and prerequisites
 
-This release implements Phases 1–3: virtual execution/risk controls, predeclared
-rule hypotheses, isolated quote-driven backtests and chronological ML research.
+This release implements Phases 1–4 engineering: virtual execution/risk controls,
+predeclared rules, isolated backtests, chronological ML research and opt-in
+supervised feed automation.
 It does not choose an investment universe, produce investment recommendations or
 execute live trades. Sample trades are synthetic. Read
 [risk-policy.md](risk-policy.md) before submitting paper intents.
@@ -317,5 +318,31 @@ For reviewed datasets, use `ml-build`, then `ml-train --training config/ml.toml`
 then `backtest --model` on data starting after validation plus embargo. Preserve the
 sample audit, model/validation manifests, hypotheses and failed results. Real research
 defaults require at least ninety sessions plus sufficient examples in every block.
-No command deploys a model to `serve`; the service still rejects ML-dependent intents
-without a configured model and requires operator-supplied paper intents.
+Default manual services still reject ML-dependent intents without a model.
+Version 0.4.0 additionally supports dedicated supervised accounts as described below.
+
+## 16. Phase 4 supervised paper feed
+
+```sh
+trading-agent paper-demo --directory data/paper-first
+```
+
+This runs credential-free synthetic partial-fill, disconnect, silent-feed and
+unclean-restart drills. It leaves the service account untouched and retains separate
+ledgers/evidence reports. Read [paper-feed.md](paper-feed.md) for the detailed connected
+setup. Use a new dedicated account config with reviewed tokens/calendar and a private
+operator token, then select exactly one policy:
+
+```sh
+trading-agent --config config/paper-session.toml paper-init --rule-only
+trading-agent --config config/paper-session.toml serve --stream --automate --rule-only
+```
+
+Use `--model data/reviewed-model` in both commands instead of `--rule-only` for an
+approved non-synthetic model matching the selected economic/strategy policy. The
+service starts disarmed and requires authenticated arming after current-session
+history and every selected quote are ready. Disconnect/staleness/restart never
+automatically rearm. Manual entry intents are disabled on dedicated automated accounts.
+Stop the service, then use `paper-report --output NEW_PATH` with the same config for
+integrity/reconciliation and source-preserving operational evidence. Real broker,
+fill-model and target-device acceptance remain unverified; execution stays virtual.

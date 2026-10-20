@@ -2,8 +2,9 @@
 
 Version 0.3.0 adds an offline logistic model, separate sigmoid calibration,
 purged walk-forward evaluation, a final holdout, and scored portfolio replays.
-All capital is virtual. The connected service still accepts operator intents;
-it has no automatic model or rule deployment command. `ready_for_live` is always false.
+All capital is virtual. This guide covers offline research; the opt-in Phase 4
+[supervised paper service](paper-feed.md) can attach approved non-synthetic models
+to dedicated accounts. `ready_for_live` is always false.
 
 ## Install and run the complete example
 
@@ -240,7 +241,7 @@ code, configuration and artifacts. Keep incomplete/failed experiments for diagno
 Training requires the optional `ml` extra (NumPy/scikit-learn). Inference imports
 neither, uses twelve-feature Python math, and does no disk/network work per score.
 The Pi setup installs only broker/runtime dependencies. Train on a separate machine;
-model integration with the connected service is deferred to Phase 4 paper validation.
+use the Phase 4 guide for supervised integration and its remaining empirical checks.
 
 ```sh
 pytest tests/ml tests/functional/test_ml_commands.py

@@ -97,6 +97,7 @@ class RuleStrategy:
         quote: Quote | None,
         instrument: Instrument,
         connected: bool,
+        entries_enabled: bool = True,
     ) -> Evaluation:
         now = utc(now)
         end = candle.start + timedelta(minutes=5)
@@ -168,6 +169,8 @@ class RuleStrategy:
             reasons.append("STALE_SESSION")
         if not connected:
             reasons.append("FEED_DISCONNECTED")
+        if not entries_enabled:
+            reasons.append("ENTRIES_DISABLED")
         usable_quote = quote is not None and all(
             0 <= (now - t).total_seconds() <= s.max_data_age_seconds
             for t in (quote.exchange_time, quote.received_time)

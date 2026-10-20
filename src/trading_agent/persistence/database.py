@@ -86,6 +86,10 @@ class Database:
             raise RuntimeError("unsupported database schema")
         if version == 0:
             self.connection.executescript("BEGIN IMMEDIATE;" + SCHEMA + "COMMIT;")
+        # Compatible additive index: runtime candidate lookups must not scan quote history.
+        self.connection.execute(
+            "CREATE INDEX IF NOT EXISTS events_kind_time ON events(kind,time,seq)"
+        )
         with self.transaction() as tx:
             defaults = {
                 "cash": str(starting_cash),

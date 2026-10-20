@@ -8,7 +8,7 @@ import platform
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from trading_agent.broker.readonly_kite import (
     QuoteStream,
@@ -25,6 +25,12 @@ from trading_agent.observability.logging import configure_logging
 from trading_agent.persistence.database import Database
 from trading_agent.replay import demo, run_events
 from trading_agent.settings import Settings
+
+if TYPE_CHECKING:
+    from trading_agent.ml.inference import ResearchModel
+    from trading_agent.paper.config import FeedSettings
+    from trading_agent.paper.runtime import PaperFeed
+    from trading_agent.strategy.rules import StrategySettings
 
 
 def clock() -> datetime:
@@ -63,6 +69,30 @@ def parser() -> argparse.ArgumentParser:
     serve.add_argument(
         "--stream", action="store_true", help="enable authenticated read-only Kite feed"
     )
+    serve.add_argument(
+        "--automate", action="store_true", help="supervised PAPER automation; starts disarmed"
+    )
+    serve.add_argument(
+        "--rule-only", action="store_true", help="explicit paper rule baseline without ML"
+    )
+    serve.add_argument("--strategy", type=Path, default=Path("config/strategy.toml"))
+    serve.add_argument("--model", type=Path, help="non-synthetic approved JSON model")
+    serve.add_argument("--feed-policy", type=Path, default=Path("config/paper-feed.toml"))
+    paper_init = commands.add_parser(
+        "paper-init", help="new dedicated account and reviewed read-only catalog"
+    )
+    paper_init.add_argument("--rule-only", action="store_true")
+    paper_init.add_argument("--model", type=Path)
+    paper_init.add_argument("--strategy", type=Path, default=Path("config/strategy.toml"))
+    paper_init.add_argument("--feed-policy", type=Path, default=Path("config/paper-feed.toml"))
+    paper_demo = commands.add_parser(
+        "paper-demo", help="synthetic supervised feed and outage/restart drills"
+    )
+    paper_demo.add_argument("--directory", type=Path, default=Path("data/paper-demo"))
+    paper_evidence = commands.add_parser(
+        "paper-report", help="source-preserving operations evidence"
+    )
+    paper_evidence.add_argument("--output", type=Path, required=True)
     backup = commands.add_parser("backup")
     backup.add_argument("destination", type=Path)
     simulation = commands.add_parser("demo")
@@ -128,6 +158,59 @@ def execute(args: argparse.Namespace) -> Any:
         }
     # Validate mode even for demonstrations and broker-only commands.
     settings = Settings.load(args.config)
+    if args.command == "paper-init":
+        strategy, feed_policy, model = paper_options(settings, args)
+        if settings.database.exists() or not settings.stream_tokens:
+            raise ValueError("paper-init requires a new database and reviewed stream tokens")
+        broker = ReadOnlyKite.from_environment()
+        broker.get_profile()
+        catalog = [
+            item for item in broker.get_instruments() if item.token in settings.stream_tokens
+        ]
+        if len(catalog) != len(settings.stream_tokens):
+            raise ValueError("reviewed tokens are missing from the current equity catalog")
+        settings.database.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+        fd = os.open(settings.database, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+        os.close(fd)
+        source = Database(settings.database, settings.starting_cash)
+        try:
+            with source.transaction() as tx:
+                for item in catalog:
+                    tx.execute(
+                        "INSERT INTO instruments VALUES (?,?,?)",
+                        (item.symbol, item.token, str(item.tick_size)),
+                    )
+        finally:
+            source.close()
+        db, engine, runtime = attach_automation(settings, strategy, feed_policy, model)
+        try:
+            runtime.close(clock())
+            return {
+                "database": str(settings.database),
+                "catalog_count": len(catalog),
+                "automation_sha256": runtime.digest,
+                "model_sha256": model.version if model else None,
+                "armed": False,
+                "cash": engine.snapshot(clock())["cash"],
+                "mode": "paper",
+            }
+        finally:
+            db.close()
+    if args.command == "paper-demo":
+        from trading_agent.paper.demo import run_paper_demo
+
+        return run_paper_demo(args.directory)
+    if args.command == "paper-report":
+        from trading_agent.paper.report import paper_report
+
+        if not settings.database.is_file():
+            raise ValueError("paper report requires an existing account")
+        source = Database(settings.database, settings.starting_cash)
+        try:
+            report = paper_report(source, args.output)
+            return {"output": str(args.output), "gates": report["gates"], "ready_for_live": False}
+        finally:
+            source.close()
     if args.command == "ml-build":
         from trading_agent.backtesting.dataset import Dataset
         from trading_agent.ml.labeling import build_samples
@@ -242,7 +325,13 @@ def execute(args: argparse.Namespace) -> Any:
         return {"session_file": str(args.output), "next": "source file; restart stream worker"}
     if args.command == "profile":
         return ReadOnlyKite.from_environment().get_profile()
-    db, engine = open_engine(settings)
+    automation = None
+    if args.command == "serve" and args.automate:
+        db, engine, automation = open_automated(settings, args)
+    else:
+        if args.command == "serve" and (args.rule_only or args.model):
+            raise ValueError("automation options require --automate")
+        db, engine = open_engine(settings)
     try:
         if args.command == "init-db":
             return {
@@ -295,9 +384,10 @@ def execute(args: argparse.Namespace) -> Any:
             from trading_agent.api.app import create_app
 
             configure_logging()
-            stream = None
+            stream: Any = None
             if args.stream:
-                ReadOnlyKite.from_environment().get_profile()
+                broker = ReadOnlyKite.from_environment()
+                broker.get_profile()
                 with db.transaction() as tx:
                     catalog = [
                         Instrument(symbol=r["symbol"], token=r["token"], tick_size=r["tick"])
@@ -326,8 +416,13 @@ def execute(args: argparse.Namespace) -> Any:
                             builder.active.clear()
                             builder.previous.clear()
 
-                stream = QuoteStream(catalog, ingest, connection_changed, clock)
-            app = create_app(engine, stream=stream)
+                if automation:
+                    from trading_agent.paper.service import PaperService
+
+                    stream = PaperService(automation, broker, clock)
+                else:
+                    stream = QuoteStream(catalog, ingest, connection_changed, clock)
+            app = create_app(engine, stream=stream, automation=automation)
             uvicorn.run(
                 app,
                 host=settings.host,
@@ -341,6 +436,77 @@ def execute(args: argparse.Namespace) -> Any:
         raise ValueError("unknown command")
     finally:
         db.close()
+
+
+def paper_options(
+    settings: Settings, args: argparse.Namespace
+) -> "tuple[StrategySettings, FeedSettings, ResearchModel | None]":
+    from trading_agent.execution.costs import Charges
+    from trading_agent.ml.inference import load_model
+    from trading_agent.paper.config import FeedSettings
+    from trading_agent.risk.policy import policy_fingerprint
+    from trading_agent.strategy.rules import StrategySettings
+
+    if (
+        args.command == "serve" and not args.stream
+    ) or not settings.operator_token.get_secret_value():
+        raise ValueError("paper automation requires --stream and an operator token")
+    if args.rule_only == bool(args.model):
+        raise ValueError("select exactly one of --rule-only or --model")
+    strategy, feed_policy = (
+        StrategySettings.load(args.strategy),
+        FeedSettings.load(args.feed_policy),
+    )
+    model = (
+        load_model(
+            args.model,
+            strategy_sha256=strategy.digest(),
+            policy_sha256=policy_fingerprint(settings),
+            charges_version=Charges().version,
+        )
+        if args.model
+        else None
+    )
+    return strategy, feed_policy, model
+
+
+def open_automated(
+    settings: Settings, args: argparse.Namespace
+) -> "tuple[Database, PaperBroker, PaperFeed]":
+    return attach_automation(settings, *paper_options(settings, args))
+
+
+def attach_automation(
+    settings: Settings,
+    strategy: "StrategySettings",
+    feed_policy: "FeedSettings",
+    model: "ResearchModel | None",
+) -> "tuple[Database, PaperBroker, PaperFeed]":
+    from trading_agent.paper.config import feed_identity
+    from trading_agent.paper.runtime import PaperFeed
+
+    calendar = SessionCalendar.load(settings.calendar)
+    db = Database(settings.database, settings.starting_cash)
+    try:
+        with db.transaction() as tx:
+            catalog = [
+                Instrument(symbol=row["symbol"], token=row["token"], tick_size=row["tick"])
+                for row in tx.execute("SELECT * FROM instruments ORDER BY symbol")
+                if row["token"] in settings.stream_tokens
+            ]
+        if not catalog or len(catalog) != len(settings.stream_tokens):
+            raise ValueError("automation requires a reviewed registered stream catalog")
+        _, signature = feed_identity(
+            catalog, strategy, feed_policy, model.version if model else None, False
+        )
+        engine = PaperBroker(db, settings, calendar, model=model, automation=signature)
+        runtime = PaperFeed(
+            engine, instruments=catalog, strategy=strategy, settings=feed_policy, now=clock()
+        )
+        return db, engine, runtime
+    except BaseException:
+        db.close()
+        raise
 
 
 def main() -> None:
