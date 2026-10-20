@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-{{SCRIPT_HASH}}'; style-src 'sha256-{{STYLE_HASH}}'; base-uri 'none'; form-action 'none'">
+<title>Daily research · Evidence before decisions</title>
+<style>{{STYLE}}</style>
+</head>
+<body>
+<main>
+<header>
+<span class="eyebrow">Offline long-term research</span>
+<h1>Understand the daily evidence</h1>
+<p class="muted" id="provenance">
+</p>
+<p>Analysis clock: <strong id="as-of">
+</strong>
+<br>Latest declared completed session: <strong id="latest">
+</strong>
+</p>
+<p class="notice">A research screen is not an order, return forecast or strategy backtest. Daily candles do not establish executable fills. No account, broker or network connection is used.</p>
+</header>
+<section class="cards" aria-label="Research overview">
+<article class="card">
+<span>Research candidates</span>
+<strong id="candidate-count">—</strong>
+<p class="muted">Pass the declared screening rules; further validation is required.</p>
+</article>
+<article class="card">
+<span>Symbols assessed</span>
+<strong id="symbol-count">—</strong>
+<p class="muted">Includes exclusions from the point-in-time universe.</p>
+</article>
+<article class="card">
+<span>Symbols needing data</span>
+<strong id="coverage-count">—</strong>
+<p class="muted">Missing, late or insufficient history is never replaced by invented prices.</p>
+</article>
+</section>
+<section class="panel" aria-labelledby="results-heading">
+<h2 id="results-heading">Screening results and reasons</h2>
+<p>Metrics use completed information available by the analysis clock. Gaps or universe re-entry restart the history window. Display values round to two decimals; report.json retains full precision.</p>
+<div class="toolbar">
+<label>Find a symbol<input id="search" type="search" placeholder="NSE:SYMBOL" autocomplete="off">
+</label>
+<label>Show status<select id="status">
+<option value="all">All statuses</option>
+<option value="research_candidate">Research candidates</option>
+<option value="needs_data">Needs data</option>
+<option value="screened_out">Screened out</option>
+<option value="outside_universe">Outside universe</option>
+</select>
+</label>
+<label>Sort results<select id="sort">
+<option value="rank">Research rank, then symbol</option>
+<option value="symbol">Symbol A–Z</option>
+</select>
+</label>
+<button id="clear" type="button">Clear filters</button>
+</div>
+<p id="result-count" role="status" aria-live="polite">
+</p>
+<div class="scroll" role="region" aria-label="Daily screening results, scroll horizontally on small screens" tabindex="0">
+<table>
+<thead>
+<tr>
+<th scope="col">Symbol / rank</th>
+<th scope="col">Assessment and reason</th>
+<th scope="col">Trailing total return</th>
+<th scope="col">Daily volatility</th>
+<th scope="col">Average turnover</th>
+<th scope="col">Latest session / coverage</th>
+</tr>
+</thead>
+<tbody id="rows">
+</tbody>
+</table>
+</div>
+<p id="empty" class="empty" hidden>
+</p>
+</section>
+<section class="panel">
+<h2>Read the metrics correctly</h2>
+<dl>
+<div>
+<dt>Trailing total return</dt>
+<dd>Gross compounded change over the policy's momentum window, including reviewed share factors and cash distributions. The analytical index assumes reinvestment at the same close, ignoring payment delays, costs and tax. It is historical, not a return forecast.</dd>
+</div>
+<div>
+<dt>Trend and rank</dt>
+<dd>A positive trailing return and index above its trailing mean pass the trend rules. Eligible candidates rank by return with deterministic symbol ties.</dd>
+</div>
+<div>
+<dt>Daily volatility</dt>
+<dd>Population standard deviation of observed daily gross returns over the momentum window. This is not a promised risk or maximum-loss bound.</dd>
+</div>
+<div>
+<dt>Turnover</dt>
+<dd>Mean raw close multiplied by volume. This proxy does not prove executable depth or available liquidity.</dd>
+</div>
+</dl>
+<details>
+<summary>Policy, source and data quality</summary>
+<h3>Fixed research policy</h3>
+<pre id="policy">
+</pre>
+<h3>Declared source</h3>
+<p id="source">
+</p>
+<p id="source-notes">
+</p>
+<h3>Coverage diagnostics</h3>
+<pre id="quality">
+</pre>
+</details>
+<details>
+<summary>Limitations and next steps</summary>
+<ul id="limits">
+</ul>
+<p>Review the source, universe and corporate-action basis. Next research steps require actual later quotes, realistic costs, chronological validation and retained unfavorable outcomes. Screening alone cannot approve automation.</p>
+</details>
+</section>
+<noscript>
+<p class="notice">Enable local JavaScript to inspect this report, or open report.json/report.md. No remote scripts are required.</p>
+</noscript>
+<footer>Private self-contained report · Keyboard and mobile browser layout · No live refresh or trading controls · Detailed schemas and usage: docs/daily-research.md</footer>
+</main>
+<script id="report-data" type="application/json">{{DATA}}</script>
+<script>{{SCRIPT}}</script>
+</body>
+</html>

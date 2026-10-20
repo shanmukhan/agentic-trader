@@ -257,3 +257,20 @@ fraction basis; investment income remains outside trade metrics.
 includes known receivables in equity and treats unknown fractions as stale. It pins
 used action sessions before restart cancellation and retains holding exit identity.
 See [corporate-actions.md](corporate-actions.md) for operational and modeling limits.
+
+## LT3a research boundary and dashboard (0.7.0)
+
+`daily_research/dataset.py` validates bounded manifest/streaming JSONL, historical
+membership clocks, raw OHLC and explicit period-benefit/price-basis availability.
+`analysis.py` uses bounded deques/rolling sums per symbol and binary-search membership
+lookup. It resets gaps/re-entry, ranks only qualifying complete observations and
+retains missing/excluded states. Analysis is outside the connected feed and never
+constructs Database/PaperBroker. Source mutation checks precede a final evidence
+manifest. Python code hashes identify logic; artifact hashes include the generated UI.
+
+`dashboard.py` packages local HTML/CSS/JS into a self-contained report with hash CSP,
+escaped JSON and text-only rendering. It exposes filter/sort/clear, provenance,
+metric definitions, actionable incomplete states and keyboard/mobile layout. No
+network or live-control surface is present. The analytical gross total-return index
+assumes same-close reinvestment; it is not paper account accounting or execution.
+See [daily-research.md](daily-research.md).

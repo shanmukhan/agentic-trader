@@ -413,3 +413,28 @@ now use schema 2 and disclose income, receivables and fractional claims separate
 The standing documentation requirement is recorded in [AGENTS.md](../AGENTS.md):
 every added feature or changed workflow must update this guide and its detailed
 component guide as part of the same implementation.
+
+## 20. Daily research and the offline dashboard (LT3a)
+
+```sh
+trading-agent daily-research-demo --directory data/daily-research-first
+trading-agent daily-analyze /absolute/path/reviewed-daily-bundle \
+  --as-of 2026-10-20T16:00:00+05:30 --policy config/daily-research.toml \
+  --output data/daily-research-reviewed-first
+```
+
+Open the output's `index.html` in a browser. It is a private self-contained research
+dashboard, with provenance/as-of clock, summary cards, symbol/status filters,
+sorting, reasons, metric explanations and data-quality/empty states. No server,
+token, account or network connection is required. JSON/Markdown evidence and a final
+hash manifest accompany it. Displayed analytical values round to two decimals;
+raw Decimal strings remain in JSON. No order or execution return is produced.
+
+Read [daily-research.md](daily-research.md) for full manifest/JSONL schemas, historical
+universe events, raw prices, explicit split/distribution units, availability clocks,
+gap handling, policy rules, failed-output recovery and benchmark boundaries. The
+gross analytical index assumes same-close reinvestment, excluding costs, tax and
+payment delays; it does not represent the LT2 ledger's actual paper cash behavior.
+Daily quote-executed strategy validation, long-term ML and lot/SIP/rebalance/capital
+coordination remain later stages. Keep unfavorable research artifacts and never use
+the invented demo calendar/prices as actual market evidence.

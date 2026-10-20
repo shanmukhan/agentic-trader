@@ -1,0 +1,15 @@
+{
+  "samples": 30,
+  "python": "3.13.16",
+  "platform": "macOS-27.0-arm64-arm-64bit-Mach-O",
+  "sessions": 90,
+  "symbols": 6,
+  "bars": 538,
+  "p50_ms": 8.00325,
+  "p95_ms": 15.210458,
+  "p99_ms": 20.406875,
+  "max_ms": 20.406875,
+  "candidate_count": 1,
+  "includes": "loading, strict validation, universe/basis, ranking, input/Python hashes",
+  "excludes": "input creation, HTML writing, network/history, execution and actual Pi"
+}

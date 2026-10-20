@@ -172,3 +172,20 @@ Offline action/receipt review and startup reconciliation may scan history; they 
 not run inside quote callbacks. Snapshots read two atomic primary-key caches for
 known receivable/unknown-fraction count. A SQL-trace test verifies that snapshot
 polling does not scan financial/event/action history. Durability was not relaxed.
+
+## LT3a end-to-end daily screen (0.7.0)
+
+[Captured Mac measurement](benchmark-daily-research-macos.json): thirty runs of
+538 bars, six symbols and ninety declared sessions; p50 **8.0033 ms**, p95
+**15.2105 ms**, maximum/p99 **20.4069 ms**. Includes loading, strict validation,
+universe/basis checks, rolling calculations/ranking and input/Python hashes. Excludes
+fixture creation, HTML writing, network/history, execution and actual Pi. The small
+fixture is not a large-universe or connected-feed latency guarantee.
+
+```sh
+.venv/bin/python scripts/benchmark_daily.py --samples 30
+```
+
+The engine streams bars with bounded per-symbol rolling state and binary-search
+membership checks. It runs outside the connected quote process. Its gross analytical
+returns are descriptive and have no execution authority.

@@ -1,10 +1,10 @@
 # Zerodha AI Equity Trading Agent — intraday and long-term paper accounts
 
-**Project specification:** v1.7
+**Project specification:** v1.8
 
 **Prepared:** 20 October 2026
 
-**Status:** Intraday Phases 1–4 and supported long-term LT1–LT2 paper engineering delivered; empirical acceptance and later long-term/live milestones pending
+**Status:** Intraday Phases 1–4, supported LT1–LT2 paper engineering and LT3a daily research delivered; empirical acceptance and remaining long-term/live milestones pending
 
 **Safety:** Paper only. No live trading, real orders or funds transfers in the implemented phases.
 
@@ -491,3 +491,16 @@ constant-size quote-path caches, adjusted holding protections and retained exit
 intent extend recovery, reporting and tests. No old quote or actual payment is
 invented. Usage/component documentation must change with features/workflows;
 the user's standing instruction is recorded in [AGENTS.md](AGENTS.md).
+
+## 18. Daily research foundation — LT3a, version 0.7.0
+
+The [daily research guide](docs/daily-research.md) defines reviewed raw completed
+bars, explicit share/distribution period benefits, availability clocks and historical
+universe transitions. Streaming causal screening uses consecutive data, resets after
+gaps/re-entry and exposes all exclusions/data failures. An analytical total-return
+index assumes same-close distribution reinvestment before costs/taxes/settlement;
+it does not simulate account cash or executable fills. The self-contained private
+dashboard explains provenance, metrics, reasons, filters and incomplete states.
+Source/code hashes, mutation checks and unit/functional/UI tests support reproducible
+review. LT3b quote-executed daily strategies/chronological ML and LT3c lot/SIP/rebalance/
+combined capital mechanics remain open. No research result authorizes automation.

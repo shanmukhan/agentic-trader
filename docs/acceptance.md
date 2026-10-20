@@ -150,3 +150,14 @@ credit/payment dates, reviewed net deductions and custody/receipt reconciliation
 Test unsupported/fractional combinations by leaving quarantine unresolved. LT2
 supports only the documented paper action subset and does not satisfy LT3 strategy
 or LT4 custody/device/feed gates. See [corporate-actions.md](corporate-actions.md).
+
+## LT3a daily data/screen acceptance (0.7.0)
+
+Local software acceptance covers future-prefix feature invariance, late basis/price
+exclusion, historical universe removal/re-entry, missing-session reset, neutral
+split/dividend wealth math, malformed/ambiguous input and unchanged-source evidence.
+The six-symbol ninety-session demo includes qualifying, unfavorable, thin, missing,
+re-entry and excluded examples. It does not establish empirical strategy/model
+performance. Actual source/calendar completeness, point-in-time notices, benefit
+units and receipt clocks require external review; future quote-executed daily
+strategies/ML and actual device/browser checks remain pending.

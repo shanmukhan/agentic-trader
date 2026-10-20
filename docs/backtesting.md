@@ -238,3 +238,14 @@ adjusted candles or total-return research data. Existing intraday backtests/ML r
 intraday-only and cannot consume a long-term account as a validated daily dataset.
 LT3 must establish completed daily availability, point-in-time membership and causal
 price/total-return treatment first. See [corporate-actions.md](corporate-actions.md).
+
+## LT3a completed daily screening (0.7.0)
+
+The daily data/point-in-time universe foundation is now implemented separately from
+intraday backtests. `daily-analyze` uses explicit period benefits and availability,
+resets gaps/re-entry and generates descriptive research candidates with a dashboard.
+It does not infer OHLC execution or report strategy P&L. Gross analytical total
+returns assume same-close reinvestment before costs/tax/payment delays. LT3b still
+requires later actual quote execution and chronological strategy/model validation;
+LT2 ledger adjustments do not automatically create a daily bundle. Full schema,
+units and workflow: [daily-research.md](daily-research.md).

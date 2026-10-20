@@ -1,0 +1,17 @@
+
+:root{color-scheme:light;--ink:#142d38;--muted:#49616b;--line:#cbd8de;--accent:#086558}
+*{box-sizing:border-box}body{margin:0;background:#f3f7f8;color:var(--ink);font:16px/1.6 system-ui,sans-serif}
+main{max-width:1160px;margin:auto;padding:36px 24px}h1{font-size:clamp(1.8rem,5vw,2.7rem);line-height:1.2;margin:12px 0}
+h2{font-size:1.15rem}p{max-width:85ch}.eyebrow{font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);font-weight:700}
+.muted,small{color:var(--muted)}.notice{background:#fff5d6;border-left:4px solid #b47800;padding:16px 20px;border-radius:6px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px;margin:24px 0}
+.card,.panel{background:white;border:1px solid var(--line);border-radius:12px;padding:22px}
+.card strong{display:block;font-size:1.8rem}.card p{margin:6px 0 0}.toolbar{display:flex;flex-wrap:wrap;gap:16px;align-items:end;margin:16px 0}
+label{display:grid;gap:6px;font-weight:600}input,select,button{font:inherit;border:1px solid #829ba6;background:white;border-radius:6px;min-height:44px;padding:8px 12px;color:var(--ink)}
+button{cursor:pointer;color:var(--accent)}:focus-visible{outline:3px solid #1177c5;outline-offset:3px}.scroll{overflow:auto;border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;min-width:940px;width:100%;font-variant-numeric:tabular-nums}th,td{text-align:left;padding:14px 16px;border-bottom:1px solid var(--line);vertical-align:top}
+th{background:#edf4f5;font-size:.85rem}td small{display:block;max-width:34ch}.badge{display:inline-block;border:1px solid currentColor;border-radius:99px;padding:2px 9px;font-size:.8rem;white-space:nowrap}
+details{margin-top:20px}summary{cursor:pointer;min-height:44px;display:list-item;padding:10px 0;font-weight:600}.empty{padding:24px;background:#edf4f5}
+footer{margin:24px 0;color:var(--muted);font-size:.85rem}code{overflow-wrap:anywhere}dl{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px}dt{font-weight:700}dd{margin:4px 0 0;color:var(--muted)}
+@media(max-width:600px){main{padding:24px 16px}.panel,.card{padding:16px}.toolbar{display:grid;grid-template-columns:1fr}.toolbar label{width:100%}.cards{grid-template-columns:1fr}.scroll{max-height:65vh}}
+@media print{.toolbar{display:none}.scroll{overflow:visible}table{min-width:0}main{max-width:none;padding:0}body{background:white}}

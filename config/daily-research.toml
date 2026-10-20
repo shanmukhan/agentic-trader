@@ -1,0 +1,5 @@
+# Fixed research screen, not an optimized/validated investment strategy.
+momentum_sessions = 20
+trend_sessions = 50
+min_average_turnover = "10000000"
+max_daily_volatility_pct = "5"

@@ -168,3 +168,16 @@ Keep reviews, input files and reports private and free of credentials/account ID
 Old versions cannot be used on an LT2 account; preserve backups and use this release
 or later. These features do not synchronize demat/bank state or authorize live use.
 See [corporate-actions.md](corporate-actions.md).
+
+## LT3a offline input/report surface (0.7.0)
+
+Daily analysis adds no account/HTTP/network authority. Bounded regular nonsymlinked
+manifest/JSONL input rejects duplicate keys, extra fields, invalid OHLC, unknown or
+unordered rows, future use and late membership knowledge. Prices remain raw with
+explicit reviewed period-benefit units. Hash/mutation checks protect reproducibility,
+not source truth or malicious filesystem-owner rewrites. Metadata asserting real
+provenance is not independently verified. Generated JSON escapes HTML delimiters;
+UI rendering uses text nodes, restrictive hash CSP and no fetch/storage/eval sink.
+Outputs are private, fsynced and completed with a final hash manifest. Research can
+be misleading if the operator omits calendar/universe/corporate-action evidence;
+those assumptions and lack of execution/model approval remain visible in the report.

@@ -190,3 +190,13 @@ Dividend income is separate from capital realized P&L. Fraction proceeds less it
 basis join capital P&L; payment does not incur another trade/DP fee. Entitlements
 persist after whole-share sale. Receipt processing time books cash; no historical
 daily marks are rewritten. Unreviewed/unsupported actions remain quarantined.
+
+## LT3a screening has no execution authority (0.7.0)
+
+Daily screens apply fixed descriptive momentum/trend/liquidity/volatility thresholds
+to completed point-in-time data. They neither choose executable quantities nor
+change account policy, reservations or risk gates. The gross index assumes same-close
+reinvestment before taxes/costs/payment delay; paper cash/claims remain governed by
+LT2. Missing/late/unreviewed inputs and universe re-entry cannot be forward-filled
+into a candidate. Further quote-executed research/ML and portfolio mechanics require
+separate validation. See [daily-research.md](daily-research.md).

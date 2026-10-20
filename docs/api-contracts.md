@@ -238,3 +238,16 @@ excludes them. Unknown fractional claims make `valuation_fresh` false. Account
 `long-term-report` schema 2 adds complete batches/claims, quarantine hashes, received
 income and fractional realized P&L. The hash-manifest format remains schema 1.
 `corporate-actions-demo --directory NEW` produces only invented isolated evidence.
+
+## LT3a offline daily research (0.7.0)
+
+`daily-research-demo --directory NEW` creates an invented dataset and report.
+`daily-analyze DATASET --as-of AWARE_TIMESTAMP --policy TOML --output NEW` validates
+and screens reviewed completed raw daily bars. Neither opens the configured account
+or calls a broker. Input manifest/JSONL schema 1, fixed policy and all availability/
+universe/benefit units are specified in [daily-research.md](daily-research.md).
+Strict bounded input and new output outside the source are required. Invalid input
+or naive clocks fail without a finished manifest. Report schema 1 includes rows,
+statuses/reasons, candidate ranks, policy, source/code hashes and coverage. Live,
+execution and model-validation flags are always false. Its interactive `index.html`
+is an offline file; no route/auth/trading contract changed.

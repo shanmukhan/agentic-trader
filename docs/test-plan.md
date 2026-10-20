@@ -230,3 +230,17 @@ and updated quarantine confirmation. The direct and CLI invented lifecycle verif
 The populated unpaid-dividend benchmark records p99 **0.2564 ms** on this Mac;
 network, callback contention and actual Pi/mobile/custody acceptance remain excluded.
 See [corporate-actions.md](corporate-actions.md) and the change log for final checks.
+
+## LT3a daily research validation (0.7.0)
+
+Current combined result: **420 Python tests and 23 JavaScript tests**, **92% Python
+coverage**. Daily analysis **97%**, input validation **93%**, report renderer/demo
+**100%**. Thirty-three new Python cases include strict clocks/OHLC/ratios/volume/input
+bounds, future-prefix invariance, split/dividend gross wealth, late price/basis,
+universe removal/re-entry, gaps, missing/latest/empty states, source mutation,
+private hashed artifacts, symlink rejection and isolated CLI behavior. Four new
+JavaScript cases cover explanatory rendering, safe text, filter/sort/clear/focus,
+empty states and large-value display. CI executes all UI tests, daily demo and benchmark.
+
+Actual browser pixel/handset acceptance is pending computer-use permissions. The
+synthetic screen is not a daily fill/backtest/model validation or real-market result.

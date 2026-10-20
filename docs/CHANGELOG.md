@@ -1,5 +1,52 @@
 # Change log
 
+## 2026-10-21 — LT3a daily research and explanatory dashboard (0.7.0)
+
+Continued after LT2 into the next dependency of the long-term roadmap. Added
+`daily-research-demo` and `daily-analyze`, strict bounded raw daily bundles with
+explicit price/basis availability, share factors/distributions in previous-share
+units and point-in-time universe inclusion/exclusion/re-entry. Missing, late or
+excluded data cannot be forward-filled into a candidate; gaps/re-entry reset windows.
+Explicit historical as-of clocks prevent future valid prices/benefits changing
+features/ranks. Membership must be knowable before its effective session opens.
+
+Added streaming Decimal gross-return/trend/volatility/turnover screening with bounded
+rolling state, binary-search membership and deterministic qualified-candidate ranks.
+The gross index assumes same-close distribution reinvestment before costs, tax or
+payment delays; it is not an execution backtest or the LT2 cash ledger. No account,
+broker, trading endpoint, model approval or risk-policy change was added.
+
+Added a self-contained responsive offline research dashboard with provenance/IST
+analysis clock, candidate/data summary cards, searchable/filterable/sortable results,
+plain-language reasons, metric definitions and useful empty/incomplete states.
+Accessible labels, column scopes, keyboard scrolling/focus and touch-sized controls
+support inspection. Untrusted values render as text; escaped embedded JSON and
+hash-bound CSP need no network dependencies. Analytical display rounding is disclosed;
+raw Decimal values remain in JSON. Private report files/source/Python hashes and a
+last-written artifact manifest support reproducible review and mutation detection.
+
+Added an invented six-symbol ninety-session fixture retaining an unfavorable trend,
+illiquidity, missing data, re-entry and historical exclusion beside one candidate.
+Added detailed daily usage and updated main/long-term usage, roadmap/specification,
+API, architecture, research/model, console, risk, operations, threat, acceptance,
+performance and test documentation. LT3b quote-executed daily strategy/ML and LT3c
+portfolio/lot/SIP/rebalance/allocation remain pending; no original live phase advanced.
+
+Validation:
+
+- **420 Python tests and 23 JavaScript tests passed**, **92% Python coverage**.
+  Daily analysis **97%**, strict input **93%**, renderer/demo **100%**. New cases
+  exercise future-prefix invariance, late basis/price, corporate benefit math,
+  membership/gaps, malformed/ambiguous input, source mutation, artifacts and CLI
+  isolation; UI cases verify text safety, filtering/sorting/reset/focus and empty states.
+- Thirty-run 538-bar/six-symbol Mac benchmark: p50 **8.0033 ms**, p95 **15.2105 ms**,
+  maximum/p99 **20.4069 ms**, including loading/validation/analysis/input/Python hashes.
+  Fixture creation, HTML writing, network/history, execution and actual Pi are excluded.
+- Ruff lint/format, mypy, secret-pattern/Markdown-link checks, frozen offline lock,
+  unchanged-dependency audit, wheel/source builds and extracted report assets passed.
+- The offline dashboard is generated for review. Pixel-level browser/handset checks
+  remain blocked by pending computer-use permissions; no visual acceptance is claimed.
+
 ## 2026-10-21 — LT2 reviewed paper corporate actions (0.6.0)
 
 Added exclusive offline `apply-corporate-actions`, `record-corporate-cash` and

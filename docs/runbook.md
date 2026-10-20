@@ -219,3 +219,15 @@ retain failed source/inputs and rebuild a separate corrected paper account. Ther
 is no arbitrary cash correction, reversal or real custody/payment operation. The
 commands' generic failure output protects private input; inspect the reviewed JSON,
 matching config, calendar, ownership and evidence using the detailed guide.
+
+## LT3a daily research operations (0.7.0)
+
+Use a reviewed manifest/JSONL bundle and an explicit aware `--as-of` clock. Keep
+analysis output in a new directory outside the source. No service downtime, account
+ownership, operator token or broker access is needed. Open the generated local
+`index.html`; retain JSON/Markdown and the final hash manifest together. An absent
+finished manifest means incomplete evidence; retain failed outputs and rerun into a
+new directory after correcting inputs. Review calendar age/completeness, historical
+membership, raw/benefit units, availability and all data-gap/excluded rows. Do not
+convert a research rank directly into an order. Input/report references are private;
+sharing the report shares those references. See [daily-research.md](daily-research.md).

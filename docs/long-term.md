@@ -226,8 +226,9 @@ network/history and actual Pi behavior. Reproduce with:
 LT2 now provides reviewed split/bonus/dividend accounting, retained fractional
 claims, separate receipts, atomic idempotency and independent reconstruction. Its
 [detailed guide](corporate-actions.md) defines supported dates/ratios and exclusions.
-LT3 adds completed daily data, total-return-aware research, long-term strategies,
-portfolio allocation/SIP/rebalancing and separately validated ML. LT4 requires actual
+LT3a now adds [completed daily data and causal screening](daily-research.md) with an
+offline explanatory dashboard. LT3b daily quote execution/ML and LT3c portfolio
+allocation/SIP/rebalancing remain pending. LT4 requires actual
 read-only custody/sellable-holdings/settlement reconciliation and supervised evidence.
 Corporate-action quarantine, custody and cash settlement are not automatically solved
 by surviving a restart. Same-day protective virtual exits and immediately credited

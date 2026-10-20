@@ -106,6 +106,17 @@ def parser() -> argparse.ArgumentParser:
     corporate_demo.add_argument(
         "--directory", type=Path, default=Path("data/corporate-actions-demo")
     )
+    daily_demo = commands.add_parser(
+        "daily-research-demo", help="invented causal daily screen and offline dashboard"
+    )
+    daily_demo.add_argument("--directory", type=Path, default=Path("data/daily-research-demo"))
+    daily = commands.add_parser(
+        "daily-analyze", help="offline completed daily research; no account or orders"
+    )
+    daily.add_argument("dataset", type=Path)
+    daily.add_argument("--as-of", required=True, type=datetime.fromisoformat)
+    daily.add_argument("--policy", type=Path, default=Path("config/daily-research.toml"))
+    daily.add_argument("--output", required=True, type=Path)
     long_report = commands.add_parser(
         "long-term-report", help="preserve source delivery account work"
     )
@@ -185,6 +196,17 @@ def execute(args: argparse.Namespace) -> Any:
         }
     # Validate mode even for demonstrations and broker-only commands.
     settings = Settings.load(args.config)
+    if args.command == "daily-research-demo":
+        from trading_agent.daily_research.demo import daily_research_demo
+
+        return daily_research_demo(args.directory)
+    if args.command == "daily-analyze":
+        from trading_agent.daily_research.analysis import DailyPolicy, write_analysis
+        from trading_agent.daily_research.dataset import DailyDataset
+
+        return write_analysis(
+            DailyDataset(args.dataset), DailyPolicy.load(args.policy), args.as_of, args.output
+        )
     if args.command == "corporate-actions-demo":
         from trading_agent.corporate_actions.demo import corporate_actions_demo
 

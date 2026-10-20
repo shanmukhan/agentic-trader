@@ -43,13 +43,13 @@ controls. The [acceptance guide](docs/acceptance.md) covers `preflight --strict`
 private diagnostic evidence and remaining broker/device work. Node 24 is used only
 for JavaScript tests; serving the console needs no Node or frontend build.
 
-Local validation: **387 Python tests and 19 JavaScript tests passed; 92% Python coverage**, with lint/type checks, dependency
+Local validation: **420 Python tests and 23 JavaScript tests passed; 92% Python coverage**, with lint/type checks, dependency
 audit and builds passing. Details are in the change log. Real Kite credentials and
 Raspberry Pi deployment remain unverified.
 
 ```sh
 uv run pytest --cov=trading_agent
-node --test tests/ui/console.test.cjs
+node --test tests/ui/*.test.cjs
 uv run ruff check .
 uv run mypy src/trading_agent
 uv run python scripts/benchmark.py
@@ -70,7 +70,11 @@ commands, limits and remaining milestones. Version 0.6.0 adds LT2 reviewed split
 adjustments, dividend/fraction claims and idempotent cash receipts. Follow the
 [corporate-action usage guide](docs/corporate-actions.md) and try
 `trading-agent corporate-actions-demo --directory data/corporate-actions-first`.
-Daily long-term strategies/ML, SIP/rebalancing and actual custody/settlement are pending.
+Version 0.7.0 adds LT3a completed daily data, point-in-time membership and causal
+screening with a self-contained interactive research dashboard. Read the
+[daily research guide](docs/daily-research.md) and run
+`trading-agent daily-research-demo --directory data/daily-research-first`.
+Quote-executed daily strategies/ML, SIP/rebalancing and actual custody/settlement are pending.
 Each account has its own virtual capital; combined allocation is not implemented.
 Real-feed/target-device acceptance and live execution remain later milestones in
 the [original specification](zerodha_ai_trading_agent_project_spec.md).

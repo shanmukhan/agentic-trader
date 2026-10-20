@@ -1,13 +1,13 @@
 # Implementation plan, enhancements and status
 
-Prepared 20 October 2026. This is the execution record for the original
+Prepared 20 October 2026; updated 21 October 2026. This is the execution record for the original
 [project specification](../zerodha_ai_trading_agent_project_spec.md).
 
 ## Implemented scope
 
 The repository delivers Phases 1–3 infrastructure/research and Phase 4 supervised
-intraday paper-feed engineering plus LT1 long-term paper foundations using the same
-transactional risk/execution mechanics. Rules/models
+intraday paper-feed engineering, LT1–LT2 long-term paper mechanics and LT3a daily
+research foundations. The paper horizons share transactional risk/execution mechanics. Rules/models
 run offline or on explicitly configured dedicated paper accounts. No live adapter, profitability
 or compliance readiness is implied. External account creation, entitlement checks
 and OS service installation require real credentials/hardware and are not fabricated.
@@ -242,11 +242,28 @@ commands, retry/failure behavior and exclusions are in [corporate-actions.md](co
 
 ### Extended long-term roadmap
 
+LT3 is implemented in dependency order: **LT3a delivered in 0.7.0** reviewed completed daily data,
+point-in-time membership and total-return-aware causal screening with an accessible
+offline research dashboard; **LT3b** quote-executed daily strategy research and
+separate chronological ML validation; **LT3c** lot additions/SIP, reviewed rebalance
+proposals and aggregate capital coordination. A daily bar cannot establish an
+executable fill, and screening statistics cannot approve a model or portfolio.
+
+LT3a delivers bounded streaming daily bundles, explicit period-benefit/availability
+evidence, historical inclusion/exclusion/re-entry, consecutive rolling gross-return/
+trend/volatility/turnover screening and deterministic candidate ranks. The private
+offline dashboard explains statuses/metrics, filters/sorts, missing-data/empty states
+and provenance without account/control access. Source/code hashes, mutation checks,
+strict validation, invented adverse/gap/exclusion fixtures and unit/functional/UI
+tests support review. **420 Python + 23 JavaScript tests, 92% coverage**; 538-bar Mac
+analysis p50 **8.0033 ms** including input/validation/hashes. See
+[daily-research.md](daily-research.md) for schemas, assumptions and exclusions.
+
 | Milestone | Required implementation / acceptance | Status |
 |---|---|---|
 | LT1: overnight paper foundations | Lifecycle, delivery costs, reviews, risk, console, evidence and tests | Engineering delivered |
 | LT2: corporate actions and cash/share ledger | Reviewed split/bonus/dividend entitlements and effective/payment dates, integral/fractional handling, atomic idempotency, independent reconstruction and recovery | Supported paper engineering delivered; complex actions/tax lots/custody remain excluded |
-| LT3: daily research and portfolio management | Completed daily price/total-return data, point-in-time universe, causal strategy/ML validation, SIP/lot additions, rebalancing and cross-account allocation | Next long-term code milestone |
+| LT3: daily research and portfolio management | Completed daily price/total-return data, point-in-time universe, causal strategy/ML validation, SIP/lot additions, rebalancing and cross-account allocation | LT3a delivered; LT3b quote-executed daily strategy research is next; LT3c portfolio mechanics pending |
 | LT4: actual read-only holdings and supervised acceptance | Reviewed custody/sellable holdings/settlement reconciliation, calibrated costs/fills and sustained actual device/feed evidence | Pending external access and engineering |
 | Live infrastructure / pilot | Existing separate empirical, compliance, adapter/reconciliation and explicit approval gates | Pending; execution unavailable |
 

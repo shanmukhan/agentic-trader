@@ -262,3 +262,11 @@ features, corporate-action-aware outcomes, holding intervals and portfolio valid
 are required by later LT milestones. Default intraday policy hashes remain unchanged,
 so existing validated intraday artifacts are not silently invalidated by the added
 settings fields. See [long-term.md](long-term.md).
+
+## LT3a inputs are not a validated long-term model (0.7.0)
+
+[Daily research](daily-research.md) now provides completed availability-aware raw
+bars, explicit period benefits, historical membership and a fixed descriptive screen.
+Those outputs are not training labels, a daily execution backtest or model approval.
+LT3b must derive quote-executed outcomes with chronology/purge/calibration/holdout
+checks before long-term ML can be enabled. Existing intraday model guards remain.
