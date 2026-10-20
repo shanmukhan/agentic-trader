@@ -1,0 +1,21 @@
+name: Paper safety checks
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13.16'
+      - run: python -m pip install uv==0.13.3
+      - run: uv sync --frozen --all-extras
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run mypy src/trading_agent
+      - run: uv run pytest --cov=trading_agent --cov-report=term-missing --cov-report=xml
+      - run: uv run python scripts/check_secrets.py
+      - run: uv run pip-audit --skip-editable
+      - run: uv run python scripts/benchmark.py --samples 1000

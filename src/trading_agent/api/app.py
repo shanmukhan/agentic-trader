@@ -1,0 +1,211 @@
+import hmac
+import logging
+import threading
+from collections.abc import AsyncIterator, Callable
+from contextlib import asynccontextmanager
+from datetime import UTC, datetime
+from typing import Annotated, Any
+
+from fastapi import Depends, FastAPI, Header, HTTPException, Request
+from fastapi.responses import HTMLResponse, JSONResponse
+from starlette.middleware.trustedhost import TrustedHostMiddleware
+
+from trading_agent.execution.paper_broker import IntentConflict, PaperBroker
+from trading_agent.models import Candidate
+
+DASHBOARD = """<!doctype html><html lang="en"><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Paper trading operator console</title>
+<style>body{font:16px system-ui;max-width:1000px;margin:3rem auto;padding:1rem;background:#101923;
+color:#e5edf6}button,input{font:inherit;padding:.6rem;margin:.3rem}pre{white-space:pre-wrap;
+background:#1c2938;padding:1rem}small{color:#b1c9df}</style>
+<h1>Paper trading console</h1><p>Virtual money · NSE cash equity · Live execution unavailable</p>
+<p><label>Operator token <input id="token" type="password" autocomplete="off"></label>
+<button id="refresh">Unlock / refresh</button></p>
+<p><button id="kill">Activate kill switch</button><button id="flatten">Queue flatten</button>
+<button id="reset">Reset kill switch</button></p>
+<small>Exits require fresh quotes and liquidity. A queued exit is not a completed fill.
+The token stays in this page's memory; close the page to clear it.</small>
+<p id="message" role="status"></p><h2>Account / risk</h2><pre id="status">Locked</pre>
+<h2>Paper orders</h2><pre id="orders">Locked</pre>
+<script src="/dashboard.js"></script></html>"""
+
+JAVASCRIPT = """let token='';
+async function call(path,method='GET',body){
+ const response=await fetch(path,{method,headers:{Authorization:'Bearer '+token,
+ 'Content-Type':'application/json'},body:body?JSON.stringify(body):undefined,cache:'no-store'});
+ const data=await response.json();
+ if(!response.ok)throw Error(data.detail||'Request failed');return data;
+}
+async function refresh(){try{
+ document.getElementById('status').textContent=JSON.stringify(await call('/api/status'),null,2);
+ const orders=await call('/api/paper/orders');
+ document.getElementById('orders').textContent=JSON.stringify(orders,null,2);
+ document.getElementById('message').textContent='Updated '+new Date().toLocaleTimeString();
+}catch(error){document.getElementById('message').textContent=error.message;}}
+document.getElementById('refresh').onclick=()=>{if(document.getElementById('token').value)
+token=document.getElementById('token').value;
+document.getElementById('token').value='';refresh();};
+for(const name of ['kill','flatten','reset'])document.getElementById(name).onclick=async()=>{
+try{await call('/api/control/'+name,'POST');await refresh();}
+catch(error){document.getElementById('message').textContent=error.message;}};
+setInterval(()=>{if(token)refresh();},3000);
+"""
+
+
+def create_app(
+    engine: PaperBroker,
+    clock: Callable[[], datetime] = lambda: datetime.now(UTC),
+    stream: Any = None,
+    background: bool = True,
+) -> FastAPI:
+    stopped = threading.Event()
+
+    def watchdog() -> None:
+        while not stopped.wait(1):
+            try:
+                if not engine.faulted:
+                    engine.poll(clock())
+            except Exception:
+                engine.faulted = True
+                engine.set_connected(False)
+                logging.getLogger(__name__).error("watchdog failed; entries blocked")
+
+    @asynccontextmanager
+    async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+        worker = threading.Thread(target=watchdog, name="risk-watchdog", daemon=True)
+        if background:
+            worker.start()
+        try:
+            if stream:
+                stream.start()
+            yield
+        finally:
+            stopped.set()
+            if stream:
+                stream.close()
+            if background:
+                worker.join(timeout=5)
+            engine.set_connected(False)
+
+    app = FastAPI(
+        title="Paper operator API",
+        docs_url=None,
+        redoc_url=None,
+        openapi_url=None,
+        lifespan=lifespan,
+    )
+    app.add_middleware(TrustedHostMiddleware, allowed_hosts=["127.0.0.1", "localhost", "[::1]"])
+
+    @app.middleware("http")
+    async def security_headers(request: Request, call_next: Any) -> Any:
+        response = await call_next(request)
+        response.headers["Cache-Control"] = "no-store"
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["Referrer-Policy"] = "no-referrer"
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; script-src 'self'; "
+            "style-src 'unsafe-inline'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'"
+        )
+        return response
+
+    def authorized(request: Request, authorization: Annotated[str | None, Header()] = None) -> None:
+        secret = engine.settings.operator_token.get_secret_value()
+        if not secret:
+            raise HTTPException(503, "operator controls disabled: configure operator token")
+        if not authorization or not hmac.compare_digest(
+            authorization.encode(), ("Bearer " + secret).encode()
+        ):
+            raise HTTPException(401, "operator authentication required")
+        if request.method not in ("GET", "HEAD"):
+            # Bearer authentication and Origin validation protect browser controls.
+            origin = request.headers.get("origin")
+            permitted = {
+                f"http://127.0.0.1:{engine.settings.port}",
+                f"http://localhost:{engine.settings.port}",
+                f"http://[::1]:{engine.settings.port}",
+            }
+            if origin is not None and origin not in permitted:
+                raise HTTPException(403, "cross-origin controls prohibited")
+
+    @app.exception_handler(Exception)
+    async def safe_error(request: Request, exc: Exception) -> JSONResponse:
+        engine.faulted = True
+        engine.set_connected(False)
+        logging.getLogger(__name__).error("operator request failed; entries blocked")
+        return JSONResponse(
+            {"detail": "internal failure; entries blocked; inspect local journal"}, 503
+        )
+
+    @app.get("/", response_class=HTMLResponse)
+    def dashboard() -> str:
+        return DASHBOARD
+
+    @app.get("/dashboard.js")
+    def javascript() -> HTMLResponse:
+        return HTMLResponse(JAVASCRIPT, media_type="application/javascript")
+
+    @app.get("/health")
+    def health() -> dict[str, str]:
+        return {"status": "alive", "mode": "paper"}
+
+    @app.get("/ready")
+    def ready() -> JSONResponse:
+        now = clock()
+        with engine.lock, engine.db.transaction() as tx:
+            snapshot = engine._snapshot(tx, now)
+            quotes = [engine._quote(tx, row[0]) for row in tx.execute("SELECT symbol FROM quotes")]
+            can_enter = bool(quotes) and any(not engine._entry_reasons(tx, q, now) for q in quotes)
+        return JSONResponse(
+            {
+                "ready": can_enter,
+                "mode": "paper",
+                "feed": snapshot["feed_connected"],
+                "kill": snapshot["kill"],
+                "calendar_open": engine.calendar.is_open(now),
+            },
+            200 if can_enter else 503,
+        )
+
+    @app.get("/api/status", dependencies=[Depends(authorized)])
+    def status() -> dict[str, Any]:
+        return engine.snapshot(clock())
+
+    @app.get("/api/paper/orders", dependencies=[Depends(authorized)])
+    def orders() -> list[dict[str, Any]]:
+        return engine.orders()
+
+    @app.post("/api/paper/intents", dependencies=[Depends(authorized)])
+    def submit(candidate: Candidate) -> dict[str, Any]:
+        try:
+            return engine.submit(candidate, clock())
+        except IntentConflict as exc:
+            raise HTTPException(409, str(exc)) from None
+
+    @app.post("/api/paper/orders/{intent}/cancel", dependencies=[Depends(authorized)])
+    def cancel(intent: str) -> dict[str, Any]:
+        try:
+            return engine.cancel(intent, clock())
+        except KeyError:
+            raise HTTPException(404, "unknown paper intent") from None
+
+    @app.post("/api/control/kill", dependencies=[Depends(authorized)])
+    def kill() -> dict[str, bool]:
+        engine.kill(clock())
+        return {"kill": True}
+
+    @app.post("/api/control/flatten", dependencies=[Depends(authorized)])
+    def flatten() -> dict[str, bool]:
+        engine.flatten(clock())
+        return {"kill": True, "exits_queued": True}
+
+    @app.post("/api/control/reset", dependencies=[Depends(authorized)])
+    def reset() -> dict[str, bool]:
+        try:
+            engine.reset_kill(clock())
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)) from None
+        return {"kill": False}
+
+    return app

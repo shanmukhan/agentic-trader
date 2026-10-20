@@ -1,0 +1,22 @@
+mode = "paper"
+database = "data/paper.sqlite3"
+host = "127.0.0.1"
+port = 8000
+starting_cash = "25000.00"
+max_trade_risk = "62.50"
+daily_loss_limit = "250.00"
+max_position_notional = "10000.00"
+max_total_notional = "20000.00"
+max_positions = 2
+max_consecutive_losses = 3
+max_quote_age_seconds = 5
+max_spread_bps = "30"
+slippage_bps = "5"
+latency_ms = 100
+order_ttl_seconds = 30
+entry_start = "09:30"
+entry_end = "14:30"
+flatten_at = "15:15"
+# No dates are assumed to be exchange sessions. Import a reviewed calendar first.
+calendar = "config/sessions.csv"
+stream_tokens = []

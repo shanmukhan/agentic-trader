@@ -1,0 +1,19 @@
+{
+  "platform": "macOS-27.0-arm64-arm-64bit-Mach-O",
+  "python": "3.13.16",
+  "sqlite": "3.53.1",
+  "durability": "WAL + synchronous=FULL",
+  "indicator_update": {
+    "count": 2000,
+    "p50_ms": 0.002208,
+    "p95_ms": 0.002375,
+    "p99_ms": 0.002834
+  },
+  "quote_validation_journal_risk_commit": {
+    "count": 2000,
+    "p50_ms": 0.097208,
+    "p95_ms": 0.118917,
+    "p99_ms": 0.15275
+  },
+  "limitations": "Synthetic single-symbol feed, empty portfolio; excludes network and ML"
+}

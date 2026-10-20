@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>com.example.trading-agent</string>
+  <key>ProgramArguments</key><array>
+    <string>/bin/sh</string>
+    <string>/ABSOLUTE/PATH/agentic-trader/scripts/run_service.sh</string>
+  </array>
+  <key>EnvironmentVariables</key><dict>
+    <key>TRADING_WORKDIR</key><string>/ABSOLUTE/PATH/agentic-trader</string>
+    <key>TRADING_STREAM</key><string>0</string>
+  </dict>
+  <key>WorkingDirectory</key><string>/ABSOLUTE/PATH/agentic-trader</string>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><dict><key>SuccessfulExit</key><false/></dict>
+  <key>ThrottleInterval</key><integer>10</integer>
+  <key>StandardErrorPath</key><string>/ABSOLUTE/PATH/agentic-trader/logs/launchd.err</string>
+  <key>StandardOutPath</key><string>/ABSOLUTE/PATH/agentic-trader/logs/launchd.out</string>
+</dict></plist>

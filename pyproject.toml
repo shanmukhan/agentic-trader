@@ -1,0 +1,45 @@
+[build-system]
+requires = ["hatchling==1.32.4"]
+build-backend = "hatchling.build"
+
+[project]
+name = "agentic-trader"
+version = "0.1.0"
+description = "Fail-closed, read-only Kite market data and durable intraday paper execution"
+readme = "README.md"
+requires-python = ">=3.13,<3.14"
+dependencies = ["fastapi>=0.115,<1", "pydantic>=2.10,<3", "uvicorn>=0.34,<1"]
+
+[project.optional-dependencies]
+broker = ["httpx>=0.28,<1", "websockets>=17.1,<18"]
+dev = ["pytest>=8,<10", "pytest-cov>=6,<8", "httpx>=0.28,<1", "httpx2>=2,<3", "ruff>=0.11,<1", "mypy>=1.15,<2", "pip-audit>=2.9,<3"]
+
+[project.scripts]
+trading-agent = "trading_agent.main:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/trading_agent"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+
+[tool.mypy]
+python_version = "3.13"
+check_untyped_defs = true
+disallow_untyped_defs = true
+ignore_missing_imports = true
+warn_unused_ignores = true
+
+[tool.coverage.run]
+source = ["trading_agent"]
+
+[tool.coverage.report]
+show_missing = true

@@ -1,0 +1,28 @@
+[Unit]
+Description=Paper-only trading market data and operator console
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=trading-agent
+Group=trading-agent
+WorkingDirectory=/opt/agentic-trader
+EnvironmentFile=/etc/agentic-trader.env
+ExecStart=/opt/agentic-trader/.venv/bin/trading-agent serve --stream
+Restart=on-failure
+RestartSec=10
+TimeoutStopSec=30
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/agentic-trader/data /opt/agentic-trader/logs
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
