@@ -129,7 +129,8 @@ def derive_receipt(receipt: CashReceipt, claim: dict[str, Any], now: datetime) -
 def steps(tx: sqlite3.Connection) -> Iterator[tuple[str, dict[str, Any]]]:
     """Retain legacy fill-only accounts; LT2 interleaves table-backed actions by journal seq."""
     fills = tx.execute(
-        "SELECT f.*,o.side,o.symbol,o.stop,o.target,o.reason FROM fills f JOIN orders o "
+        "SELECT f.*,o.side,o.symbol,o.stop,o.target,o.reason,o.cap,o.created "
+        "FROM fills f JOIN orders o "
         "ON o.id=f.order_id ORDER BY f.seq"
     )
     enabled = tx.execute("SELECT 1 FROM meta WHERE key='corporate_actions_schema'").fetchone()
@@ -198,6 +199,11 @@ class Ledger:
     """Reconstruct current economics without trusting materialized cash/positions/claims."""
 
     def __init__(self, tx: sqlite3.Connection):
+        self._tx = tx
+        from trading_agent.portfolio.accounting import reconcile
+
+        self.contributions = reconcile(tx)
+        self.entry_orders: dict[str, str] = {}
         meta = dict(tx.execute("SELECT key,value FROM meta"))
         self.cash = D(meta["initial_cash"])
         self.positions: dict[str, dict[str, Any]] = {}
@@ -347,6 +353,31 @@ class Ledger:
             raise RuntimeError("invalid persisted fill")
         old = self.positions.get(symbol)
         if row["side"] == "BUY":
+            if row["order_id"] in self.contributions:
+                if D(row["price"]) > D(row["cap"]) or utc(
+                    datetime.fromisoformat(row["time"])
+                ) <= utc(datetime.fromisoformat(row["created"])):
+                    raise RuntimeError(
+                        "contribution fill exceeded its cap or preceded execution authority"
+                    )
+                if row["order_id"] not in self.turnovers:
+                    preview = json.loads(
+                        self._tx.execute(
+                            "SELECT preview FROM portfolio_requests WHERE id=?", (row["order_id"],)
+                        ).fetchone()[0]
+                    )
+                    if old != preview["holding"]:
+                        raise RuntimeError(
+                            "contribution holding basis changed before its first fill"
+                        )
+            if (
+                old
+                and row["order_id"] != self.entry_orders[symbol]
+                and row["order_id"] not in self.contributions
+            ):
+                raise RuntimeError("holding addition lacks a reviewed contribution")
+            if old is None:
+                self.entry_orders[symbol] = row["order_id"]
             self.positions[symbol] = {
                 "symbol": symbol,
                 "quantity": qty + (old["quantity"] if old else 0),

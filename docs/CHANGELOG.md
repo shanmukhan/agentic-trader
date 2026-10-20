@@ -1,5 +1,63 @@
 # Change log
 
+## 2026-10-21 — LT3c1 reviewed contributions, acquisition history and SIP (0.9.0)
+
+Started the next portfolio-management dependency after LT3b. Split LT3c into
+contribution/SIP foundations, reviewed rebalance proposals and then aggregate
+capital coordination, documenting which part is delivered. Added exact cash-budget
+purchases and holding additions through read-only previews and explicit confirmation.
+Preview hashes bind quote, holding/protections, cash/exposure/risk and plan context.
+Existing-plus-new position capacity, fee-inclusive cash budget and shared broker risk
+remain enforced. Ordinary manual intents still reject duplicate holdings; additions
+cannot loosen stops/targets or override pending/latched exits.
+
+Added immutable explicitly sourced-session SIP schedules, deterministic occurrence
+identity and one confirmed attempt/date, due/upcoming/missed/cancelled states,
+idempotent retries and atomic cancellation of pending plan residue. Filled shares
+remain protected. No automatic deposits, holiday roll-forward, catch-up or unattended
+purchase is inferred. Historical acquisition lots group original BUY fills/costs/fees;
+current adjusted pooled holdings remain distinct from tax/FIFO ownership.
+
+Added compatible empty tables/indexes, durable approval/plan events/schema, independent
+authority/hash/order reconstruction, first-fill holding basis and later cap/clock
+checks. Shared sizing was extracted without changing normal intraday economics or
+legacy risk hashes. Restart cancels pending entry residue and returns existing intent
+state on retry. Existing delivery/action/claim/DP and pooled capital P&L remain shared.
+The security import check now parses AST across execution/portfolio/risk/action modules
+instead of treating a table name containing `requests` as a network import.
+
+Added authenticated responsive `/portfolio` UI, shared exact money formatter, concrete
+preview/dialog, due-plan review, stale/lock/unknown-response handling, spent/reserved
+cash, recent purchase orders, current holdings and original acquisition history.
+Private values remain in memory/text DOM. Main console links to the new page.
+Added deterministic `portfolio-demo` with separate frozen evidence and mutable UI
+working copy/config/calendar, leaving configured accounts unopened.
+
+Validation: **511 Python + 36 JavaScript tests, 92% Python coverage**. New cases cover
+cash/protections/addition room, partial/restart/idempotency, stale/changed previews,
+concurrency/atomic rollback, damaged proof, SIP authority/calendar/missed/cancel,
+split→addition→partial sale→DP reconstruction, deterministic journal, isolated CLI,
+authenticated/origin/typed API and UI preview/confirmation/lock/staleness/no-retry.
+The invented lifecycle independently reconciles six shares sold, four acquisition
+lots, ₹22.35 fees and ₹25,273.45 final cash = seed + ₹273.45 capital P&L.
+Populated Mac benchmark: preview p99 **0.1784 ms** (1,000 calls), durable reviewed
+addition plus next fill p99 **1.5532 ms** (twenty calls), retaining WAL/FULL. Network,
+browser, warmup and actual Pi are excluded. Full usage/component/spec/plan docs updated.
+
+Only LT3c1 is complete. Reviewed rebalance proposals, cross-account capital enforcement,
+per-lot current/FIFO/tax attribution, funding/withdrawals, custody/settlement, actual
+market/device acceptance and all live phases remain pending.
+
+Final local checks: Ruff lint/format, mypy, frozen offline lock/sync and installed
+package consistency pass. Sdist/wheel build and all shared/new console resources
+load outside the repository. Secret checks and local links in 23 Markdown files pass;
+online advisory audit reports no known vulnerabilities. Read-only preflight preserves
+the original account at ₹25,000, zero fees/events/positions/orders and its original
+risk hash; operator/calendar/broker/device readiness remains explicitly incomplete.
+The separate demo copy runs at localhost:8003/portfolio; actual HTTP asset/CSP/auth/
+four-lot checks pass and frozen source hashes remain intact while it runs. The page
+was opened; browser pixel/physical-phone acceptance remains pending permissions.
+
 ## 2026-10-21 — LT3b daily quote execution and separate chronological ML (0.8.0)
 
 Implemented the next long-term dependency after completed daily screening. Added

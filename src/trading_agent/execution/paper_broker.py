@@ -21,6 +21,7 @@ from trading_agent.settings import Settings
 if TYPE_CHECKING:
     from trading_agent.ml.features import FeatureVector
     from trading_agent.ml.inference import ResearchModel
+    from trading_agent.portfolio.contracts import Approval
 
 D = Decimal
 PENDING = "state IN ('ACCEPTED','PARTIAL')"
@@ -73,6 +74,11 @@ class PaperBroker:
             if existing and (not charges or charges[0] != self.charges.version):
                 raise RuntimeError("missing or changed account charge schedule")
             if self.long_term:
+                from trading_agent.portfolio.service import (
+                    validate_calendar as validate_sip_calendar,
+                )
+
+                validate_sip_calendar(tx, self)
                 self.long_term.bind(tx, utc(recovery_time or datetime.now(UTC)))
             db.set(tx, "investment_horizon", settings.investment_horizon)
             db.set(tx, "policy_hash", signature)
@@ -302,6 +308,48 @@ class PaperBroker:
                 reasons.append("SPREAD_TOO_WIDE")
         return reasons
 
+    def _size_entry(
+        self,
+        tx: sqlite3.Connection,
+        candidate: Candidate,
+        quote: Quote,
+        now: datetime,
+        *,
+        budget: Decimal | None = None,
+        add: bool = False,
+    ) -> RiskDecision:
+        tick = self._tick(tx, candidate.symbol)
+        price = up(quote.ask * (1 + self.settings.slippage_bps / 10000), tick)
+        if candidate.stop % tick or candidate.target % tick:
+            return RiskDecision(allowed=False, reasons=("INVALID_TICK_SIZE",))
+        if candidate.stop >= quote.bid:
+            return RiskDecision(allowed=False, reasons=("STOP_ALREADY_TRIGGERED",))
+        snapshot = self._snapshot(tx, now)
+        remaining = (
+            self.settings.daily_loss_limit + D(snapshot["day_pnl"]) - D(snapshot["reserved_risk"])
+        )
+        position_room = self.settings.max_position_notional
+        cash = D(snapshot["available_cash"])
+        if add:
+            old = tx.execute(
+                "SELECT * FROM positions WHERE symbol=?", (candidate.symbol,)
+            ).fetchone()
+            if old:
+                position_room -= max(quote.bid * old["quantity"], D(old["cost"]))
+            cash = min(cash, max(D(0), position_room))
+        if budget is not None:
+            cash = min(cash, budget)
+        return size(
+            price=price,
+            stop_fill=self._sell_price(tx, candidate.symbol, candidate.stop),
+            target_fill=self._sell_price(tx, candidate.symbol, candidate.target),
+            cash=cash,
+            exposure_room=self.settings.max_total_notional - D(snapshot["exposure"]),
+            position_cap=max(D(0), position_room),
+            risk_budget=max(D(0), min(self.settings.max_trade_risk, remaining)),
+            charges=self.charges,
+        )
+
     def submit(
         self,
         candidate: Candidate,
@@ -309,6 +357,7 @@ class PaperBroker:
         *,
         features: "FeatureVector | None" = None,
         automation: str | None = None,
+        _contribution: "Approval | None" = None,
     ) -> dict[str, Any]:
         now = utc(now)
         normalized = candidate.model_dump(mode="json")
@@ -327,6 +376,13 @@ class PaperBroker:
                         raise IntentConflict("intent ID has different instructions")
                     return dict(old)
                 self._roll_day(tx, now)
+                if _contribution:
+                    from trading_agent.portfolio.service import prepare, record
+
+                    reviewed = prepare(self, tx, _contribution.request, now)
+                    if reviewed["candidate"] != candidate.model_dump(mode="json"):
+                        raise ValueError("contribution candidate differs from its reviewed preview")
+                    record(self, tx, _contribution, now)
                 quote = self._quote(tx, candidate.symbol)
                 reasons = self._entry_reasons(tx, quote, now)
                 if self.automation and automation != self.automation:
@@ -356,9 +412,12 @@ class PaperBroker:
                     )
                 elif candidate.requires_ml:
                     reasons.append("MODEL_UNAVAILABLE")
-                if tx.execute(
-                    "SELECT 1 FROM positions WHERE symbol=?", (candidate.symbol,)
-                ).fetchone():
+                if (
+                    not _contribution
+                    and tx.execute(
+                        "SELECT 1 FROM positions WHERE symbol=?", (candidate.symbol,)
+                    ).fetchone()
+                ):
                     reasons.append("POSITION_ALREADY_EXISTS")
                 pending_symbols = {
                     r[0]
@@ -374,30 +433,14 @@ class PaperBroker:
                     reasons.append("ENTRY_ALREADY_PENDING")
                 decision = RiskDecision(allowed=False, reasons=tuple(reasons))
                 if not reasons and quote:
-                    tick = self._tick(tx, candidate.symbol)
-                    price = up(quote.ask * (1 + self.settings.slippage_bps / 10000), tick)
-                    if candidate.stop % tick or candidate.target % tick:
-                        decision = RiskDecision(allowed=False, reasons=("INVALID_TICK_SIZE",))
-                    elif candidate.stop >= quote.bid:
-                        decision = RiskDecision(allowed=False, reasons=("STOP_ALREADY_TRIGGERED",))
-                    else:
-                        snapshot = self._snapshot(tx, now)
-                        remaining = (
-                            self.settings.daily_loss_limit
-                            + D(snapshot["day_pnl"])
-                            - D(snapshot["reserved_risk"])
-                        )
-                        decision = size(
-                            price=price,
-                            stop_fill=self._sell_price(tx, candidate.symbol, candidate.stop),
-                            target_fill=self._sell_price(tx, candidate.symbol, candidate.target),
-                            cash=D(snapshot["available_cash"]),
-                            exposure_room=self.settings.max_total_notional
-                            - D(snapshot["exposure"]),
-                            position_cap=self.settings.max_position_notional,
-                            risk_budget=max(D(0), min(self.settings.max_trade_risk, remaining)),
-                            charges=self.charges,
-                        )
+                    decision = self._size_entry(
+                        tx,
+                        candidate,
+                        quote,
+                        now,
+                        budget=_contribution.request.budget if _contribution else None,
+                        add=_contribution is not None,
+                    )
                 state = "ACCEPTED" if decision.allowed else "REJECTED"
                 reason = ",".join(decision.reasons)
                 tx.execute(
@@ -728,6 +771,25 @@ class PaperBroker:
                 and not self.long_term.can_sell(tx, order, quantity, price, now)
             ):
                 continue
+            if (
+                side == "BUY"
+                and tx.execute(
+                    "SELECT 1 FROM portfolio_requests WHERE id=?", (order["id"],)
+                ).fetchone()
+            ):
+                held = tx.execute(
+                    "SELECT * FROM positions WHERE symbol=?", (order["symbol"],)
+                ).fetchone()
+                exposure = max(quote.bid * held["quantity"], D(held["cost"])) if held else D(0)
+                fees = self.charges.fee("BUY", D(order["turnover"]) + price * quantity) - D(
+                    order["fees"]
+                )
+                snapshot = self._snapshot(tx, now)
+                if exposure + price * quantity + fees > self.settings.max_position_notional or D(
+                    snapshot["reserved_risk"]
+                ) > self.settings.daily_loss_limit + D(snapshot["day_pnl"]):
+                    self._cancel(tx, order, stamp(now), "CONTRIBUTION_CAPACITY_CHANGED")
+                    continue
             liquidity[side] -= quantity
             self._fill(tx, order, quantity, price, now)
 

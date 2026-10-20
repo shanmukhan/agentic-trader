@@ -1,12 +1,12 @@
 # Zerodha AI Equity Trading Agent — intraday and long-term paper accounts
 
-**Project specification:** v1.9
+**Project specification:** v1.10
 
 **Prepared:** 20 October 2026
 
 **Updated:** 21 October 2026
 
-**Status:** Intraday Phases 1–4, supported LT1–LT2 and LT3a/LT3b daily research/ML engineering delivered; LT3c portfolio mechanics, empirical acceptance and live milestones pending
+**Status:** Intraday Phases 1–4, LT1–LT2, LT3a/LT3b daily research/ML and LT3c1 reviewed contributions/SIP delivered; rebalancing, shared capital, empirical acceptance and live milestones pending
 
 **Safety:** Paper only. No live trading, real orders or funds transfers in the implemented phases.
 
@@ -529,3 +529,22 @@ synthetic workflow and separately measured analysis/durable replay support the c
 milestone. Real market/model acceptance remains pending. LT3c lot additions/SIP,
 reviewed rebalancing and aggregate capital coordination are next; LT4 custody and
 the original live gates are unchanged.
+
+## 20. Reviewed portfolio contributions — LT3c1, version 0.9.0
+
+LT3c is enhanced into three dependencies: contribution/SIP authority, reviewed
+rebalance proposals, then aggregate cross-account capital coordination. LT3c1 now
+implements exact fee-inclusive cash budgets, readonly context-bound previews,
+explicit authenticated confirmation and atomic evidence/order/reservations.
+Additions retain existing protections/opening identity and respect held-plus-added
+capacity, daily/per-trade risk and exit latches. Original acquisition history remains
+separate from current adjusted pooled holdings; no FIFO/tax ownership is asserted.
+
+Immutable sourced-session SIP plans require separate confirmation on each due date.
+A consumed occurrence is not replayed after partial fill/cancel/restart; missed dates
+never catch up or infer funding. Plan cancellation releases pending buy capacity and
+retains filled holdings. Independently reconstructed authority, split/addition/sale
+accounting, deterministic recovery, API/CLI/UI tests and measured durable latency
+support the code milestone. Detailed [usage](docs/portfolio-contributions.md) includes
+the new responsive `/portfolio` page and separate frozen evidence/UI working copy.
+LT3c2 rebalancing and LT3c3 shared capital are next; live/custody/tax gates remain.

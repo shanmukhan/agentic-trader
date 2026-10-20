@@ -43,7 +43,7 @@ controls. The [acceptance guide](docs/acceptance.md) covers `preflight --strict`
 private diagnostic evidence and remaining broker/device work. Node 24 is used only
 for JavaScript tests; serving the console needs no Node or frontend build.
 
-Local validation: **479 Python tests and 29 JavaScript tests passed; 92% Python coverage**, with lint/type checks, dependency
+Local validation: **511 Python tests and 36 JavaScript tests passed; 92% Python coverage**, with lint/type checks, dependency
 audit and builds passing. Details are in the change log. Real Kite credentials and
 Raspberry Pi deployment remain unverified.
 
@@ -78,7 +78,12 @@ Version 0.8.0 adds LT3b quote-executed daily delivery research, independent outc
 labels, chronological daily ML validation and later scored replays with explanatory
 dashboards. Read [daily execution and ML usage](docs/daily-execution.md) and try
 `trading-agent daily-execution-demo --directory data/daily-execution-first --with-ml`.
-SIP/rebalancing, aggregate capital and actual custody/settlement remain pending.
+Version 0.9.0 adds LT3c1 reviewed cash-budget holding additions, original acquisition
+history and explicit-session SIP plans. Open `/portfolio` on a manual long-term
+service or try `trading-agent portfolio-demo --directory data/portfolio-first`.
+Follow the [contribution/SIP guide](docs/portfolio-contributions.md) for previews,
+confirmation, recovery and the separate demo UI working copy. Rebalance proposals,
+cross-account capital coordination and actual custody/settlement remain pending.
 Each account has its own virtual capital; combined allocation is not implemented.
 Real-feed/target-device acceptance and live execution remain later milestones in
 the [original specification](zerodha_ai_trading_agent_project_spec.md).

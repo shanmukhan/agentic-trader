@@ -7,7 +7,8 @@ Prepared 20 October 2026; updated 21 October 2026. This is the execution record 
 
 The repository delivers Phases 1–3 infrastructure/research and Phase 4 supervised
 intraday paper-feed engineering, LT1–LT2 long-term paper mechanics and LT3a daily
-research foundations plus LT3b offline quote-executed daily strategy/ML validation.
+research foundations plus LT3b offline quote-executed daily strategy/ML validation
+and LT3c1 reviewed contributions/SIP.
 The paper horizons share transactional risk/execution mechanics. Rules/models
 run offline or on explicitly configured dedicated paper accounts. No live adapter, profitability
 or compliance readiness is implied. External account creation, entitlement checks
@@ -246,8 +247,9 @@ commands, retry/failure behavior and exclusions are in [corporate-actions.md](co
 LT3 is implemented in dependency order: **LT3a delivered in 0.7.0** reviewed completed daily data,
 point-in-time membership and total-return-aware causal screening with an accessible
 offline research dashboard; **LT3b delivered in 0.8.0** quote-executed daily strategy
-research and separate chronological ML validation; **LT3c next** lot additions/SIP, reviewed rebalance
-proposals and aggregate capital coordination. A daily bar cannot establish an
+research and separate chronological ML validation; **LT3c1 delivered in 0.9.0**
+reviewed cash-budget additions/acquisition history/SIP; **LT3c2 next** reviewed
+rebalance proposals; **LT3c3** aggregate capital coordination. A daily bar cannot establish an
 executable fill, and screening statistics cannot approve a model or portfolio.
 
 LT3a delivers bounded streaming daily bundles, explicit period-benefit/availability
@@ -264,7 +266,7 @@ analysis p50 **8.0033 ms** including input/validation/hashes. See
 |---|---|---|
 | LT1: overnight paper foundations | Lifecycle, delivery costs, reviews, risk, console, evidence and tests | Engineering delivered |
 | LT2: corporate actions and cash/share ledger | Reviewed split/bonus/dividend entitlements and effective/payment dates, integral/fractional handling, atomic idempotency, independent reconstruction and recovery | Supported paper engineering delivered; complex actions/tax lots/custody remain excluded |
-| LT3: daily research and portfolio management | Completed daily price/total-return data, point-in-time universe, causal strategy/ML validation, SIP/lot additions, rebalancing and cross-account allocation | LT3a/LT3b engineering delivered; LT3c lot/SIP/rebalance/capital mechanics next |
+| LT3: daily research and portfolio management | Completed daily price/total-return data, point-in-time universe, causal strategy/ML validation, SIP/lot additions, rebalancing and cross-account allocation | LT3a/LT3b/LT3c1 delivered; LT3c2 reviewed rebalance proposals next; LT3c3 capital coordination pending |
 | LT4: actual read-only holdings and supervised acceptance | Reviewed custody/sellable holdings/settlement reconciliation, calibrated costs/fills and sustained actual device/feed evidence | Pending external access and engineering |
 | Live infrastructure / pilot | Existing separate empirical, compliance, adapter/reconciliation and explicit approval gates | Pending; execution unavailable |
 
@@ -302,7 +304,37 @@ historical fee matching and custody remain pending. Daily models do not enable t
 connected long-term service. **Next locally implementable item: LT3c lot additions/SIP,
 reviewed rebalancing and aggregate capital coordination**, before LT4 actual holdings.
 
-## Remaining milestones and acceptance gates (external evidence)
+## LT3c1 delivered — reviewed contribution foundation, version 0.9.0
+
+LT3c is deliberately split by financial dependency: stable contribution identity/
+cash accounting first; reviewed rebalance proposals second; aggregate account capital
+coordination third. This preserves independent reconstruction and review at each step.
+It does not mark all portfolio management or tax-lot accounting complete.
+
+| Work item | Implementation / evidence |
+|---|---|
+| Reviewed contributions | Read-only exact preview, fresh quote/holding/capacity hash, explicit authenticated confirmation, atomic budget/order/proof reservation |
+| Safe holding additions | Existing-plus-added position room, shared daily/per-trade/aggregate risk and cash/fee checks, retained protection/opening identity, exit-latch refusal |
+| Acquisition history | Original filled BUY orders, actual cash/fees and partial entries; distinct current aggregate pooled holdings; no FIFO/tax-lot attribution |
+| SIP occurrences | Immutable reviewed source-session dates, fixed cash caps/new-holding percentages, one confirmed attempt/date, explicit missed/due/cancelled states and no automatic catch-up/funding |
+| Atomic cancellation/recovery | Pending plan buys cancelled with plan; restart cancels residue, retains fills and consumed occurrence; identical approval retries return original state |
+| Independent integrity | Additive tables/schema/journal, reconstructed plan/approval/hash/order authority, first-fill basis and later price-cap/time checks, existing Decimal fills/fees/actions/claims reconciliation |
+| Responsive UI | `/portfolio` with exact previews, clear confirmations, due-plan buttons, reserved/spent cash, pending orders, current holdings, original lot history, stale/locked states |
+| Evidence/performance | Deterministic invented restart/SIP lifecycle, 511 Python + 36 UI tests, 92% coverage; populated preview p99 0.1784 ms, durable confirmation/fill p99 1.5532 ms |
+| Usage | [Detailed contribution/SIP guide](portfolio-contributions.md), main usage and component/specification updates; no new dependency or broker capability |
+
+Enhancements: spend only already available virtual cash rather than infer future
+deposits; require an explicitly reviewed session list rather than guess holiday
+roll-forward; separate original acquisition history from current pooled ownership;
+leave the original intent route's duplicate-holding guard intact; atomically cancel
+plan remainder without selling filled shares. The demo's mutable UI copy is separate
+from frozen financial evidence. Network/device/market acceptance remains external.
+
+**Next: LT3c2 reviewed rebalance proposals**, followed by LT3c3 shared capital
+coordination. Partial discretionary trims/execution, per-lot ownership/FIFO/taxes,
+deposits/withdrawals and connected daily automatic signals remain outside this release.
+
+## Remaining external milestones and acceptance gates
 
 | Milestone | Required next evidence |
 |---|---|

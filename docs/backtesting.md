@@ -264,3 +264,12 @@ and exclusions; labels are not portfolio returns. `daily-train` and a separate l
 `daily-backtest --model` supply daily chronological model validation. Intraday rules,
 artifacts and connected guards remain distinct. Schemas, commands, reports and recovery
 are in [daily-execution.md](daily-execution.md). Actual source/cost/fill acceptance is pending.
+
+## Reviewed contributions are not automatic research signals (0.9.0)
+
+LT3c1 adds manually reviewed cash-budget purchases/additions, original acquisition
+history and explicit-date SIP occurrences. These use the shared exact delivery
+ledger but are not automatically injected into daily/intraday strategy research,
+independent labels or ML selection. Existing research fingerprints/feature identities
+remain distinct. `portfolio-demo` tests synthetic contribution/restart accounting,
+not a market edge or rebalance strategy. Workflow: [portfolio-contributions.md](portfolio-contributions.md).

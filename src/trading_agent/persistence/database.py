@@ -65,6 +65,18 @@ CREATE TABLE IF NOT EXISTS corporate_payments (
 );
 """
 
+PORTFOLIO_SCHEMA = """
+CREATE TABLE IF NOT EXISTS portfolio_requests (
+    id TEXT PRIMARY KEY, time TEXT NOT NULL, request TEXT NOT NULL, preview TEXT NOT NULL,
+    plan_id TEXT, occurrence TEXT, UNIQUE(plan_id,occurrence)
+);
+CREATE TABLE IF NOT EXISTS sip_plans (
+    id TEXT PRIMARY KEY, time TEXT NOT NULL, request TEXT NOT NULL, sessions TEXT NOT NULL,
+    cancelled INTEGER NOT NULL CHECK(cancelled IN (0,1))
+);
+CREATE INDEX IF NOT EXISTS acquisition_orders ON orders(side);
+"""
+
 
 class Database:
     def __init__(self, path: Path, starting_cash: Decimal):
@@ -99,6 +111,7 @@ class Database:
         if version == 0:
             self.connection.executescript("BEGIN IMMEDIATE;" + SCHEMA + "COMMIT;")
         self.connection.executescript(CORPORATE_SCHEMA)
+        self.connection.executescript(PORTFOLIO_SCHEMA)
         # Compatible additive index: runtime candidate lookups must not scan quote history.
         self.connection.execute(
             "CREATE INDEX IF NOT EXISTS events_kind_time ON events(kind,time,seq)"

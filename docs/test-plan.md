@@ -274,3 +274,31 @@ patterns and all local links in 22 Markdown files pass. Online advisory scan rep
 no known vulnerabilities. Read-only preflight leaves the original account at exactly
 ₹25,000, zero fees, flat/no orders and its legacy risk hash; operator/calendar/broker/
 device readiness remains explicitly incomplete. No new dependency or broker action.
+
+## LT3c1 contribution/SIP verification (0.9.0)
+
+Current combined evidence: **511 Python and 36 JavaScript tests**, **92% coverage**.
+Thirty-two new Python cases cover budget/protection/position capacity, concrete
+approval and stale contexts, partial/restart/idempotency, damaged/missing proof,
+concurrent confirmations and transactional fault rollback, explicit SIP schedules/
+missed/cancelled occurrences and pinned calendar changes. Split→addition→partial/
+final sale checks exact pooled cost/P&L and one DP charge. A deterministic two-run
+lifecycle compares financial journal digests; functional CLI preserves its configured
+account and verifies private finished artifacts. API tests cover bearer/origin,
+manual-long-term guards, typed payloads and preview→confirmation→actual later fills.
+
+Seven new UI cases exercise exact money/text safety, locks/late responses, preview/
+explicit single confirmation, blocked reasons, stale/cancelled dialogs, due-plan IDs/
+save/cancel and unknown outcomes without retries. Full existing intraday/long-term/
+ML/security tests remain. AST import checks cover execution/portfolio/risk/actions.
+CI adds `portfolio-demo` and populated benchmark; full [usage](portfolio-contributions.md)
+distinguishes original acquisitions from current/FIFO ownership. Actual broker/Pi/
+phone/pixel and portfolio rebalance/cross-account acceptance remain pending.
+
+Ruff lint/format, mypy, frozen lock/sync, installed package consistency, sdist/wheel,
+outside-repository shared/new UI resources, secret scan and links in 23 Markdown
+files pass. Online `pip-audit --skip-editable` reports no known vulnerabilities.
+Actual localhost:8003 asset/CSP/bearer/four-lot checks pass on the separate preview
+copy; the original demo artifact hashes remain unchanged. Original account read-only
+preflight retains ₹25,000, zero fees/events/orders/holdings and the legacy risk hash.
+Missing operator/calendar/broker/device readiness is still disclosed.

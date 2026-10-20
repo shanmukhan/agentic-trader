@@ -325,3 +325,12 @@ Next in the plan is LT3c: reviewed lot additions/SIP, rebalance proposals and
 aggregate capital coordination. Actual read-only custody/settlement reconciliation,
 real data/model acceptance, physical device/feed drills and all live phases remain
 open. See [implementation-plan.md](implementation-plan.md).
+
+## 9. LT3c1 now supplies reviewed contribution foundations (0.9.0)
+
+[Contribution/SIP usage](portfolio-contributions.md) adds explicit manual purchases/
+holding additions, original acquisition history and recurring reviewed-session
+occurrences. It reuses exact delivery accounting while keeping normal daily strategy
+research unchanged: the daily model does not arm this service or schedule SIPs.
+LT3c2 reviewed rebalance proposals and LT3c3 cross-account capital coordination remain
+next. No current per-lot/FIFO/tax attribution or external funding is supplied.

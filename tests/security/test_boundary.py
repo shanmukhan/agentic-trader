@@ -69,5 +69,20 @@ def test_unknown_secret_header_and_json_redaction(message):
 
 
 def test_execution_does_not_import_broker_sdk():
-    source = Path("src/trading_agent/execution/paper_broker.py").read_text()
-    assert "kiteconnect" not in source and "requests" not in source
+    import ast
+
+    for directory in ("execution", "portfolio", "risk", "corporate_actions"):
+        for path in Path("src/trading_agent", directory).glob("*.py"):
+            for item in ast.walk(ast.parse(path.read_text())):
+                modules = (
+                    [alias.name for alias in item.names]
+                    if isinstance(item, ast.Import)
+                    else [item.module or ""]
+                    if isinstance(item, ast.ImportFrom)
+                    else []
+                )
+                assert not any(
+                    module.split(".")[0] in {"kiteconnect", "requests", "httpx", "websockets"}
+                    or module.startswith("trading_agent.broker")
+                    for module in modules
+                ), path

@@ -289,3 +289,11 @@ close plus embargo. JSON-only loading/scoring imports no training packages, enfo
 context/provenance/hash/audit checks and ranks only simultaneous later candidates.
 No connected long-term model/controller is enabled. Full commands, features, censoring,
 chronology and report interpretation: [daily-execution.md](daily-execution.md).
+
+## LT3c1 contribution boundary (0.9.0)
+
+The contribution/SIP UI requires a manual long-term account and explicit review for
+each purchase. Plans do not attach models, authorize unattended entries or inject
+occurrences into training labels. Shared sizing extraction preserves intraday risk
+identity and existing model gates. Original acquisition history is not an ML outcome
+or a tax-lot feature. See [portfolio-contributions.md](portfolio-contributions.md).

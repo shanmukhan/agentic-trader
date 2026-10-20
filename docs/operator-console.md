@@ -157,3 +157,19 @@ explains that loading is blocked. Tables cap display at 200 rows, retaining full
 JSON/JSONL evidence and empty-state guidance. Keyboard focus/scrolling and clear
 labels are tested. Actual handset/pixel acceptance remains pending. Full walkthrough:
 [daily-execution.md](daily-execution.md). The authenticated connected console flow is unchanged.
+
+## Contribution and SIP review page (0.9.0)
+
+The long-term safeguards panel links to `/portfolio`. Unlock this separate tab using
+the same private operator token. Exact cash/reservations and quote/risk state lead
+into a server-computed purchase preview and explicit confirmation, then recent intent
+states, actual debit, current aggregate holdings and original acquisition history.
+SIP panels show due/upcoming/missed/cancelled dates and confirmed attempts; save and
+cancel actions use dialogs. Due-plan budgets/IDs remain server supplied and read-only.
+
+The page supports keyboard/touch/responsive browser use, text-only untrusted values,
+lock/late-response invalidation and no automatic action retry. A changed/expired
+preview must be reviewed again; unknown outcomes direct inspection by intent ID.
+Original acquisitions are clearly distinguished from current pooled/tax ownership.
+Emergency exits remain in the main console. See the full [walkthrough](portfolio-contributions.md).
+Browser pixel/physical-handset acceptance remains pending.

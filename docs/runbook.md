@@ -247,3 +247,20 @@ Review source clocks, actions, coverage and censored audits; rerun a corrected r
 experiment into a new directory. Open HTML locally and check full JSON for records
 beyond the 200-row display. Do not force-close surviving research exposure to make a
 result look complete. Detailed commands/recovery: [daily-execution.md](daily-execution.md).
+
+## LT3c1 contribution/SIP operations (0.9.0)
+
+Use `/portfolio` only on a manual long-term account with current reviewed quotes.
+Preview reserves nothing; confirmation atomically reserves the exact fee-inclusive
+cash cap and links immutable evidence. Inspect pending/partial intent state after
+uncertain responses; reuse the same request/approval rather than create another ID.
+Restart cancels residue and retains filled shares/consumed SIP dates. Plans never
+credit cash or catch up unattended. Cancel a plan to release pending buy capacity;
+this does not sell holdings or restore the occurrence for retry.
+
+Before changing an active planned calendar definition, cancel the plan with its
+original calendar available; review the new definition and use a new plan ID. Used
+account sessions retain existing pinning. Back up the owned account normally; on
+proof/accounting failure preserve evidence and restore a verified backup. `portfolio-demo`
+keeps frozen source evidence separate from a mutable preview DB/config on port 8003.
+Full commands, limits and recovery: [portfolio-contributions.md](portfolio-contributions.md).

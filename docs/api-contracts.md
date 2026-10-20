@@ -268,3 +268,20 @@ Global config precedes the subcommand. No service API/authorization, long-term
 model attachment or broker capability was added. Strict event schemas, matching
 calendars, files, return meanings and recovery are in [daily-execution.md](daily-execution.md).
 Reports support desktop/mobile browsers; model loading uses bounded JSON and hashes.
+
+## LT3c1 reviewed contribution and SIP API (0.9.0)
+
+Static `/portfolio`, `/portfolio.js` and shared `/money.js` contain no private values.
+All `/api/paper/portfolio` routes retain bearer/origin/no-cache checks and require a
+manual long-term account. GET returns bounded account/orders/holdings/original lots
+and explicit plan-date states. POST `/preview` accepts a cash-budget `Contribution`
+and reserves nothing; POST `/contributions` accepts `Approval` with exact request
+and preview hash. Changed/expired/blocked context returns 409 without an order;
+invalid typed input returns 422. Exact duplicate approvals return original order state.
+
+POST `/plans` saves immutable ID/symbol/budget/dates/protection percentages/reference;
+POST `/plans/cancel` atomically cancels future occurrences and pending plan buys.
+No automatic execution or cash deposit occurs. Original `/api/paper/intents` still
+rejects adding to an open holding. `portfolio-demo --directory NEW` creates separate
+invented evidence and a UI working copy. Full schemas/examples and limits:
+[portfolio-contributions.md](portfolio-contributions.md).

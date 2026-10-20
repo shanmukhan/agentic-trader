@@ -198,3 +198,20 @@ issuer or bank provenance. Counterfactual cash entitlements are not inferred. Es
 embedded JSON, text-only DOM rendering and hash CSP keep reports local with no network
 or trade authority. Training remains offline and daily models cannot arm a connected
 long-term service. See [daily-execution.md](daily-execution.md) for workflow/limits.
+
+## LT3c1 contribution authority and SIP input (0.9.0)
+
+Typed bounded immutable requests, exact preview context hashes, authenticated origin
+checks and writer-transaction revalidation prevent stale approval or duplicate intent
+from adding exposure. A unique plan/date and deterministic server-issued ID prevent
+new IDs from replaying a consumed occurrence. Additions preserve existing protections
+and require independent cash/risk/holding capacity; ordinary intents still refuse them.
+No automatic funding/scheduler, external broker client or cross-account writer is added.
+
+Journal/table/schema reconstruction checks missing/rehashed proof, order economics,
+first-fill holding basis, caps and timing before normal recovery. Hash consistency
+is not protection against an owner rewriting all evidence. Network-import checks now
+parse AST across execution/portfolio/risk/action modules, avoiding table-name false
+positives while widening coverage. Shared money rendering uses decimal strings;
+private page values remain in memory and clear on lock. No browser persistence or
+client sizing authority. See [portfolio-contributions.md](portfolio-contributions.md).

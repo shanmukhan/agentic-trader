@@ -135,6 +135,60 @@ def create_app(
             ASSETS.joinpath("dashboard.css").read_text(encoding="utf-8"), media_type="text/css"
         )
 
+    @app.get("/portfolio", response_class=HTMLResponse)
+    def portfolio_page() -> str:
+        return ASSETS.joinpath("portfolio.html").read_text(encoding="utf-8")
+
+    @app.get("/portfolio.js")
+    def portfolio_script() -> HTMLResponse:
+        return HTMLResponse(
+            ASSETS.joinpath("portfolio.js").read_text(), media_type="application/javascript"
+        )
+
+    @app.get("/money.js")
+    def money_script() -> HTMLResponse:
+        return HTMLResponse(
+            ASSETS.joinpath("money.js").read_text(), media_type="application/javascript"
+        )
+
+    from trading_agent.portfolio import service as portfolio
+    from trading_agent.portfolio.contracts import Approval, CancelPlan, Contribution, SIPPlan
+
+    @app.get("/api/paper/portfolio", dependencies=[Depends(authorized)])
+    def portfolio_view() -> dict[str, Any]:
+        try:
+            return portfolio.view(engine, clock())
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)) from None
+
+    @app.post("/api/paper/portfolio/preview", dependencies=[Depends(authorized)])
+    def contribution_preview(request: Contribution) -> dict[str, Any]:
+        try:
+            return portfolio.preview(engine, request, clock())
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)) from None
+
+    @app.post("/api/paper/portfolio/contributions", dependencies=[Depends(authorized)])
+    def contribution_confirm(request: Approval) -> dict[str, Any]:
+        try:
+            return portfolio.confirm(engine, request, clock())
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)) from None
+
+    @app.post("/api/paper/portfolio/plans", dependencies=[Depends(authorized)])
+    def sip_create(request: SIPPlan) -> dict[str, Any]:
+        try:
+            return portfolio.create_plan(engine, request, clock())
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)) from None
+
+    @app.post("/api/paper/portfolio/plans/cancel", dependencies=[Depends(authorized)])
+    def sip_cancel(request: CancelPlan) -> dict[str, Any]:
+        try:
+            return portfolio.cancel_plan(engine, request, clock())
+        except ValueError as exc:
+            raise HTTPException(409, str(exc)) from None
+
     @app.get("/api/console", dependencies=[Depends(authorized)])
     def console() -> dict[str, Any]:
         return console_snapshot(engine, clock(), automation)

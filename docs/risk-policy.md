@@ -217,3 +217,20 @@ outcomes are excluded/censored. Statistical checks are not market, custody or li
 approval. The daily model cannot attach to a long-term service. Historical fee
 matching, settlement and aggregate capital remain external/later work. Full assumptions
 and failure states: [daily-execution.md](daily-execution.md).
+
+## LT3c1 cash-budget additions and SIP (0.9.0)
+
+Each confirmed contribution uses existing available virtual cash after reservations/
+DP buffer and includes buy fees inside its cash cap. Existing holding value consumes
+position room; total exposure, remaining daily capacity and per-trade limits still
+apply. Additions preserve the exact holding stop/target/opening identity. Pending
+buys/sells, latched exits, kill/loss/drawdown, stale or quarantined basis refuse approval.
+Risk/capacity changes during later quotes can cancel residual entry rather than
+overspend. Stops remain requests, not guaranteed realized-loss limits.
+
+Explicit-session SIP plans reserve no future cash and authorize no unattended orders.
+One confirmed attempt/date remains consumed after partial fills, cancellation or
+restart; missed dates do not catch up. Current aggregate costs remain pooled and
+partial exits retain proportional basis/residual semantics. Original acquisition
+history does not implement FIFO/tax ownership or cross-account capital enforcement.
+See [portfolio-contributions.md](portfolio-contributions.md).

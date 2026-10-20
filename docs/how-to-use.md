@@ -1,6 +1,6 @@
 # How to use Agentic Trader
 
-Updated 21 October 2026 for version 0.8.0. This guide and corresponding detailed
+Updated 21 October 2026 for version 0.9.0. This guide and corresponding detailed
 guides are updated with every feature or changed workflow, as required by [AGENTS.md](../AGENTS.md).
 
 ## 1. Scope and prerequisites
@@ -9,6 +9,7 @@ This release implements Phases 1–4 engineering: virtual execution/risk control
 predeclared rules, isolated backtests, chronological ML research and opt-in
 supervised intraday feed automation, long-term paper holdings/corporate actions and
 offline completed-daily screening, quote execution and separate daily ML validation.
+Long-term accounts also support reviewed cash-budget contributions and explicit-session SIP plans.
 It does not choose an investment universe, produce investment recommendations or
 execute live trades. Sample trades are synthetic. Read
 [risk-policy.md](risk-policy.md) before submitting paper intents.
@@ -491,4 +492,51 @@ exclusions, feature identities, purge/calibration/holdout, model availability,
 failure/recovery and performance. Preserve partial failed outputs; absence of a
 finished manifest prevents loading. Correct reviewed inputs and rerun into a new
 directory. Daily models remain offline and cannot arm the long-term service.
-LT3c lot/SIP/rebalance/aggregate-capital mechanics are next in the plan.
+LT3c1 now supplies reviewed contributions/SIP. LT3c2 rebalance proposals and LT3c3
+aggregate capital coordination remain next.
+
+## 22. Reviewed purchases, holding additions and SIP (LT3c1)
+
+```sh
+trading-agent portfolio-demo --directory data/portfolio-first
+```
+
+This invented isolated lifecycle confirms two scheduled purchases, adds to a
+holding, cancels an unfilled partial-entry remainder on restart and exits six
+shares. Four acquisition lots and exact cash/fees remain independently reconcilable.
+Read `report.md`/`report.json`; `manifest.json` protects completed source artifacts.
+No original service account is opened. Reuse of the directory fails.
+
+On a manual long-term service, open <http://127.0.0.1:8001/portfolio> or follow the
+main console's long-term link. Unlock with the same private operator token. Enter a
+symbol, maximum cash debit including buy fees and review reference. New holdings
+need reviewed stop/target prices; additions keep the existing levels. **Calculate
+server preview**, inspect quantity/debit/risk/caps and then explicitly confirm in the
+dialog. Previewing reserves no cash; confirming reserves existing virtual cash.
+Orders fill only on later usable quotes. A changed/expired preview needs a new
+review. Inspect the stable intent ID after any uncertain response before a new purchase.
+
+SIP plans save increasing, explicitly reviewed exchange dates, a cash budget and
+new-holding protection percentages. Each due occurrence needs a separate preview
+and confirmation. Missed dates never catch up, and no deposit or automatic order is
+created. Cancellation stops future occurrences and pending plan buys; acquired
+shares retain their safeguards. One confirmed attempt per plan/date remains consumed
+even after cancellation, partial fill or restart.
+
+Current aggregate holdings and original acquisition history are shown separately.
+Original lots include actual partial fills and buy fees; sales/actions change the
+current pooled holding separately. These are not FIFO/tax ownership lots. The UI
+shows recent order states, actual cash spent, remaining reservations and original
+costs with exact decimal formatting and responsive browser layouts.
+
+The demo writes a separate `preview.sqlite3` and `preview.toml` for UI inspection:
+set your private operator token and run
+`trading-agent --config data/portfolio-first/preview.toml serve`, then open
+<http://127.0.0.1:8003/portfolio>. Its historical invented calendar/feed cannot approve
+current entries. The working copy is excluded from frozen source evidence so
+recovery cannot overwrite it. Do not serve or modify `paper.sqlite3` in the evidence bundle.
+
+Read [portfolio-contributions.md](portfolio-contributions.md) for all UI steps,
+API schemas, plan bounds, cash/risk constraints, idempotency, backup/recovery,
+calendar revision and performance. LT3c1 is complete; reviewed rebalancing and
+cross-account capital coordination remain separate next milestones.

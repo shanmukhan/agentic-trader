@@ -1,0 +1,22 @@
+{
+  "python": "3.13.16",
+  "platform": "macOS-27.0-arm64-arm-64bit-Mach-O",
+  "synthetic": true,
+  "populated_quotes": 1000,
+  "preview_samples": 1000,
+  "preview": {
+    "p50_ms": 0.138791,
+    "p95_ms": 0.147375,
+    "p99_ms": 0.178417,
+    "max_ms": 0.249125
+  },
+  "confirm_fill_samples": 20,
+  "confirm_fill": {
+    "p50_ms": 1.351709,
+    "p95_ms": 1.461542,
+    "p99_ms": 1.553167,
+    "max_ms": 1.553167
+  },
+  "includes": "preview: lock/SQLite read transaction, exact sizing/risk/hash; confirm/fill: revalidation, FULL durable approval/order/fill, quote/watch accounting",
+  "excludes": "initialization, warmup, baseline purchases/exits, network, browser and actual Pi"
+}

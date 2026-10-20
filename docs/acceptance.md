@@ -177,3 +177,18 @@ costs, empirical sample/model performance, custody/settlement and target-device/
 pixel/handset acceptance remain pending. Daily models stay offline. The next code
 milestone is LT3c lot/SIP/rebalance/aggregate capital. Workflow and explicit limitations:
 [daily-execution.md](daily-execution.md).
+
+## LT3c1 contribution/SIP software acceptance (0.9.0)
+
+Local evidence covers fee-inclusive budget reservations, aggregate addition room,
+protection identity, stale/changed approvals, partial/restart/duplicate intent,
+concurrency and atomic rollback, corrupted proof, explicit SIP/calendar/consumed-date
+rules, split→addition→partial sale/DP, deterministic journal and private isolated CLI.
+API/UI checks cover authorization/origin/types, concrete previews/dialogs, original-vs-
+current holdings, exact money, lock/staleness/unknown outcomes and no automatic retry.
+The invented six-share/four-acquisition lifecycle is accounting evidence only.
+
+Reviewed rebalance proposals and cross-account capital are later LT3c dependencies.
+Actual source/fees/custody/settlement, device/mobile pixels and market/model evidence
+remain external. No live acceptance or automatic long-term entries are authorized.
+Full workflow and boundaries: [portfolio-contributions.md](portfolio-contributions.md).

@@ -259,3 +259,18 @@ total deduction/payment; supported pure share actions can proceed, with unresolv
 fractional claims excluding completion. The observer has no entitlement and is not
 a traded portfolio. See [daily-execution.md](daily-execution.md) for full input/usage
 and the remaining custody, historical costs and tax limitations.
+
+## Contributions and original purchase history (0.9.0)
+
+A reviewed holding addition preserves current aggregate protections, including levels
+already adjusted by a supported split/bonus. Existing quarantine/post-application
+review/new quote requirements remain. Applying an action still cancels affected
+pending entry residue; a consumed SIP occurrence is not automatically retried.
+The independent ledger now also validates contribution authority and first-fill basis.
+
+Share/dividend/fraction entitlements continue using the actual aggregate held quantity
+and pooled cost. Original purchase lots retain their acquisition units/debits/fees;
+they are not retroactively rewritten into current or tax-lot ownership. Tests cover
+split→new addition→partial/final sale, exact cash/P&L and one DP charge that day.
+No FIFO, per-lot entitlement or custody/tax behavior is inferred. Full workflow:
+[portfolio-contributions.md](portfolio-contributions.md).

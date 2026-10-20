@@ -236,3 +236,18 @@ Corporate-action quarantine, custody and cash settlement are not automatically s
 by surviving a restart. Same-day protective virtual exits and immediately credited
 paper sale cash are simulation simplifications, not actual product netting or T+1
 settlement behavior. Original live phases remain separate after empirical acceptance.
+
+## LT3c1 reviewed additions and SIP now available (0.9.0)
+
+The new `/portfolio` page previews/explicitly confirms cash-budget buys and additions
+on manual long-term accounts. Shared risk/cash/fees/DP and review authority still
+apply; existing stop/target/opening identity cannot change. Original filled purchase
+lots/costs appear separately from current adjusted pooled holdings. There is no
+FIFO/tax or active per-lot attribution. Ordinary manual intents still reject duplicates.
+
+SIP plans save explicit sourced session dates and a budget; each occurrence needs
+its own review and confirmation, with no catch-up, deposit or automatic purchase.
+Cancelled/partial/restarted attempts retain original IDs and consumed dates. Follow
+[portfolio-contributions.md](portfolio-contributions.md) for UI, schemas, recovery,
+calendar changes and the isolated `portfolio-demo`. Remaining LT3c work is reviewed
+rebalance proposals and aggregate cross-account capital; LT4 custody/live gates remain.

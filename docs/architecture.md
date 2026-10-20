@@ -292,3 +292,20 @@ sharing feature/model namespace or enabling connected long-term inference. Model
 availability includes final evidence/declared close plus embargo. Failure leaves no
 finished manifest. Self-contained CSP-bound dashboards explain portfolio, label and
 validation meanings. Detailed contracts and workflow: [daily-execution.md](daily-execution.md).
+
+## LT3c1 contribution and SIP foundation (0.9.0)
+
+`portfolio/contracts` defines immutable cash-budget requests, approvals and explicit
+SIP sessions. `service.prepare` is a read-only exact account/quote-context proposal;
+confirmation revalidates under the engine lock and writes proof/order/reservations
+in one writer transaction. Shared broker sizing subtracts held value from position
+room; fill processing retains protection/opening identity and rechecks capacity.
+Plan cancellation atomically cancels pending plan buys without closing filled shares.
+
+Additive `portfolio_requests` / `sip_plans`, unique plan/date and journal/schema
+support SELECT-only authority reconstruction in `Ledger`. It verifies preview/order
+identity, first-fill basis, later quote authority/cap and existing accounting. Original
+purchase history is derived from filled BUY orders, distinct from current pooled
+holdings. New UI/API share exact money formatting, bearer/origin and stale/lock gates.
+No scheduler, network client, external funding or cross-account allocator is added.
+See [portfolio-contributions.md](portfolio-contributions.md).

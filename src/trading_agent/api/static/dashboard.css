@@ -44,6 +44,14 @@ p+p {
   color:var(--muted);
   font-size:.84rem
 }
+a { color:var(--accent); }
+.portfolio-page .record { display:block; }
+.portfolio-page .record > p { margin-top:6px; }
+.portfolio-page .record > button { margin-top:12px; margin-right:8px; }
+.portfolio-page .access { display:block; }
+.portfolio-page .access form { margin-top:12px; }
+.portfolio-page .review-form button { align-self:end; }
+.portfolio-page input[readonly] { border-style:dashed; color:var(--muted); }
 .eyebrow {
   font-size:.7rem;
   letter-spacing:.15em;

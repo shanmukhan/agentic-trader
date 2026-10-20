@@ -206,3 +206,18 @@ Fixture creation, ML fitting, independent label trials, network/history, intrati
 extremes and actual Pi are excluded. Cached screen timings do not represent full
 execution latency, large-universe throughput or exchange fills. CI uses five runs
 without a hardware-specific time assertion. See [daily-execution.md](daily-execution.md).
+
+## LT3c1 contribution review and durable entry (0.9.0)
+
+[Captured Mac evidence](benchmark-portfolio-macos.json) starts after 1,000 journaled
+quotes. One thousand previews including lock, SQLite read transaction, exact sizing,
+risk and context hash: p50 **0.1388 ms**, p95 **0.1474 ms**, p99 **0.1784 ms**.
+Twenty reviewed holding additions including revalidation, durable approval/order,
+next quote/watch/fill: p50 **1.3517 ms**, p99/max **1.5532 ms**. SQLite WAL/FULL stays
+enabled. Initialization, baseline buys/exits, network/browser and actual Pi are excluded.
+
+Reproduce with `python scripts/benchmark_portfolio.py --samples 1000`; CI uses 100
+samples without a hardware-specific threshold. Recent purchase/history views are
+bounded and indexed; full authority reconstruction runs on verification/startup,
+not every quote. This does not establish device or exchange latency. See
+[portfolio-contributions.md](portfolio-contributions.md).

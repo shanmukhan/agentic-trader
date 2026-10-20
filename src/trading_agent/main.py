@@ -137,6 +137,10 @@ def parser() -> argparse.ArgumentParser:
     )
     execution_demo.add_argument("--directory", type=Path, default=Path("data/daily-execution-demo"))
     execution_demo.add_argument("--with-ml", action="store_true")
+    portfolio_demo = commands.add_parser(
+        "portfolio-demo", help="invented reviewed purchases, SIP and partial-fill restart"
+    )
+    portfolio_demo.add_argument("--directory", type=Path, default=Path("data/portfolio-demo"))
     long_report = commands.add_parser(
         "long-term-report", help="preserve source delivery account work"
     )
@@ -216,6 +220,10 @@ def execute(args: argparse.Namespace) -> Any:
         }
     # Validate mode even for demonstrations and broker-only commands.
     settings = Settings.load(args.config)
+    if args.command == "portfolio-demo":
+        from trading_agent.portfolio.demo import portfolio_demo
+
+        return portfolio_demo(args.directory)
     if args.command == "daily-execution-demo":
         from trading_agent.daily_execution.demo import execution_demo
 
