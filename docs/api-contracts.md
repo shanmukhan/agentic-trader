@@ -116,6 +116,19 @@ service; automation-bound/custom apps without one return a safe 409.
 | `POST /api/setup/connect` | Empty object; verifies profile/selection and requests full stream; no intent or arming; fresh quotes may resume existing pending fills/exits |
 | `POST /api/setup/disconnect` | Empty object; stops stream, blocks quote-dependent entries/fills; no liquidation |
 
+Since 0.11.1, `GET /api/setup` and successful action responses also include
+`feed_diagnostics`: null when no stream is requested, otherwise a credential-free
+snapshot containing `state` (`connecting`, `connected`, `retrying`, `failed`,
+`stopped`), `failures` (current consecutive failures, at most ten), `last_failure`
+(null or fixed `handshake_rejected`, `timeout`, `broker_rejected`, `invalid_data`,
+`processing_error`, `connection_lost`), `last_message_at` (UTC receipt timestamp,
+including text/heartbeat; not quote freshness) and `unusable_quotes` (cumulative
+full packets skipped for zero bid/ask prices/quantities in this requested stream).
+Last failure is retained as history after recovery; connected state takes precedence.
+These fields describe transport, not quote acceptance, market opening or permission
+to trade. No raw broker error or authenticated URL is returned. Diagnostics are
+read under a short stream lock with no external I/O.
+
 Setup bodies are bounded to 8192 bytes and parsed without framework validation that
 could echo credential input. Known/third-party setup failures return credential-free
 409 messages; independent financial controls are not faulted merely because a login

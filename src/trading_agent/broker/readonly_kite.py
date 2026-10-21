@@ -258,16 +258,21 @@ def exchange_token(api_key: str, api_secret: str, request_token: str) -> str:
         raise BrokerUnavailable("token exchange failed; repeat supported manual login") from None
 
 
-def parse_binary(
+def _parse_binary(
     message: bytes, instruments: dict[int, Instrument], received: datetime
-) -> list[Quote]:
-    """Strict NSE full-mode 184-byte packets. Index/derivative/LTP packets fail closed."""
+) -> tuple[list[Quote], list[str]]:
+    """Strict full packets; empty-sided books are observations, not executable quotes.
+
+    Skip those books without inventing depth or disconnecting a healthy transport.
+    Framing, instrument identity and all remaining Quote validation stay strict.
+    """
     if len(message) == 1:  # documented heartbeat
-        return []
+        return [], []
     if len(message) < 2:
         raise ValueError("truncated quote header")
     count = struct.unpack_from(">H", message, 0)[0]
     offset, result = 2, []
+    unusable = []
     if count > 10:
         raise ValueError("unexpected packet count")
     for _ in range(count):
@@ -287,6 +292,9 @@ def parse_binary(
         if token not in instruments or token & 255 != 1:
             raise ValueError("unknown or non-NSE equity token")
         item = instruments[token]
+        if any(integer(start) == 0 for start in (64, 68, 124, 128)):
+            unusable.append(item.symbol)
+            continue
         result.append(
             Quote(
                 symbol=item.symbol,
@@ -304,7 +312,15 @@ def parse_binary(
         )
     if offset != len(message):
         raise ValueError("unexpected trailing quote bytes")
-    return result
+    # A conflicting batch cannot restore freshness for an empty-sided symbol.
+    return [quote for quote in result if quote.symbol not in unusable], unusable
+
+
+def parse_binary(
+    message: bytes, instruments: dict[int, Instrument], received: datetime
+) -> list[Quote]:
+    """Return only executable full quotes from a structurally valid batch."""
+    return _parse_binary(message, instruments, received)[0]
 
 
 class QuoteStream:
@@ -316,6 +332,7 @@ class QuoteStream:
         clock: Callable[[], datetime],
         *,
         credentials: tuple[str, str] | None = None,
+        on_unusable: Callable[[str], None] | None = None,
     ):
         self.instruments = {item.token: item for item in instruments}
         if not 1 <= len(self.instruments) <= 10:
@@ -329,16 +346,36 @@ class QuoteStream:
             raise BrokerUnavailable("missing broker stream credentials")
         self._url = "wss://ws.kite.trade/?" + urlencode({"api_key": key, "access_token": token})
         self._on_quote, self._on_connection, self._clock = on_quote, on_connection, clock
+        self._on_unusable = on_unusable
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
         self._socket: Any = None
+        self._status_lock = threading.Lock()
+        self._diagnostics: dict[str, Any] = {
+            "state": "connecting",
+            "failures": 0,
+            "last_failure": None,
+            "last_message_at": None,
+            "unusable_quotes": 0,
+        }
+
+    def diagnostics(self) -> dict[str, Any]:
+        """Credential-free transport state; never include broker messages or URLs."""
+        with self._status_lock:
+            return dict(self._diagnostics)
+
+    def _status(self, **values: Any) -> None:
+        with self._status_lock:
+            self._diagnostics.update(values)
 
     def _run(self) -> None:
         from websockets.sync.client import connect
 
         attempts = 0
         while not self._stop.is_set() and attempts < 10:
+            phase = "connect"
             try:
+                self._status(state="connecting" if not attempts else "retrying")
                 with connect(
                     self._url,
                     open_timeout=5,
@@ -349,27 +386,64 @@ class QuoteStream:
                     compression=None,
                 ) as socket:
                     self._socket = socket
+                    phase = "subscribe"
                     tokens = list(self.instruments)
                     socket.send(json.dumps({"a": "subscribe", "v": tokens}))
                     socket.send(json.dumps({"a": "mode", "v": ["full", tokens]}))
                     self._on_connection(True)
+                    self._status(state="connected")
                     while not self._stop.is_set():
+                        phase = "receive"
                         message = socket.recv(timeout=5)
+                        self._status(last_message_at=utc(self._clock()).isoformat())
                         if isinstance(message, str):
+                            phase = "control"
                             payload = json.loads(message)
                             if payload.get("type") == "error":
                                 raise BrokerUnavailable("broker streaming session failed")
                             continue
-                        for quote in parse_binary(message, self.instruments, self._clock()):
+                        phase = "parse"
+                        quotes, unusable = _parse_binary(message, self.instruments, self._clock())
+                        with self._status_lock:
+                            self._diagnostics["unusable_quotes"] += len(unusable)
+                        phase = "process"
+                        if self._on_unusable:
+                            for symbol in unusable:
+                                self._on_unusable(symbol)
+                        for quote in quotes:
                             self._on_quote(quote)
                         attempts = 0
-            except Exception:
+                        self._status(failures=0)
+            except Exception as error:
                 # Exception strings can include authenticated URLs; never log them.
+                from websockets.exceptions import InvalidStatus
+
                 attempts += 1
+                code = (
+                    "handshake_rejected"
+                    if isinstance(error, InvalidStatus)
+                    else "timeout"
+                    if isinstance(error, TimeoutError)
+                    else "broker_rejected"
+                    if isinstance(error, BrokerUnavailable)
+                    else "invalid_data"
+                    if phase in ("parse", "control")
+                    else "processing_error"
+                    if phase == "process"
+                    else "connection_lost"
+                )
+                self._status(
+                    state="failed" if attempts >= 10 else "retrying",
+                    failures=attempts,
+                    last_failure=code,
+                )
             finally:
                 self._socket = None
                 self._on_connection(False)
-            self._stop.wait(min(30, 2**attempts))
+            if attempts < 10:
+                self._stop.wait(min(30, 2**attempts))
+        if self._stop.is_set():
+            self._status(state="stopped")
 
     def start(self) -> None:
         if self._thread is not None:
@@ -379,6 +453,7 @@ class QuoteStream:
 
     def close(self) -> None:
         self._stop.set()
+        self._status(state="stopped")
         self._on_connection(False)
         if self._socket:
             self._socket.close()

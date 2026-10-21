@@ -5,6 +5,24 @@ Prepared 20 October 2026; updated 21 October 2026. This is the execution record 
 
 ## Implemented scope
 
+### Verified after-hours feed repair (0.11.1)
+
+Diagnosed the actual 8004 feed failure with a valid broker profile and successful
+read-only WebSocket: all five selected full packets had empty bid/ask sides after
+hours. Skip zero-depth/price observations without manufacturing executable Quotes
+or disconnecting; retain strict framing/identity and other validation. Immediately
+invalidate prior fresh depth per symbol, reset manual partial candles and apply existing
+intraday stale-data safeguards without silently rearming. Added safe stream state,
+consecutive retry budget/failure category, receipt time and ignored-book
+count to authenticated Setup and explanatory UI. Added meaningful unit, HTTP lifecycle,
+pending-order/accounting and UI checks. Updated usage/restart and component documents.
+The corrected worker stayed connected in an isolated 15-second actual broker check;
+five unusable observations, zero usable quotes, no account callbacks or orders.
+No operator-owned process was stopped or restarted by this work. Port 8004 was no
+longer listening at the final local check; the operator can start the corrected version
+with `./scripts/start_ui.sh` and explicitly reconnect in Setup.
+This does not complete fresh-market execution, full-session or strategy acceptance.
+
 ### Shared workspace and explicit operating guidance (0.11.0)
 
 Added the requested clear menu and a shared in-memory local unlock across its Start

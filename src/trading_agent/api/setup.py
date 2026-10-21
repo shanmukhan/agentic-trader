@@ -152,6 +152,7 @@ class SetupService:
                 "profile_verified_this_run": self.verified,
                 "feed_connected": self.engine.connected,
                 "stream_requested": self.stream is not None,
+                "feed_diagnostics": self.stream.diagnostics() if self.stream else None,
                 "catalog_count": tx.execute("SELECT count(*) FROM instruments").fetchone()[0],
                 "selected": selected,
                 "today": day.isoformat(),
@@ -412,12 +413,20 @@ class SetupService:
                         builder.active.clear()
                         builder.previous.clear()
 
+            def unusable(symbol: str) -> None:
+                with self.engine.lock:
+                    self.engine.invalidate_quote(symbol)
+                    for builder in builders:
+                        builder.active.pop(symbol, None)
+                        builder.previous.pop(symbol, None)
+
             self.stream = QuoteStream(
                 catalog,
                 ingest,
                 connected,
                 self.clock,
                 credentials=(self.values["api_key"], self.values["access_token"]),
+                on_unusable=unusable,
             )
 
     def connect(self) -> None:

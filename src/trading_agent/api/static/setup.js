@@ -38,7 +38,26 @@
       el('session-state').textContent = (data.access_token_available ? 'A broker access token is available. ' : 'No broker access token is available. ') + (data.profile_verified_this_run ? 'Profile verified this run; streaming entitlement still needs a feed check.' : 'Saved credentials have not been verified this run.');
       el('catalog-state').textContent = data.catalog_count + ' catalog instruments stored. Selected tokens and tick sizes below are server-validated.';
       el('calendar-state').textContent = data.calendar_today ? 'Today has a reviewed session definition.' : 'Today is not in the reviewed calendar; entries remain blocked.';
-      el('feed-state').textContent = data.feed_connected ? 'WebSocket connected. Check accepted quote freshness and remaining trading safeguards in the console.' : data.stream_requested ? 'Feed requested but not connected. Refresh status; check login, entitlement and network. Disconnect before trying another session.' : 'Feed disconnected. No new quotes can establish execution readiness.';
+      const diagnostic = data.feed_diagnostics;
+      const failures = {
+        handshake_rejected: 'Zerodha refused the WebSocket handshake. Check the saved broker session and streaming entitlement.',
+        timeout: 'The connection or incoming data timed out. Check the network and refresh status.',
+        broker_rejected: 'Zerodha reported a streaming error. Check the saved broker session and streaming entitlement.',
+        invalid_data: 'The feed returned unsupported or invalid data. Trading quotes remain blocked; inspect the application before retrying.',
+        processing_error: 'The application could not process a quote. Inspect account health and the server before reconnecting.',
+        connection_lost: 'The market-data connection failed or closed. Check the network and broker session.'
+      };
+      let feedText = data.feed_connected ? 'WebSocket connected. A connection is not proof of fresh usable quotes. Check quote freshness and trading safeguards in the console.' : data.stream_requested ? 'Feed requested but not connected. Refresh status; check login, entitlement and network. Disconnect before trying another session.' : 'Feed disconnected. No new quotes can establish execution readiness.';
+      if (data.stream_requested && diagnostic) {
+        if (!data.feed_connected) {
+          if (diagnostic.state === 'failed') feedText = 'Connection retries exhausted. Select Disconnect market data, then Connect paper market data after resolving the cause.';
+          else if (diagnostic.state === 'retrying') feedText = 'Feed reconnecting after failure ' + diagnostic.failures + ' of 10. Refresh setup status to check progress.';
+          else if (diagnostic.state === 'connecting') feedText = 'Connecting to Zerodha market data. Wait a few seconds, then select Refresh setup status.';
+          if (failures[diagnostic.last_failure]) feedText += ' ' + failures[diagnostic.last_failure];
+        }
+        if (diagnostic.unusable_quotes > 0) feedText += ' Empty-sided/zero-liquidity quotes ignored: ' + diagnostic.unusable_quotes + '. This can occur after market hours or in an illiquid book. No price or liquidity is invented; these observations cannot fill orders.';
+      }
+      el('feed-state').textContent = feedText;
       el('selected').replaceChildren(); for (const item of data.selected) row('selected', item.symbol + ' · token ' + item.token + ' · tick ' + item.tick);
       el('sessions').replaceChildren(); for (const session of data.sessions) row('sessions', session.date + ' · ' + session.open + '–' + session.close + ' IST · ' + session.source);
       if (!el('symbol-list').value) el('symbol-list').value = data.selected.map(s => s.symbol).join(', ');

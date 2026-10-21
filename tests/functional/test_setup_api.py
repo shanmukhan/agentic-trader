@@ -1,9 +1,11 @@
 import json
+import struct
+from contextlib import nullcontext
 from decimal import Decimal
 from unittest.mock import Mock
 
 import pytest
-from conftest import NOW, TOKEN
+from conftest import NOW, TOKEN, candidate
 from fastapi.testclient import TestClient
 
 from trading_agent.api.app import create_app
@@ -56,7 +58,9 @@ def test_full_browser_setup_flow_is_readonly_for_finances(setup_client, monkeypa
     upstream.get_instruments.return_value = []
     monkeypatch.setattr("trading_agent.api.setup.ReadOnlyKite", lambda *args: upstream)
     monkeypatch.setattr("trading_agent.api.setup.exchange_token", lambda *args: "sessionvalue")
-    monkeypatch.setattr("trading_agent.api.setup.QuoteStream", lambda *a, **k: Mock())
+    stream = Mock()
+    stream.diagnostics.return_value = {"state": "connecting", "failures": 0}
+    monkeypatch.setattr("trading_agent.api.setup.QuoteStream", lambda *a, **k: stream)
     before = client.get("/api/status", headers=AUTH).json()
     for operation, body in (
         ("credentials", {"api_key": "unitkey", "api_secret": "unitsecret"}),
@@ -87,6 +91,70 @@ def test_full_browser_setup_flow_is_readonly_for_finances(setup_client, monkeypa
     for key in ("cash", "fees", "positions", "reserved_cash", "reserved_risk"):
         assert after[key] == before[key]
     assert client.get("/api/paper/orders", headers=AUTH).json() == []
+    assert not service.engine.faulted
+
+
+def test_empty_depth_keeps_feed_online_without_filling_pending_order(setup_client, monkeypatch):
+    import websockets.sync.client
+
+    from trading_agent.broker.readonly_kite import QuoteStream
+
+    client, service = setup_client
+    service.select_symbols({"symbols": ["DEMO"]})
+    service.values = {"api_key": "unitkey", "api_secret": "unitsecret", "access_token": "session"}
+    service.engine.submit(candidate(), NOW)
+    service.engine.set_connected(False)
+    before = client.get("/api/status", headers=AUTH).json()
+    orders = client.get("/api/paper/orders", headers=AUTH).json()
+    monkeypatch.setattr("trading_agent.api.setup.ReadOnlyKite", lambda *args: Mock())
+    monkeypatch.setattr(QuoteStream, "start", lambda self: None)
+    assert client.post("/api/setup/connect", headers=AUTH, json={}).status_code == 200
+    packet = bytearray(184)
+    for offset, value in ((0, 1), (4, 50000), (60, int(NOW.timestamp())), (64, 100), (68, 49995)):
+        struct.pack_into(">I", packet, offset, value)
+    # Missing ask price/quantity observed on the real after-hours feed.
+    message = struct.pack(">HH", 1, 184) + packet
+    socket = Mock()
+    calls = 0
+    observed = []
+
+    def recv(**kwargs):
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            return message
+        assert service.stream is not None
+        observed.append(
+            (
+                client.get("/api/setup", headers=AUTH).json(),
+                set(service.engine.seen_symbols),
+                set(service.engine.bad_symbols),
+                client.get("/api/paper/orders", headers=AUTH).json(),
+            )
+        )
+        service.stream._stop.set()
+        return b"\x00"
+
+    socket.recv.side_effect = recv
+    monkeypatch.setattr(websockets.sync.client, "connect", lambda *a, **k: nullcontext(socket))
+    assert service.stream is not None
+    monkeypatch.setattr(service.stream._stop, "wait", lambda timeout: service.stream._stop.set())
+    service.stream._run()
+    assert calls == 2 and socket.send.call_count == 2
+    assert len(observed) == 1
+    status, seen, bad, observed_orders = observed[0]
+    assert status["feed_connected"] and status["stream_requested"]
+    assert status["feed_diagnostics"]["state"] == "connected"
+    assert status["feed_diagnostics"]["unusable_quotes"] == 1
+    assert status["feed_diagnostics"]["last_message_at"] == NOW.isoformat()
+    assert status["feed_diagnostics"]["failures"] == 0
+    assert not seen and bad == {"NSE:DEMO"} and observed_orders == orders
+    after = client.get("/api/status", headers=AUTH).json()
+    for field in ("cash", "fees", "positions", "reserved_cash", "reserved_risk"):
+        assert after[field] == before[field]
+    assert Decimal(after["cash"]) == Decimal("25000.00")
+    assert Decimal(after["fees"]) == Decimal("0")
+    assert client.get("/api/paper/orders", headers=AUTH).json() == orders
     assert not service.engine.faulted
 
 

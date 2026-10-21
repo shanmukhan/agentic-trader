@@ -1,5 +1,13 @@
 # Threat model and security decisions
 
+Version 0.11.1 exposes fixed credential-free feed failure codes and bounded retry
+counts through authenticated Setup. Never include raw exception strings, broker text
+messages, socket URLs or headers: these can contain session credentials. Last receipt
+time includes heartbeats and is explicitly not a fresh-quote attestation. Empty books
+invalidate prior executable depth per symbol without manufacturing prices/quantities;
+strict batch identity/framing checks precede callbacks. Intraday's existing stale-data
+safeguards remain active while the transport stays connected.
+
 ## Shared in-memory workspace (0.11.0)
 
 Local menu navigation retains one operator token in workspace/active-section memory.

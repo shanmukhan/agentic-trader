@@ -127,6 +127,12 @@ class PaperBroker:
                 self.seen_symbols.clear()
             self.connected = connected
 
+    def invalidate_quote(self, symbol: str) -> None:
+        """An observed empty book supersedes earlier executable depth immediately."""
+        with self.lock:
+            self.bad_symbols.add(symbol)
+            self.seen_symbols.discard(symbol)
+
     def register(self, instruments: list[Instrument]) -> None:
         with self.lock, self.db.transaction() as tx:
             for item in instruments:

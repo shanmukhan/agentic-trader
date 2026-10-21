@@ -4,7 +4,7 @@ from decimal import Decimal as D
 from unittest.mock import Mock
 
 import pytest
-from conftest import NOW
+from conftest import NOW, candidate, quote
 
 from trading_agent.broker.readonly_kite import (
     BrokerUnavailable,
@@ -160,6 +160,9 @@ def test_malformed_stream_and_expiry_disable_connection(monkeypatch, message):
     monkeypatch.setattr(stream._stop, "wait", lambda timeout: stream._stop.set())
     stream._run()
     assert states == [True, False] and not quotes
+    assert stream.diagnostics()["last_failure"] == (
+        "broker_rejected" if isinstance(message, str) else "invalid_data"
+    )
 
 
 def test_stream_accepts_server_owned_credentials_without_global_environment(monkeypatch):
@@ -175,3 +178,71 @@ def test_stream_accepts_server_owned_credentials_without_global_environment(monk
     assert "api_key=serverkey" in stream._url
     assert "access_token=serversession" in stream._url
     stream.close()
+
+
+@pytest.mark.parametrize("offset", [64, 68, 124, 128])
+def test_empty_book_is_not_an_executable_quote(offset):
+    message = bytearray(packet())
+    struct.pack_into(">I", message, 4 + offset, 0)
+    instruments = {1: Instrument(symbol="NSE:DEMO", token=1, tick_size=D(".05"))}
+    assert parse_binary(bytes(message), instruments, NOW) == []
+    # One empty book must not discard another instrument's usable quote.
+    mixed = struct.pack(">H", 2) + message[2:] + packet(257)[2:]
+    instruments[257] = Instrument(symbol="NSE:OTHER", token=257, tick_size=D(".05"))
+    assert [q.symbol for q in parse_binary(mixed, instruments, NOW)] == ["NSE:OTHER"]
+    conflicting = struct.pack(">H", 2) + packet()[2:] + message[2:]
+    assert parse_binary(conflicting, instruments, NOW) == []
+    with pytest.raises(ValueError):
+        parse_binary(bytes(message) + b"bad", instruments, NOW)
+    struct.pack_into(">I", message, 4, 513)
+    with pytest.raises(ValueError, match="unknown"):
+        parse_binary(bytes(message), instruments, NOW)
+
+
+def test_retry_budget_exposes_only_safe_failure_codes(monkeypatch):
+    import websockets.sync.client
+
+    def failure(*args, **kwargs):
+        raise TimeoutError("https://private.invalid/?access_token=DO_NOT_EXPOSE")
+
+    monkeypatch.setattr(websockets.sync.client, "connect", failure)
+    stream = QuoteStream(
+        [Instrument(symbol="NSE:DEMO", token=1, tick_size=D(".05"))],
+        Mock(),
+        Mock(),
+        lambda: NOW,
+        credentials=("key", "session"),
+    )
+    waits = []
+    monkeypatch.setattr(stream._stop, "wait", waits.append)
+    stream._run()
+    assert stream.diagnostics() == {
+        "state": "failed",
+        "failures": 10,
+        "last_failure": "timeout",
+        "last_message_at": None,
+        "unusable_quotes": 0,
+    }
+    assert len(waits) == 9 and max(waits) == 30
+    snapshot = stream.diagnostics()
+    snapshot["state"] = "modified"
+    assert stream.diagnostics()["state"] == "failed"
+    stream.close()
+    assert stream.diagnostics()["state"] == "stopped"
+
+
+def test_observed_empty_book_invalidates_recent_depth_until_next_accepted_quote(engine):
+    assert engine._fresh(quote(), NOW)
+    engine.invalidate_quote("NSE:DEMO")
+    assert engine.connected and not engine._fresh(quote(), NOW)
+    rejected = engine.submit(candidate("empty-book"), NOW)
+    assert rejected["state"] == "REJECTED"
+    assert "STALE_OR_MISSING_QUOTE" in rejected["reason"]
+    assert not engine.snapshot(NOW)["positions"]
+    assert D(engine.snapshot(NOW)["cash"]) == D("25000.00")
+    assert engine.ingest(quote(1), NOW + timedelta(seconds=1))
+    assert engine._fresh(quote(1), NOW + timedelta(seconds=1))
+    accepted = engine.submit(
+        candidate("restored", now=NOW + timedelta(seconds=1)), NOW + timedelta(seconds=1)
+    )
+    assert accepted["state"] == "ACCEPTED"

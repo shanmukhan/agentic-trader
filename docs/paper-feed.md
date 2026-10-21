@@ -1,5 +1,19 @@
 # Phase 4: supervised live-feed paper trading
 
+The 0.11.1 transport fix ignores full packets whose best bid/ask price or quantity
+is zero. A real after-hours observation previously caused Quote validation to throw
+and disconnect the socket. These packets now produce no executable Quote or callback;
+valid packets in the same structurally valid batch remain available. Strict packet
+identity/framing and remaining price/timestamp validation are preserved. Heartbeats
+and empty books can sustain a connected transport without fresh executable prices.
+An empty book immediately invalidates the affected symbol's earlier execution quote.
+The controller applies its existing stale-universe/held-position safeguards, including
+disarming/cancelling entries and the held-price kill latch. Another valid quote does
+not automatically rearm it. Conflicting same-symbol packets in a batch cannot clear
+an observed empty book. Manual partial candle builders reset for that symbol.
+Existing freshness, session, basis and risk gates remain mandatory. Manual Setup
+exposes safe bounded-retry diagnostics; see [UI recovery](ui-setup.md#after-hours-feed-offline-fix-0111).
+
 Version 0.4.0 connects reviewed rule/model candidates to the read-only Kite feed and
 the existing **virtual** broker. It adds explicit arming, outage controls, separate
 history loading, telemetry and operations reports. No live orders or transfers are

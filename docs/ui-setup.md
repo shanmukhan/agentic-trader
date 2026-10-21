@@ -5,6 +5,66 @@ the [shared workspace menu and step-by-step guide](workspace.md). The existing
 Python 3.13.16 environment and frozen dependencies remain sufficient. The page is
 responsive browser UI, not a native mobile app. No real order or fund transfer exists.
 
+## After-hours feed offline fix (0.11.1)
+
+On 21 October 2026 after market hours, a read-only probe confirmed a valid profile
+(HTTP 200), successful WebSocket handshake and five 184-byte full packets. All five
+had a zero bid or ask. The old parser raised a positive-price validation error and
+the worker treated it as a broken connection. This was an application bug; neither
+missing calendar approval nor a proven expired token explained this occurrence.
+
+The corrected parser ignores full packets with zero bid/ask prices or side quantities,
+keeps the healthy connection, and preserves valid packets elsewhere in the same batch.
+It never substitutes last price for missing depth. Unknown tokens, malformed framing,
+unsupported modes, crossed books and other Quote validation still fail closed.
+Ignored observations are excluded from accepted quotes, candles, marking and fills.
+An affected symbol's earlier quote immediately loses execution freshness even within
+its normal age limit, until another valid quote is accepted. Its partial candle
+builders reset rather than silently bridge the missing book. An empty-sided symbol
+also cannot become usable through a conflicting valid packet in the same batch.
+Other symbols keep their independent freshness checks. The intraday controller runs
+its existing stale-data safeguards immediately: disarm entries/cancel pending buys,
+and latch the kill switch for affected holdings where the existing policy requires
+it. A later valid quote restores data freshness but never silently rearms automation.
+
+To load this fix on your existing 8004 account:
+
+1. Review holdings/pending orders. If an old server is still running, press **Ctrl+C**
+   in its terminal. If it is already stopped, go directly to the next step.
+   Offline periods cannot fill exits; restart recovery cancels old pending order residue.
+2. From the repository root, run `./scripts/start_ui.sh` and keep that terminal open.
+3. Reload `/workspace` and unlock with `TRADING_OPERATOR_TOKEN` from your private `.env`.
+4. Open **Broker & feed setup**. Select **Check saved broker session** in step 3.
+   If verification succeeds, keep that session. If it fails, complete a fresh login
+   and exchange using the existing instructions below; a new login is not necessary
+   merely because an after-hours book has no buy/sell side.
+5. In step 6, select **Connect paper market data**, review and confirm. Wait a few
+   seconds, then select **Refresh setup status**. The new backend reports version
+   0.11.1; the launcher refuses to reuse an older running server.
+6. Expect **WebSocket connected**, possibly with **Empty-sided/zero-liquidity quotes
+   ignored**. The console can still show stale/missing quotes after market hours.
+   That means there is no fresh executable quote, not that the socket is broken.
+7. During a genuinely reviewed open exchange session, complete calendar and per-symbol
+   long-term basis reviews and check fresh quotes/readiness. Do not attest an invented
+   session or loosen safeguards to make the status green.
+
+Step 6 distinguishes connecting, reconnecting and exhausted retries. Fixed failure
+descriptions identify handshake refusal (session/permission), timeout, broker error,
+invalid data or application processing failure. They never show raw broker messages,
+URLs or credentials. Refresh explicitly to see progress. There are at most ten
+consecutive failures with bounded exponential backoff; a valid binary message,
+including a heartbeat, resets that failure budget. After exhaustion, **Disconnect
+market data**, resolve the stated cause, then reconnect explicitly. Disconnecting
+also re-enables replacement login/selection controls. Investigate invalid-data or
+processing failures rather than repeatedly reconnecting a faulty account.
+
+A diagnostic-only fixed-worker check stayed connected for 15 seconds, ignored all
+five empty-sided observations and produced zero usable quotes. Its callbacks were
+isolated from the account; no paper/broker orders or review attestations were made.
+This is a brief actual transport check, not a full-session/fresh-execution acceptance.
+The implementation did not stop/restart an operator process. At its final local check,
+8004 was no longer listening, so the next action is to start the updated launcher.
+
 ## Why the Zerodha redirect token does not unlock the app
 
 | Value | Where it comes from | Where to use it |

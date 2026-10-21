@@ -81,6 +81,23 @@ test('streaming prevents credential/selection replacement and connecting twice',
   assert.equal(s.nodes.disconnect.disabled,false);s.nodes.disconnect.fire('click');assert.ok(s.nodes.confirm.open);
   assert.match(s.nodes['confirm-text'].textContent,/Holdings stay open/);
 });
+test('connected empty books explain missing usable quotes without presenting them as tradable',async()=>{
+  const s=setup(async()=>ok(status({stream_requested:true,feed_connected:true,feed_diagnostics:{state:'connected',failures:0,unusable_quotes:5}})));await s.unlock();
+  assert.match(s.nodes['feed-state'].textContent,/WebSocket connected/);
+  assert.match(s.nodes['feed-state'].textContent,/not proof of fresh usable quotes/);
+  assert.match(s.nodes['feed-state'].textContent,/ignored: 5/);
+  assert.match(s.nodes['feed-state'].textContent,/cannot fill orders/);
+});
+test('exhausted feed retries give recovery steps and fixed credential-free failure descriptions',async()=>{
+  const s=setup(async()=>ok(status({stream_requested:true,feed_diagnostics:{state:'failed',failures:10,last_failure:'timeout',unusable_quotes:0}})));await s.unlock();
+  assert.match(s.nodes['feed-state'].textContent,/retries exhausted/);
+  assert.match(s.nodes['feed-state'].textContent,/Disconnect market data, then Connect/);
+  assert.match(s.nodes['feed-state'].textContent,/timed out/);
+  assert.equal(s.nodes.disconnect.disabled,false);assert.equal(s.nodes.connect.disabled,true);
+  const other=setup(async()=>ok(status({stream_requested:true,feed_diagnostics:{state:'retrying',failures:2,last_failure:'sensitive-broker-error',unusable_quotes:0}})));await other.unlock();
+  assert.match(other.nodes['feed-state'].textContent,/failure 2 of 10/);
+  assert.doesNotMatch(other.nodes['feed-state'].textContent,/sensitive/);
+});
 test('callback removes sensitive query before posting only to its own origin',()=>{
   const messages=[],history=[];
   const window={location:{search:'?request_token=onetime&setup_state=nonce',pathname:'/',origin:'http://127.0.0.1:8004'},history:{replaceState:(...a)=>history.push(a)},opener:{postMessage:(...a)=>messages.push(a)}};

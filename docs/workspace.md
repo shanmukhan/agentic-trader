@@ -1,6 +1,12 @@
 # One workspace, one unlock, clear next steps
 
 Version 0.11.0 adds a shared menu and an in-memory local unlock across its sections.
+Version 0.11.1 also fixes after-hours empty-sided quote disconnections. If your
+console remains offline after requesting a feed, inspect Setup step 6 for safe
+failure/retry details and follow the [restart/recovery guide](ui-setup.md#after-hours-feed-offline-fix-0111).
+Connected with stale/missing quotes after hours is a valid distinct state: missing
+executable depth is ignored rather than invented, and trading stays blocked.
+
 This is navigation/setup usability work; it does not add automatic stock selection
 or automatic long-term entries.
 

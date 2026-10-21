@@ -40,6 +40,23 @@ def test_history_only_once_per_completed_boundary_and_before_arm(paper_factory, 
     assert feed.engine.orders() == before and not feed.engine.connected
 
 
+def test_empty_book_invalidates_depth_and_disarms_without_disconnecting(paper_factory, monkeypatch):
+    feed = paper_factory()
+    controller, broker, current = service(feed, monkeypatch)
+    assert controller.refresh_history()
+    assert feed.arm(WARM)["armed"]
+    controller.unusable("NSE:DEMO")
+    assert feed.engine.connected and not feed.armed
+    assert not feed.engine._fresh(demo_quote(WARM), WARM)
+    assert feed.reason == "STALE_UNIVERSE_QUOTE"
+    assert not feed.engine.snapshot(WARM)["positions"]
+    assert D(feed.engine.snapshot(WARM)["cash"]) == D("25000.00")
+    current[0] += timedelta(seconds=1)
+    controller.quote(demo_quote(current[0], volume=28100))
+    assert feed.engine._fresh(demo_quote(current[0]), current[0])
+    assert not feed.armed  # A good quote never silently rearms automation.
+
+
 def test_network_history_wait_does_not_block_quote_processing(paper_factory, monkeypatch):
     feed = paper_factory()
     controller, broker, current = service(feed, monkeypatch)

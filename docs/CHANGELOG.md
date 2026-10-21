@@ -1,5 +1,31 @@
 # Change log
 
+## 2026-10-21 — Keep after-hours empty books from disconnecting the feed (0.11.1)
+
+Fixed the verified full-packet parser failure when the broker sends an empty bid/ask
+or zero side quantity. Ignore these observations without emitting an executable quote
+or disconnecting; preserve valid packets elsewhere in the batch and strict framing,
+identity and remaining Quote validation. No financial policy or order capability changes.
+Earlier executable depth for an affected symbol immediately loses freshness; manual
+candle builders reset and intraday applies its existing stale-data safeguards. A later
+valid quote cannot silently rearm automation. Conflicting same-symbol packets in one
+batch cannot restore freshness past an observed empty book.
+Setup now reports credential-free connection state, bounded retry progress/exhaustion,
+fixed failure categories, last transport receipt time and ignored-book count, with
+clear recovery instructions. Raw broker messages/authenticated URLs stay private.
+
+Validation: **547 Python tests**, **56 JavaScript tests**, **93% Python coverage**;
+Ruff/mypy passed. Unit cases cover each empty side/quantity, mixed packets, unknown
+tokens/trailing corruption and retry exhaustion/redaction. A functional pending-order
+case keeps the socket connected while proving exact unchanged cash/fees/reservations,
+orders/positions and no fill. Unit/service checks also prove prior fresh depth cannot
+authorize a new entry, valid data restores freshness, and automation disarms without
+losing the transport or rearming. Actual isolated read-only worker check remained connected
+for 15 seconds with five ignored books and no usable quotes/orders. User-owned server
+and persisted account were left untouched. Port 8004 was no longer listening at the
+final check; start the launcher to load the fix and explicitly reconnect. Fresh
+market/full-session, sustained device and actual paper-fill acceptance remain pending.
+
 ## 2026-10-21 — Shared menu, one workspace unlock and next-step guidance (0.11.0)
 
 Added `/workspace` with Start here, Trading console, Broker & feed setup and Purchases

@@ -21,8 +21,19 @@ class PaperService:
         self.last_attempt: datetime | None = None
         self.next_request = 0.0
         self.stream: Any = QuoteStream(
-            list(runtime.catalog.values()), self.quote, self.connection, clock
+            list(runtime.catalog.values()),
+            self.quote,
+            self.connection,
+            clock,
+            on_unusable=self.unusable,
         )
+
+    def unusable(self, symbol: str) -> None:
+        with self.runtime.engine.lock:
+            if self.stop.is_set() or self.runtime.closed:
+                return
+            self.runtime.engine.invalidate_quote(symbol)
+            self.runtime.tick(self.clock())
 
     def quote(self, quote: Quote) -> None:
         began = perf_counter_ns()

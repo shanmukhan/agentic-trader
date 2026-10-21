@@ -1,7 +1,18 @@
 # How to use Agentic Trader
 
-Updated 21 October 2026 for version 0.11.0. This guide and corresponding detailed
+Updated 21 October 2026 for version 0.11.1. This guide and corresponding detailed
 guides are updated with every feature or changed workflow, as required by [AGENTS.md](../AGENTS.md).
+
+Version 0.11.1 fixes a verified after-hours feed disconnection: full quote packets
+with an empty bid/ask or zero side quantity are ignored without disconnecting.
+They cannot create accepted quotes, candles or paper fills. Any earlier quote for
+an affected symbol is immediately unusable until a new valid quote passes acceptance;
+other symbols retain their independent freshness checks. Setup step 6 now shows
+safe connection failure/retry details and a count of these unusable observations.
+Restart an older server once to load the fix, then explicitly connect and refresh
+Setup status; see [the exact recovery steps](ui-setup.md#after-hours-feed-offline-fix-0111).
+Connected transport still requires fresh executable quotes, reviewed sessions and
+all independent risk/basis checks before trading.
 
 ## 1. Scope and prerequisites
 

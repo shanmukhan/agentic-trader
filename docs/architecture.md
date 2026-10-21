@@ -1,5 +1,14 @@
 # Architecture and invariants
 
+Version 0.11.1 separates missing executable depth from transport failure. The strict
+full-packet decoder returns usable quotes and unusable symbol observations after
+batch framing/identity validation. Stream callbacks invalidate prior depth per affected
+symbol; manual Setup clears its partial candles and intraday runs its existing stale-data
+guard. Other symbols remain usable; conflicting quotes cannot restore an empty-sided
+symbol's freshness in that batch. A later accepted quote can restore freshness.
+Transport diagnostics use a separate short lock and fixed categories without recording
+raw exception/broker strings or credentials.
+
 Version 0.11.0 adds a fixed-route `/workspace` shell with same-origin sections and
 one parent-held in-memory operator token. Origin/window/active-view handshakes share
 it only with the active section. Section controllers retain their own risk/freshness,

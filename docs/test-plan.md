@@ -1,5 +1,27 @@
 # Test and validation plan
 
+## After-hours transport regression coverage (0.11.1)
+
+Unit cases independently zero best bid/ask prices and quantities, preserve a second
+usable instrument in a mixed batch, and retain rejection of unknown tokens/trailing
+corruption. Bounded retry tests verify ten failures/nine waits, final failed/stopped
+states, snapshot isolation and fixed timeout codes without exception details. Existing
+invalid-packet/broker-error tests verify safe failure classification. Functional HTTP
+coverage runs the actual worker against a mocked full packet while an order is pending:
+connection stays online, ignored-book count advances, no symbol becomes fresh, and
+persisted order/cash/fee/reservation/position state remains unchanged. UI tests distinguish
+connected transport from usable depth and give retry-exhaustion recovery without exposing
+unknown error text. Prior-depth invalidation/recovery tests prove a new entry is rejected
+immediately despite the earlier quote's age, then permitted only after accepted valid
+data. Service tests prove immediate intraday disarm while remaining connected and no
+automatic rearm after recovery. Full validation: **547 Python / 56 JS tests**, **93% coverage**.
+
+Separately, an actual diagnostic-only broker check after market hours verified HTTP 200
+profile, successful WebSocket handshake and the original zero-sided packet failure.
+The corrected worker stayed connected for 15 seconds with five ignored books and zero
+usable quotes. No callback entered the user's account; no order, review or arming occurred.
+This brief observation does not establish fresh-market/fill or full-session acceptance.
+
 ## Shared menu coverage (0.11.0)
 
 Functional checks cover authenticated read-only workspace metadata, actual manual

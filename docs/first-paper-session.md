@@ -286,6 +286,11 @@ for private remote/mobile access.
 | Token expires/feed stops | Stop the service, login again, source the new session file, restart the same account/config and inspect recovery before resuming |
 | After-market/weekend test | Use an isolated offline demo; the live feed cannot supply an executable open session on demand |
 
+Version 0.11.1 corrects the verified after-hours zero-sided-book parser failure;
+it can keep the transport connected while the console correctly reports stale/missing
+executable quotes. See [recovery and diagnostic meanings](ui-setup.md#after-hours-feed-offline-fix-0111).
+Missing calendar/basis approval blocks trading independently of WebSocket connectivity.
+
 Once the manual lifecycle works, use [paper-feed.md](paper-feed.md) for a **different
 new dedicated intraday account** with explicit `paper-init` and supervised arming.
 Rule-only mode is an experimental baseline. The long-term research/ML pipeline is
