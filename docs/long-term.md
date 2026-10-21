@@ -69,6 +69,13 @@ never forces an exit for this horizon. Entry hours remain 09:30–14:30 IST and 
 fifteen minutes before an earlier reviewed close. Protective exits can fill during
 any supported reviewed open session when usable quotes/liquidity arrive.
 
+The current delivery charge policy assumes equity shares and is not instrument-class
+aware. A broker catalog `EQ` row can also be an ETF, including
+[the GOLDCASE gold ETF](https://zerodha.com/markets/etf/NSE/GOLDCASE/). Catalog membership
+or quote subscription does not validate ETF fees. Do not submit ETF paper orders or
+approve their execution basis as supported equity-share tests until class-specific
+costs are implemented. No automatic ETF execution exclusion/monitor-only flag exists.
+
 Load the private operator/Kite environment as described in the main guide. Initialize
 and import the read-only instrument catalog before starting the feed:
 

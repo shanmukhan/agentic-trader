@@ -15,6 +15,11 @@ The first-session recovery instructions also distinguish copied-config port
 selection, a diagnostic-only preflight, offline UI startup and the nonempty catalog
 selection required by streaming. Local UI availability does not establish live-data
 or session readiness.
+The first actual profile/WebSocket observation is now recorded in
+[acceptance.md](acceptance.md#first-connected-session-observation-21-october-2026),
+with calendar/price-basis and full-quote acceptance still pending. Catalog `EQ`
+membership can include ETFs; instrument-class-aware charges and corresponding
+unit/functional accounting checks are required before claiming ETF execution support.
 
 The repository delivers Phases 1–3 infrastructure/research and Phase 4 supervised
 intraday paper-feed engineering, LT1–LT2 long-term paper mechanics and LT3a daily
@@ -349,7 +354,7 @@ deposits/withdrawals and connected daily automatic signals remain outside this r
 
 | Milestone | Required next evidence |
 |---|---|
-| Real read-only session | Actual manual login, profile, history entitlement, full quote feed; tests currently mock Kite |
+| Real read-only session | 21 October 2026: actual saved-session profile authentication and five-symbol WebSocket connection observed; accepted full quotes, history entitlement and sustained checks pending; unit transports remain mocked |
 | Target-device operations | ARM64 Pi dependency installation, reboot/launchd/systemd/power-loss drill, disk monitoring |
 | Empirical strategy validation | Actual matching raw candle/quote data, point-in-time universe/corporate-action review, calibrated fees/depth and retained unfavorable experiments |
 | Empirical ML acceptance | Implemented Phase 3 workflow must pass on reviewed real data, with exclusion/selection/cost assumptions retained and later portfolio validation |

@@ -17,9 +17,12 @@ Intraday accounts request end-of-session exits. No simulated exit can fill witho
 usable quotes and liquidity. Simulated results do not establish real execution or
 strategy profitability.
 
-The engineering tests and invented replay evidence are available, but **your login,
-data entitlement, sustained real feed and physical-device acceptance are not yet
-verified**. Existing demo accounts/calendars are synthetic. Use a new database for
+The engineering tests and invented replay evidence are available, but **login,
+data entitlement, sustained real feed and physical-device acceptance require
+independent checks for your session**. A local 21 October 2026 check has now observed
+successful profile authentication and a WebSocket connection, while full accepted
+quotes and sustained operation remain unverified; see [acceptance.md](acceptance.md#first-connected-session-observation-21-october-2026).
+Existing demo accounts/calendars are synthetic. Use a new database for
 this test rather than reusing the preview, demo or original paper account.
 
 For an immediate test without an API account, run:
@@ -167,6 +170,21 @@ sqlite3 data/first-live-paper.sqlite3 'select symbol,token,tick from instruments
 Select a small reviewed NSE cash-equity universe from this actual catalog. Set
 `stream_tokens` in the copied TOML to its numeric instrument tokens (one to ten).
 Do not guess tokens or use `NSE:DEMO`. Include every held symbol when restarting.
+For an already running account, stop its owning service before restarting with the
+new selection; do not run `init-db` again or create a replacement account merely to
+select feed tokens. Changing only the selected stream tokens preserves the economic
+policy identity. Confirm that the dashboard lists exactly your intended symbols.
+
+The catalog's `EQ` classification can also include ETFs. It does **not** establish
+that this app models their costs correctly. For example,
+[GOLDCASE is a gold ETF](https://zerodha.com/markets/etf/NSE/GOLDCASE/), while the
+current charge policy is selected by horizon and applies equity-share estimates to
+every symbol. ETF-specific costs/classification are not implemented. A feed
+subscription is not approval to submit ETF paper orders or interpret their estimated
+net results as validated. No persistent per-instrument monitor-only flag is provided;
+leave unsupported instruments out of order submission and price-basis approval until
+the instrument-class policy is implemented.
+
 Then run:
 
 ```sh

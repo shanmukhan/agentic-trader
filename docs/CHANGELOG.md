@@ -1,5 +1,26 @@
 # Change log
 
+## 2026-10-21 — Operator-selected first read-only feed connection
+
+Validated the operator's five supplied symbols/tokens/tick sizes against the local
+downloaded NSE catalog and updated only the private first-session feed selection.
+Checked actual Kite profile authentication without displaying personal fields or
+credentials. Restarted the previously offline 8004 service with read-only streaming;
+the authenticated console reports a connected feed and exactly the five selected
+symbols. API state and read-only reconciliation preserve ₹25,000.00, zero fees,
+no positions and no orders. Saved a separate private connection observation beside
+preflight evidence; no account config, credentials or private evidence is committed.
+
+Documented this partial external evidence separately from completed acceptance:
+current calendar/long-term basis reviews are missing, full quotes are not accepted
+for execution and readiness stays 503. No order, basis approval or calendar change
+was performed. Found that a selected instrument is a gold ETF; documented the
+existing equity-share fee assumption and missing ETF-specific policy/exclusion.
+Instrument-class accounting is now an explicit prerequisite for ETF paper execution
+claims. Updated usage, long-term, acceptance and plan guides. No application source
+or economic policy changed; validation comprises actual profile/connection/API
+observations, read-only accounting, Markdown links, secret scan and whitespace.
+
 ## 2026-10-21 — First-session dashboard startup diagnosis
 
 Diagnosed the local first-session config retaining the long-term template's 8001

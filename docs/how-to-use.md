@@ -158,6 +158,10 @@ If the example URL refuses connections, follow its
 the copied config's port must match the URL, preflight does not start a server,
 and streaming cannot start with an empty token selection. An offline `serve`
 can load the console while keeping entries blocked until feed setup is complete.
+Feed selection is separate from execution eligibility: catalog `EQ` rows can include
+ETFs, while current fee estimates model equity shares. Read the detailed guide's
+instrument-class limits before submitting orders. The current partial real-session
+evidence is recorded in [acceptance.md](acceptance.md#first-connected-session-observation-21-october-2026).
 
 An appropriate Kite application and market-data entitlement are required. Verify
 current availability in the [Kite documentation](https://kite.trade/docs/connect/v3/)

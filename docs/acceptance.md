@@ -5,6 +5,32 @@ read-only deployment/account diagnostics and clearer operator supervision. It do
 not complete empirical broker, model, fill-calibration or physical-device acceptance.
 Those require actual observations. No local report can approve live execution.
 
+## First connected-session observation 21 October 2026
+
+A private operator-configured manual long-term account on loopback port 8004 now
+has a five-symbol selection validated against its downloaded catalog. The saved
+session successfully authenticated against Kite's read-only profile endpoint, and
+the running service reported `feed_connected: true` after WebSocket subscription.
+The authenticated console listed exactly the selected five symbols. HTTP checks of
+the console, portfolio, health and authenticated status succeeded. Exact read-only
+reconciliation and API state retain ₹25,000.00, zero fees, no positions and no orders.
+
+This verifies only a point-in-time profile/connection observation. The calendar
+still has no reviewed current session and per-symbol long-term price-basis reviews
+are incomplete. Quotes are therefore not accepted for execution, readiness remains
+503 and no order was submitted. Full-mode quote acceptance, historical entitlement,
+sustained feed quality, execution calibration and target-device checks remain open.
+One selected catalog instrument is a gold ETF; its costs are not validated by the
+equity-share charge policy. Subscription does not establish execution eligibility.
+
+Private evidence is under `data/first-paper-feed-check-20261021T054205Z/`:
+`report.json`/`report.md` and their preflight manifest, plus a separate
+`connection-observation.json` recording selected tokens, connection state and
+remaining blockers. The extra observation is not covered by the preflight manifest.
+No credentials or personal broker-profile fields are included. The directory and
+operator account config remain local and are not committed. This does not mark the
+external acceptance milestone complete.
+
 ## Run a local preflight
 
 Use the same config, Python environment and private environment variables as the
