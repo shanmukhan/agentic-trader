@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlencode
 
+from trading_agent import __version__
 from trading_agent.broker.readonly_kite import (
     QuoteStream,
     ReadOnlyKite,
@@ -139,6 +140,7 @@ class SetupService:
                 ]
             day = self.clock().astimezone(IST).date()
             return {
+                "ui_version": __version__,
                 "account_id": hashlib.sha256(
                     str(self.engine.settings.database.resolve()).encode()
                 ).hexdigest(),

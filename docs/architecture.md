@@ -1,5 +1,18 @@
 # Architecture and invariants
 
+Version 0.11.0 adds a fixed-route `/workspace` shell with same-origin sections and
+one parent-held in-memory operator token. Origin/window/active-view handshakes share
+it only with the active section. Section controllers retain their own risk/freshness,
+request serialization and confirmation logic. A pending mutation/dialog/login prevents
+section navigation; otherwise the old section is unloaded, clearing unsaved forms.
+Lock destroys the section and invalidates late responses. No persistent browser
+session, new financial authority or backend trading scheduler was introduced.
+
+Only the three section routes may be framed by their own origin; all other routes
+retain frame denial. `/api/workspace` provides actual policy/mode/connection metadata
+under the existing bearer boundary, outside the analysis hot path. The launcher
+checks account identity and current UI version before opening an existing workspace.
+
 Version 0.10.0 introduces `api/setup.py` for the manual service's browser setup and
 feed lifecycle. It owns private broker credentials and a replaceable `QuoteStream`,
 while the same `PaperBroker`/database owner continues to enforce every financial

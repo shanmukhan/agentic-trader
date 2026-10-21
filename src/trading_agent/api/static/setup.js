@@ -16,6 +16,7 @@
       el('disconnect').disabled = !latest.stream_requested;
     }
     function lock() {
+      if (win.AgenticNavigation) win.AgenticNavigation.locked();
       generation++; token = ''; state = ''; busy = false; pending = null; latest = null;
       if (controller) controller.abort(); controller = null;
       if (popup && !popup.closed) popup.close(); popup = null;
@@ -104,8 +105,11 @@
     el('cancel-confirm').addEventListener('click', () => { pending = null; el('confirm').close(); });
     el('confirm').addEventListener('cancel', () => { pending = null; });
     el('confirm-action').addEventListener('click', () => { const action = pending; pending = null; el('confirm').close(); if (action && token && !busy) action(); });
-    lock(); return { lock, refresh: () => call() };
+    lock(); return { lock, refresh: () => call(), canNavigate: () => !busy && !el('confirm').open && (!popup || popup.closed) };
   }
   if (typeof module !== 'undefined' && module.exports) module.exports = { createSetup };
-  else createSetup(document, window, window.fetch.bind(window));
+  else {
+    const view = createSetup(document, window, window.fetch.bind(window));
+    if (window.AgenticNavigation) window.AgenticNavigation.connect(view, 'access');
+  }
 })();

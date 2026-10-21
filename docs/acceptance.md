@@ -5,6 +5,16 @@ read-only deployment/account diagnostics and clearer operator supervision. It do
 not complete empirical broker, model, fill-calibration or physical-device acceptance.
 Those require actual observations. No local report can approve live execution.
 
+## Workspace navigation checks (0.11.0)
+
+HTTP and DOM checks now verify shared local unlock across menu sections, exact
+origin/window/view handoff, global lock and authorization failure, navigation guards,
+scoped same-origin framing and actual account-mode/frequency metadata. They do not
+establish physical-browser/pixel/phone acceptance. The user-owned service is left
+running for the operator to restart; neither restart nor stock selection/trading
+was silently performed as part of this navigation update. Real price acceptance,
+reviewed data and sustained paper evidence remain separate requirements.
+
 ## First connected-session observation 21 October 2026
 
 A private operator-configured manual long-term account on loopback port 8004 now

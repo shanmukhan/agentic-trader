@@ -1,5 +1,23 @@
 # Threat model and security decisions
 
+## Shared in-memory workspace (0.11.0)
+
+Local menu navigation retains one operator token in workspace/active-section memory.
+It never uses URLs, cookies or browser storage. Only fixed Console/Setup/Portfolio
+views receive it, after exact origin/window/active-view checks; each child also
+checks its parent. A lock or section authorization failure removes the active view
+and clears shared authority. Reload/new workspace tabs require a new local unlock;
+visibility changes alone do not intentionally log out. Server actions already
+received can still complete after locking, so unknown-outcome recovery still applies.
+
+Framing is deliberately relaxed only for `/console`, `/setup` and `/portfolio` to
+same-origin ancestors. Workspace/root/API/other routes retain DENY and/or
+`frame-ancestors 'none'`; outside-origin framing remains prohibited. The parent
+cannot embed arbitrary URLs from its hash or child messages. The same-origin
+application remains a single trust boundary, not protection from same-origin XSS
+or a compromised OS user. Popup callback state/origin/window guards and legacy CLI
+capture remain intact. No server cookie or cross-tab credential broadcasting exists.
+
 ## Authenticated browser setup (0.10.0)
 
 The new manual-account `/setup` shell has no private values until local operator

@@ -11,6 +11,26 @@
   font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
   line-height:1.5
 }
+.workspace-header { display:flex; justify-content:space-between; gap:16px; align-items:center; margin-bottom:18px; }
+.workspace-header h1 { font-size:1.6rem; }
+.workspace-nav { display:flex; flex-wrap:wrap; gap:8px; padding:12px; margin-bottom:18px; position:sticky; top:0; z-index:5; background:var(--bg); border-bottom:1px solid var(--border); }
+.workspace-nav a { display:inline-flex; align-items:center; min-height:44px; padding:8px 14px; border:1px solid var(--border); border-radius:8px; text-decoration:none; }
+.workspace-nav a.active { background:var(--accent); color:var(--bg); font-weight:650; }
+.workspace-nav button { margin-left:auto; }
+.workspace-page iframe { width:100%; min-height:800px; border:0; margin-top:12px; background:var(--bg); }
+.workspace-page #workspace-message { margin-bottom:16px; }
+.workspace-child { padding:12px 2px; }
+.workspace-child .access { display:none; }
+.frequency-table { width:100%; border-collapse:collapse; margin-top:16px; font-size:.86rem; }
+.frequency-table th,.frequency-table td { text-align:left; padding:12px; border-bottom:1px solid var(--border); vertical-align:top; }
+.frequency-table th { color:var(--accent); }
+@media(max-width:640px) {
+  .workspace-nav { position:static; }
+  .workspace-nav a { flex:1 1 45%; justify-content:center; text-align:center; }
+  .workspace-nav button { margin-left:0; width:100%; }
+  .workspace-page { padding:20px 12px; }
+  .frequency-table th,.frequency-table td { padding:8px 5px; overflow-wrap:anywhere; }
+}
 * {
   box-sizing:border-box
 }

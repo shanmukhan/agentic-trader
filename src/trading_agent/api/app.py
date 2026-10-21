@@ -62,7 +62,7 @@ def create_app(
                 # Schedule after lifespan startup so the browser reaches a listening socket.
                 host = "[::1]" if engine.settings.host == "::1" else "127.0.0.1"
                 threading.Timer(
-                    0.5, webbrowser.open, args=[f"http://{host}:{engine.settings.port}/"]
+                    0.5, webbrowser.open, args=[f"http://{host}:{engine.settings.port}/workspace"]
                 ).start()
             yield
         finally:
@@ -90,12 +90,14 @@ def create_app(
         response = await call_next(request)
         response.headers["Cache-Control"] = "no-store"
         response.headers["X-Content-Type-Options"] = "nosniff"
-        response.headers["X-Frame-Options"] = "DENY"
+        framed = request.url.path in {"/console", "/setup", "/portfolio"}
+        response.headers["X-Frame-Options"] = "SAMEORIGIN" if framed else "DENY"
         response.headers["Referrer-Policy"] = "no-referrer"
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; script-src 'self'; "
             "style-src 'self'; form-action 'none'; object-src 'none'; "
-            "connect-src 'self'; frame-ancestors 'none'; base-uri 'none'"
+            "connect-src 'self'; frame-src 'self'; base-uri 'none'; frame-ancestors "
+            + ("'self'" if framed else "'none'")
         )
         return response
 
@@ -134,6 +136,53 @@ def create_app(
     @app.get("/", response_class=HTMLResponse)
     def dashboard() -> str:
         return ASSETS.joinpath("index.html").read_text(encoding="utf-8")
+
+    @app.get("/console", response_class=HTMLResponse)
+    def console_page() -> str:
+        return ASSETS.joinpath("index.html").read_text(encoding="utf-8")
+
+    @app.get("/workspace", response_class=HTMLResponse)
+    def workspace_page() -> str:
+        return ASSETS.joinpath("workspace.html").read_text(encoding="utf-8")
+
+    @app.get("/workspace.js")
+    def workspace_script() -> HTMLResponse:
+        return HTMLResponse(
+            ASSETS.joinpath("workspace.js").read_text(), media_type="application/javascript"
+        )
+
+    @app.get("/workspace-bridge.js")
+    def workspace_bridge() -> HTMLResponse:
+        return HTMLResponse(
+            ASSETS.joinpath("workspace-bridge.js").read_text(), media_type="application/javascript"
+        )
+
+    @app.get("/api/workspace", dependencies=[Depends(authorized)])
+    def workspace_status() -> dict[str, Any]:
+        from trading_agent.market_data.calendar import IST
+        from trading_agent.models import stamp
+
+        now = clock()
+        with engine.lock:
+            s = engine.settings
+            return {
+                "mode": "paper",
+                "investment_horizon": s.investment_horizon,
+                "observed_at": stamp(now),
+                "entry_start": s.entry_start.isoformat(timespec="minutes"),
+                "entry_end": s.entry_end.isoformat(timespec="minutes"),
+                "flatten_at": s.flatten_at.isoformat(timespec="minutes"),
+                "max_quote_age_seconds": s.max_quote_age_seconds,
+                "calendar_open": engine.calendar.is_open(now),
+                "calendar_today": now.astimezone(IST).date() in engine.calendar.sessions,
+                "feed_connected": engine.connected,
+                "feed_requested": setup.stream is not None if setup else stream is not None,
+                "automation_enabled": automation is not None,
+                "automation_armed": automation.armed if automation else False,
+                "candidate_cap_per_symbol_day": automation.strategy.max_candidates_per_symbol_day
+                if automation
+                else None,
+            }
 
     @app.get("/dashboard.js")
     def javascript() -> HTMLResponse:

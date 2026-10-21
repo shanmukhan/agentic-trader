@@ -1,6 +1,7 @@
 # Start, unlock and configure the paper app in your browser
 
-Version 0.10.0 adds authenticated setup for **manual** paper accounts. The existing
+Version 0.10.0 added authenticated setup for **manual** paper accounts; 0.11.0 adds
+the [shared workspace menu and step-by-step guide](workspace.md). The existing
 Python 3.13.16 environment and frozen dependencies remain sufficient. The page is
 responsive browser UI, not a native mobile app. No real order or fund transfer exists.
 
@@ -18,8 +19,10 @@ Open your private local `.env` in your editor and copy **only the value** after
 name or surrounding quotes. Do not send any token in chat. The error message and all
 three access panels now explicitly distinguish local access from broker access.
 
-The operator token is retained only in that page's memory and sent as a bearer
-header. Each page needs its own unlock. Lock/reload clears it; no URL, cookie,
+The operator token is retained only in workspace/active-section memory and sent as a bearer
+header. One workspace unlock covers its menu sections. A separate workspace tab or
+reload requires another unlock; simply changing browser tabs does not intentionally
+lock it. Lock/reload clears it; no URL, cookie,
 local/session storage or password-manager persistence is implemented. Locking a page
 does not stop the server, disconnect quotes, disarm automation or close holdings.
 
@@ -32,7 +35,7 @@ In Terminal, from the repository root:
 ```
 
 For this workspace, this selects the existing `config/first-paper-session.toml`
-and opens <http://127.0.0.1:8004/>. A matching existing server is opened without
+and opens <http://127.0.0.1:8004/workspace>. A matching same-version server is opened without
 starting another database owner or running recovery. If no server listens, it starts
 one in the foreground and opens the browser. Keep that terminal running. Press
 **Ctrl+C** for a graceful stop; inspect positions/pending orders beforehand because
@@ -79,7 +82,8 @@ account: retain its exact `paper-init`/`--automate`/model policy from [paper-fee
 
 Open <http://127.0.0.1:8004/setup> for the current workspace or follow the console's
 **Kite login, feed selection and session setup** link. Unlock with your operator
-token. No private setup API is accessed before unlocking. Refresh setup status is
+token once in the shared workspace; menu navigation retains that local access.
+No private setup API is accessed before unlocking. Refresh setup status is
 explicit, not automatic background login or credential probing.
 
 1. **Register your Kite app externally.** Use the developer-console link. Set the

@@ -58,6 +58,7 @@
       buttons();
     }
     function lock() {
+      if (win.AgenticNavigation) win.AgenticNavigation.locked();
       generation += 1;
       token = ''; fresh = false; latest = null; busy = false; mutating = false; holdingExitButtons = [];
       if (controller) controller.abort();
@@ -259,9 +260,12 @@
         stale('No fresh update for over 6 seconds. Displayed values may be stale.');
     }, 1000);
     lock();
-    return { refresh, lock };
+    return { refresh, lock, canNavigate: () => !mutating && !el('confirm').open };
   }
 
   if (typeof module !== 'undefined' && module.exports) module.exports = { formatMoney, createConsole };
-  if (typeof document !== 'undefined') createConsole(document, window, window.fetch.bind(window));
+  if (typeof document !== 'undefined') {
+    const view = createConsole(document, window, window.fetch.bind(window));
+    if (window.AgenticNavigation) window.AgenticNavigation.connect(view, 'unlock');
+  }
 })();

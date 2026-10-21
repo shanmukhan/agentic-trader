@@ -10,7 +10,9 @@ for non-browser clients. Untrusted Origins return 403; untrusted Hosts return 40
 
 | Method and path | Result |
 |---|---|
-| `GET /` | Operator console shell, no account values until authenticated |
+| `GET /` | Public entry shell; ordinary browser navigation opens the workspace guide, legacy token callbacks retain capture |
+| `GET /workspace` | Shared menu/guide; no private account data before local unlock |
+| `GET /console` | Same-origin console section inside the workspace |
 | `GET /dashboard.js` | Static console script |
 | `GET /dashboard.css` | Static responsive console stylesheet |
 | `GET /api/console` | Serialized account/readiness/automation and bounded recent orders |
@@ -71,7 +73,29 @@ response bypasses the per-intent gate.
 
 ## CLI and database ownership
 
-### Manual-service setup (0.10.0)
+### Shared workspace navigation (0.11.0)
+
+`GET /workspace` serves the public menu/guide shell; `/workspace.js` and
+`/workspace-bridge.js` serve its same-origin scripts. `GET /console` is the explicit
+console section. Ordinary root/Setup/Portfolio page navigation routes to the matching
+workspace section; legacy manual broker callback URLs are preserved. No private
+workspace request is sent before local unlock.
+
+Authenticated `GET /api/workspace` returns actual horizon, configured entry/flatten
+times, quote-age limit, current calendar/feed flags and supervised automation state/
+proposal cap. It performs no recovery, arming, order submission or financial write.
+It is metadata for guidance, not candidate approval. `/api/setup` additionally reports
+`ui_version` so the launcher can refuse an older running service.
+
+The workspace retains the operator token only in memory and hands it to the current
+section using exact origin, frame-window and view checks. The section verifies its
+parent origin/window. Lock/authorization failure clears the whole workspace; no cookie,
+URL credential or browser storage was added. Only `/console`, `/setup` and `/portfolio`
+permit same-origin framing (`SAMEORIGIN`, `frame-ancestors 'self'`). Workspace/root,
+API and other assets retain framing denial; cross-origin framing remains blocked.
+See [workspace.md](workspace.md) for navigation, active-action guards and limitations.
+
+### Broker setup actions
 
 `GET /setup`, `/setup.js` and `/kite-callback.js` serve public shells/assets without
 private account values. `/api/setup` and all its actions require the existing local

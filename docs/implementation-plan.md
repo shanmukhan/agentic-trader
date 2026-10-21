@@ -5,6 +5,19 @@ Prepared 20 October 2026; updated 21 October 2026. This is the execution record 
 
 ## Implemented scope
 
+### Shared workspace and explicit operating guidance (0.11.0)
+
+Added the requested clear menu and a shared in-memory local unlock across its Start
+here, Trading console, Broker & feed setup and Purchases & SIP sections. Direct page
+URLs route to the workspace; root goes to the guide. Reload/new workspace tabs still
+require unlock. Pending requests/confirmations/login windows block navigation, and
+lock/authorization failure clears shared access. Scoped same-origin framing and
+origin/window/view checks preserve the bearer-only boundary without browser storage.
+Workspace metadata explains actual account mode, configured hours, feed-not-requested
+versus disconnected and the difference between trade/strategy/monitoring frequencies.
+The [new workspace guide](workspace.md) gives restart and next-session instructions.
+This changes navigation, not financial policy, order submission or automatic discovery.
+
 ### New priority: broader profit-oriented discovery for both horizons
 
 The operator clarified that “best” means potential profit, after being asked to

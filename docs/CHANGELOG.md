@@ -1,5 +1,35 @@
 # Change log
 
+## 2026-10-21 — Shared menu, one workspace unlock and next-step guidance (0.11.0)
+
+Added `/workspace` with Start here, Trading console, Broker & feed setup and Purchases
+& SIP. One local in-memory unlock now covers menu navigation. Explicit lock, reload/
+new workspace tabs and authorization failures require a new unlock; browser-tab
+visibility alone does not log out. Late messages/responses cannot restore cleared
+access. Fixed-route same-origin section handoff checks origin, frame window and active
+view; only the three section routes permit same-origin framing, while outer/API
+routes retain framing denial. Active mutations/dialogs/Setup login windows block
+navigation. Changing sections clears unsaved forms/previews, not confirmed server work.
+
+Added authenticated read-only workspace metadata and an actionable guide explaining
+feed startup, genuine calendar/basis review, actual entry hours, manual long-term
+entries, separately configured five-minute intraday signals and monitoring intervals.
+Preserved manual CLI callback capture and the guarded broker popup handoff. Startup
+opens the workspace directly and refuses reuse of older UI versions. No new dependency,
+financial policy, automatic selector or trading scheduler was added. Updated relevant
+usage, API, architecture, security, test and implementation documents.
+
+Validation: **539 Python tests** and **54 JavaScript tests** passed, **93% Python
+coverage**; Ruff/mypy, secret checks, frozen offline lock/sync and source/wheel build
+passed. Package inspection includes the workspace assets and excludes private
+account configs/data. HTTP/DOM checks cover frame policy, actual account cadence,
+shared-token integration, pending-action guards, global lock and late responses.
+Local read-only account inspection preserves ₹25,000.00, zero fees/positions/pending
+orders and matching risk policy. The operator-owned 8004 process was left running;
+one manual restart is needed to load the new backend routes. No broker login,
+connection change, attestation, arming or order was performed during this change.
+Physical-browser/phone/pixel and actual popup acceptance remain distinct pending checks.
+
 ## 2026-10-21 — Clarified profit-oriented discovery scope and data gap
 
 Recorded the operator's selection goal for both intraday and long-term paper trading:

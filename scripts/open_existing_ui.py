@@ -8,6 +8,7 @@ import urllib.error
 import urllib.request
 import webbrowser
 
+from trading_agent import __version__
 from trading_agent.settings import Settings
 
 
@@ -29,7 +30,7 @@ def main() -> int:
         with opener.open(request, timeout=3) as response:
             state = json.loads(response.read(65536))
         expected = hashlib.sha256(str(settings.database.resolve()).encode()).hexdigest()
-        if state.get("account_id") != expected:
+        if state.get("account_id") != expected or state.get("ui_version") != __version__:
             raise ValueError
     except urllib.error.URLError as exc:
         if getattr(exc.reason, "errno", None) == errno.ECONNREFUSED:
@@ -48,7 +49,7 @@ def main() -> int:
         )
         return 1
     print("Opening the existing paper dashboard; no second account process was started.")
-    webbrowser.open(url)
+    webbrowser.open(url + "workspace")
     return 0
 
 

@@ -30,6 +30,9 @@ After initial local configuration, `./scripts/start_ui.sh` starts/opens your acc
 and browser. The new [browser setup guide](docs/ui-setup.md) covers Kite login,
 session exchange, catalog/symbols, reviewed dates and feed controls. Unlock with the
 local `TRADING_OPERATOR_TOKEN`, not a Zerodha redirect token.
+The [shared workspace guide](docs/workspace.md) explains its clear menu, one unlock
+across sections, feed startup steps and the difference between trade and monitoring
+frequency. The current long-term account remains manual.
 See [implementation status](docs/implementation-plan.md), [risk policy](docs/risk-policy.md),
 [architecture](docs/architecture.md), [API contracts](docs/api-contracts.md),
 [operator runbook](docs/runbook.md), [threat model](docs/threat-model.md),

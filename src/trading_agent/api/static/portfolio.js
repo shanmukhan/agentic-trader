@@ -17,6 +17,7 @@ function createPortfolio(doc,win,fetcher){
  }
  function clearPreview(){review=null;el('preview').hidden=true;el('preview-summary').textContent='';el('preview-reasons').replaceChildren();buttons();}
  function lock(){
+  if(win.AgenticNavigation)win.AgenticNavigation.locked();
   generation++;active?.abort();active=null;token='';latest=null;request=null;review=null;pending=null;submitted=false;busy=false;dynamic=[];
   el('token').value='';el('lock').disabled=true;el('token').required=true;
   if(el('confirm').open)el('confirm').close();
@@ -90,8 +91,8 @@ function createPortfolio(doc,win,fetcher){
  doc.addEventListener('visibilitychange',()=>{if(!doc.hidden&&!busy)refresh();});
  win.setInterval(()=>{if(token&&!doc.hidden&&!busy&&!el('confirm').open)refresh();},3000);
  win.setInterval(()=>{if(token&&latest&&!fresh()){el('state').textContent='Display stale · refresh required';buttons();}},1000);
- lock();return {refresh,lock};
+ lock();return {refresh,lock,canNavigate:()=>!busy&&!el('confirm').open};
 }
 if(typeof module!=='undefined'&&module.exports)module.exports={createPortfolio};
-if(typeof document!=='undefined')createPortfolio(document,window,window.fetch.bind(window));
+if(typeof document!=='undefined'){const view=createPortfolio(document,window,window.fetch.bind(window));if(window.AgenticNavigation)window.AgenticNavigation.connect(view,'access');}
 })();

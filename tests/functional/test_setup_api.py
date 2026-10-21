@@ -156,4 +156,4 @@ def test_open_browser_uses_only_local_url(engine, monkeypatch):
         create_app(engine, background=False, open_browser=True), base_url="http://127.0.0.1"
     ):
         timer.return_value.start.assert_called_once()
-        assert timer.call_args.kwargs["args"] == ["http://127.0.0.1:8000/"]
+        assert timer.call_args.kwargs["args"] == ["http://127.0.0.1:8000/workspace"]

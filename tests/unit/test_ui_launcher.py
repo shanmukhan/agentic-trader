@@ -26,11 +26,13 @@ def test_matching_running_account_opens_browser_without_another_owner(launcher, 
     module, engine = launcher
     account = hashlib.sha256(str(engine.settings.database.resolve()).encode()).hexdigest()
     opener = Mock()
-    opener.open.return_value = io.BytesIO(json.dumps({"account_id": account}).encode())
+    opener.open.return_value = io.BytesIO(
+        json.dumps({"account_id": account, "ui_version": module.__version__}).encode()
+    )
     build = Mock(return_value=opener)
     monkeypatch.setattr(module.urllib.request, "build_opener", build)
     assert module.main() == 0
-    module.webbrowser.open.assert_called_once_with("http://127.0.0.1:8000/")
+    module.webbrowser.open.assert_called_once_with("http://127.0.0.1:8000/workspace")
     assert isinstance(build.call_args.args[1], module.NoRedirect)
     assert (
         module.NoRedirect().redirect_request(None, None, 302, "", {}, "https://evil.test") is None
@@ -57,6 +59,18 @@ def test_mismatched_account_does_not_open_or_restart(launcher, monkeypatch):
     module, _ = launcher
     opener = Mock()
     opener.open.return_value = io.BytesIO(b'{"account_id":"another-account"}')
+    monkeypatch.setattr(module.urllib.request, "build_opener", lambda *a: opener)
+    assert module.main() == 1
+    module.webbrowser.open.assert_not_called()
+
+
+def test_old_ui_version_is_not_silently_reused(launcher, monkeypatch):
+    module, engine = launcher
+    account = hashlib.sha256(str(engine.settings.database.resolve()).encode()).hexdigest()
+    opener = Mock()
+    opener.open.return_value = io.BytesIO(
+        json.dumps({"account_id": account, "ui_version": "old"}).encode()
+    )
     monkeypatch.setattr(module.urllib.request, "build_opener", lambda *a: opener)
     assert module.main() == 1
     module.webbrowser.open.assert_not_called()

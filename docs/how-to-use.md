@@ -1,6 +1,6 @@
 # How to use Agentic Trader
 
-Updated 21 October 2026 for version 0.10.0. This guide and corresponding detailed
+Updated 21 October 2026 for version 0.11.0. This guide and corresponding detailed
 guides are updated with every feature or changed workflow, as required by [AGENTS.md](../AGENTS.md).
 
 ## 1. Scope and prerequisites
@@ -143,7 +143,11 @@ browser. Keep its terminal running; Ctrl+C stops a server started there. See
 [ui-setup.md](ui-setup.md) for selection precedence, first setup, repeated starts,
 daily login, credentials, catalog/symbol selection, sourced calendar and feed controls.
 `TRADING_OPERATOR_TOKEN` from your private `.env` unlocks the local app;
-**Zerodha request/access tokens do not**. Each page must be unlocked independently.
+**Zerodha request/access tokens do not**. The [workspace menu](workspace.md) retains
+one unlock while moving among Start here, Trading console, Broker & feed setup and
+Purchases & SIP. Reload/new workspace tabs still require unlocking; merely switching
+browser tabs does not intentionally lock access. Its Start here page explains the
+next connection steps, actual configured hours and manual/automated trading frequency.
 
 The lower-level command with an explicitly loaded environment remains:
 

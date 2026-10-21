@@ -1,5 +1,18 @@
 # Test and validation plan
 
+## Shared menu coverage (0.11.0)
+
+Functional checks cover authenticated read-only workspace metadata, actual manual
+versus bound intraday cadence, public shell privacy, explicit framing allowlist and
+unchanged account state. Launcher tests refuse older UI versions as well as mismatched
+accounts. UI tests verify no private fetch before unlock, one unlock across menu
+changes, exact origin/window/active-view token handoff, hostile hash rejection,
+mutation/dialog navigation guards, global lock/authorization-failure propagation,
+late-response suppression and preserved broker callback behavior. An integration
+test uses the real Setup controller with the workspace bridge to prove shared unlock
+does not falsely lock the parent. Physical-browser layout/phone acceptance remains
+distinct from these DOM and HTTP checks.
+
 ## Browser setup coverage (0.10.0)
 
 Unit and functional tests cover operator/Origin authorization, bounded secret bodies

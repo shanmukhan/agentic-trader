@@ -12,8 +12,10 @@ For the current workspace, `./scripts/start_ui.sh` opens the configured account,
 including reusing a matching running server safely. [Browser Setup](ui-setup.md)
 adds broker login/session exchange, catalog/symbol selection, reviewed calendar and
 feed controls for manual accounts. The local unlock value is `TRADING_OPERATOR_TOKEN`
-from `.env`, never a Zerodha redirect/request/access token. Each page needs its own
-unlock; no cross-page credential persistence was added.
+from `.env`, never a Zerodha redirect/request/access token. Version 0.11.0's
+[shared workspace](workspace.md) keeps one in-memory unlock across menu sections.
+Reload/new workspace tabs require another unlock; no browser credential storage or
+cross-tab session synchronization was added. Ordinary page URLs route to the menu.
 
 Follow the [environment/token instructions](how-to-use.md) first. From the repository
 root, with the private operator environment loaded:
