@@ -48,6 +48,7 @@ class TradingDesk:
         self.reason = "STARTUP_DISARMED"
         self.last_analysis: str | None = None
         self.analysis_error: str | None = None
+        self.installing = False
         if profile and not automation:
             try:
                 self.research = Research(engine, profile, now, synthetic=synthetic)
@@ -122,6 +123,8 @@ class TradingDesk:
     def blockers(self, now: datetime) -> list[str]:
         e = self.engine
         reasons = []
+        if self.installing:
+            reasons.append("STRATEGY_INSTALLING")
         if self.problem:
             reasons.append(self.problem)
         if self.analysis_error:
@@ -137,9 +140,9 @@ class TradingDesk:
         if e.snapshot(now)["kill"]:
             reasons.append("KILL_SWITCH")
         with e.lock, e.db.transaction() as tx:
-            selected = (
+            selected_symbols = (
                 [
-                    e._quote(tx, r[0])
+                    r[0]
                     for r in tx.execute(
                         "SELECT symbol FROM instruments WHERE token IN ("
                         + ",".join("?" for _ in self.execution_tokens)
@@ -150,11 +153,27 @@ class TradingDesk:
                 if self.execution_tokens
                 else []
             )
+            selected = [e._quote(tx, symbol) for symbol in selected_symbols]
             if not selected:
                 reasons.append("NO_EXECUTION_SHORTLIST")
             elif not any(e._fresh(q, now) for q in selected):
                 reasons.append("NO_FRESH_EXECUTION_QUOTES")
+            if e.long_term and any(
+                not e.long_term.reviewed(tx, symbol, now) for symbol in selected_symbols
+            ):
+                reasons.append("LONG_TERM_REVIEW_REQUIRED")
+            if self.research and any(
+                symbol not in {s.symbol for s in self.research.profile.shares}
+                for symbol in selected_symbols
+            ):
+                reasons.append("EXECUTION_SHORTLIST_NOT_REVIEWED")
         if self.research:
+            result = self.research.result
+            latest = result.get("latest_reviewed_completed_session")
+            if not any(
+                row.get("last_session") == latest and latest for row in result.get("rows", [])
+            ):
+                reasons.append("RESEARCH_DAILY_HISTORY_UNAVAILABLE")
             day = now.astimezone(IST).date()
             sessions = {s.day: (s.open, s.close) for s in self.research.dataset.manifest.sessions}
             if day not in sessions or sessions[day] != e.calendar.sessions.get(day):
@@ -646,6 +665,8 @@ class TradingDesk:
             return record
 
     def view(self, now: datetime) -> dict[str, Any]:
+        from trading_agent.desk.readiness import readiness
+
         with self.engine.lock, self.engine.db.transaction() as tx:
             tokens = self.execution_tokens
             selected = (
@@ -670,13 +691,15 @@ class TradingDesk:
             ]
         # Snapshot opens another transaction; do not nest it in the view transaction.
         result = self.research.result if self.research else None
+        blockers = self.blockers(now)
         return {
             "mode": self.mode,
             "revision": self.revision,
             "mode_reason": self.reason,
             "horizon": self.engine.settings.investment_horizon,
             "observed_at": stamp(now),
-            "blockers": self.blockers(now),
+            "blockers": blockers,
+            "readiness": readiness(self, now, blockers),
             "selected": selected,
             "decisions": records,
             "decisions_limit": 100,

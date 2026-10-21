@@ -1,5 +1,51 @@
 # Implementation plan, enhancements and status
 
+## Genuine strategy preparation and actionable readiness (0.13.0)
+
+Implemented operator-requested genuine-data acquisition in Trading desk: fixed official
+Nifty 100/500 constituent CSV, NSE capital-market holidays and equity-action snapshots,
+catalog/INE equity matching and up to 60 completed daily Kite sessions. All returned
+action kinds in the interval and incomplete history are excluded. Downloads are
+background, cancellable, quota-paced and separate from quote/risk authority; progress,
+sources, period, coverage and exclusion reasons are visible. No per-stock history read
+is made for known action exclusions. Failures are bounded/sanitized, with no data or ML
+fallback. A read-only real-source probe returned 100 constituents, 60 proposed completed
+sessions, 65 action-free catalog matches and exact 60-session Kite history for one share.
+This verifies source/read plumbing, not all-stock coverage or current-market profitability.
+
+Subsequently completed the actual Nifty 100 acquisition: 35 action exclusions, 65
+catalog-matched eligible shares, each with all 60 expected daily candles (3,900 rows).
+Stored only genuine source snapshots and an unreviewed draft through a strictly read-only
+catalog adapter. No actual account/configuration, reviews, strategy/mode or orders were
+changed. The new UI will load this pending review after the operator restarts the older
+owning server. Validation: 614 Python / 71 JS tests, 92% coverage, static/type checks,
+frozen offline environment and build/secret checks; synthetic headless desktop/mobile
+layout and installation/navigation checks passed independently of the real data download.
+
+Added an editable calendar and explicit class/basis/policy review, optional server-selected
+compatible ML, an explicitly chosen experimental rules policy and private immutable profile
+installation. It preserves existing used session definitions, holds Manual, requires a
+disconnected feed/no pending orders and rechecks generation/state after out-of-lock
+validation. Saved profile/data hashes restore in Manual on restart. Current constituents
+are `prospective_snapshot`, available no earlier than observation/review; historical
+execution/ML rejects them. Existing point-in-time contracts remain the default.
+
+The desk now shows actionable strategy, transport, per-symbol freshness/basis, market and
+entry-window, shortlist, analysis/model and risk cards beside mode explanations. Browser
+refresh preserves unsaved preparation reviews. Detailed guide: [strategy-preparation.md](strategy-preparation.md).
+Independent current-market model/expectancy validation, point-in-time universe acquisition,
+unattended daily refresh, automatic action accounting and early-year/cross-year source
+automation remain open; the supported explicit custom-bundle workflow remains available.
+
+Found the actual account's saved 15:15 close conflicting with the normal 15:30 proposal.
+Added visible hour differences and a separate strict acknowledgement for correcting an
+unused account only; quotes/candles, pinned reviews, trades, actions and portfolio/SIP/
+desk-instruction usage prevent correction, rechecked after validation. No actual calendar
+was changed automatically. Installation blocks arming; midnight invalidates source runs.
+Verified the actual Nifty 500 source contains 501 rows with six unsupported series/dummy
+entries; exclude those individually and retain 495 supported shares within the 500-symbol
+analysis limit. This is current-source parsing evidence, not their daily history acceptance.
+
 ## Trading desk and decision modes (0.12.0)
 
 Delivered a default Trading desk and separate Buy / sell activity section. Explicit

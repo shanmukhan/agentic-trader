@@ -1,5 +1,27 @@
 # Start, unlock and configure the paper app in your browser
 
+The strategy wizard also shows saved/proposed calendar differences and can correct an
+unused account after a separate explicit acknowledgement. Any accepted quote/candle,
+pinned review or execution/instruction usage prevents correction, rechecked after
+validation. Setup's per-date form retains its stricter existing-definition behavior.
+Normal 15:30 exchange close is separate from a strategy's 15:15 flatten/cutoff.
+
+Version **0.13.0** adds an in-desk [strategy preparation workflow](strategy-preparation.md).
+The feed can connect while modes remain disabled: it supplies transport, not a
+strategy or usable after-hours depth. **Your next step** now lists separate strategy,
+connection, quote, session, entry-window, shortlist/model and basis checks with actions.
+Use **Prepare a paper strategy** to download genuine Nifty 100/500 history and inspect
+sources/exclusions; review the proposed calendar and basis yourself, select a policy
+explicitly, then install while disconnected in Manual. No model, financial approval
+or executable quote is created by connecting or installing.
+
+In setup step 5, **NSE notice / review reference** means the official URL/circular or
+review notes used to check the selected date and hours. For a reviewed normal cash-equity
+session use 09:15 AM–03:30 PM IST; the app rejects evening times. Check the actual
+holiday/special notices and tick the review box only after that review. The preparation
+wizard can propose a larger calendar from downloaded sources, but still requires your
+review and never changes already used account hours.
+
 Version 0.12.0 separates day-to-day decisions from setup: use **Trading desk** for
 modes/proposals and **Buy / sell activity** for reasons, actual orders and fills.
 **Broker & data** retains the existing setup steps and **Advanced controls** retains

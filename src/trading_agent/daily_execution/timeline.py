@@ -14,6 +14,7 @@ from trading_agent.models import utc
 class DailyTimeline:
     def __init__(self, dataset: DailyDataset, symbols: set[str], policy: DailyPolicy):
         self.policy = policy
+        self.snapshot = dataset.manifest.universe_kind == "prospective_snapshot"
         self.sessions = tuple(session.day for session in dataset.manifest.sessions)
         self.closes = [
             datetime.combine(session.day, session.close, IST)
@@ -43,6 +44,10 @@ class DailyTimeline:
         self.rebuilds = 0
 
     def membership(self, symbol: str, day: date, as_of: datetime | None = None) -> Any:
+        if self.snapshot:
+            members = self.members[symbol]
+            member = members[0] if members else None
+            return member if member and (not as_of or member.known_at <= as_of) else None
         index = bisect_right(self.membership_dates[symbol], day) - 1
         while index >= 0 and as_of and self.members[symbol][index].known_at > as_of:
             index -= 1
@@ -60,7 +65,8 @@ class DailyTimeline:
         window = self.windows.get(bar.symbol)
         if window and (
             window.last_index != index - 1
-            or window.last
+            or not self.snapshot
+            and window.last
             and window.last.session < member.effective_session
         ):
             window = None

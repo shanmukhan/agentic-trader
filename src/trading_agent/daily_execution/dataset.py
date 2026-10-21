@@ -64,6 +64,11 @@ class ExecutionManifest(Manifest):
 
 class ExecutionDataset:
     def __init__(self, directory: Path, daily: DailyDataset):
+        if daily.manifest.universe_kind != "point_in_time":
+            raise ValueError(
+                "Prospective constituent snapshots cannot establish "
+                "historical execution/ML evidence."
+            )
         if directory.is_symlink():
             raise ValueError("execution bundle must not be a symlink")
         self.directory = directory.resolve()

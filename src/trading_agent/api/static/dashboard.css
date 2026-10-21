@@ -240,6 +240,23 @@ button:focus-visible,input:focus-visible,summary:focus-visible,a:focus-visible {
   border-top:1px solid var(--border);
   padding-top:16px
 }
+.readiness-checks {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr));gap:12px;margin:20px 0}
+.readiness-check {border:1px solid var(--border);border-radius:10px;padding:16px;min-width:0;overflow-wrap:anywhere}
+.readiness-check h3 {font-size:.95rem;margin:0 0 10px}.readiness-check p {font-size:.85rem;margin:8px 0}
+.readiness-check a {font-size:.85rem;display:inline-block;min-height:32px;padding-top:8px}
+.check-ready {color:var(--accent)}.check-waiting {color:var(--warning)}
+.preparation-steps {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;margin-top:20px}
+.preparation-steps article {min-width:0;border:1px solid var(--border);border-radius:10px;padding:18px}
+.preparation-steps h3 {font-size:1rem;margin:0 0 12px}.preparation-steps p {font-size:.87rem;margin:12px 0}
+.preparation-steps label:not(.check) {display:block;margin:18px 0 8px}
+.preparation-steps .check {display:flex;align-items:flex-start;gap:12px;min-height:44px;padding:10px 0;font-size:.87rem}
+.preparation-steps .check input[type=checkbox] {width:20px;height:20px;min-height:20px;flex:0 0 20px;margin:3px 0;accent-color:var(--accent)}
+.preparation-steps select,.preparation-steps textarea,.preparation-steps input:not([type=checkbox]) {width:100%;box-sizing:border-box}
+.preparation-steps textarea {resize:vertical;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:12px;font:inherit;font-size:.85rem}
+.preparation-steps progress {width:100%;height:12px;accent-color:var(--accent)}
+.preparation-steps .dialog-actions {flex-wrap:wrap;justify-content:flex-start}
+.readiness-panel details {margin-top:18px}#mode-status,#next-action {overflow-wrap:anywhere}
+@media(max-width:900px){.preparation-steps{grid-template-columns:1fr}.preparation-steps article{padding:14px}}
 .records {
   display:grid;
   gap:10px;

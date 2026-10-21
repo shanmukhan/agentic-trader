@@ -11,6 +11,7 @@ import json
 import os
 import struct
 import threading
+import time
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
@@ -19,6 +20,19 @@ from urllib.parse import urlencode
 
 from trading_agent.market_data.calendar import IST
 from trading_agent.models import Candle, Instrument, Quote, utc
+
+_history_lock = threading.Lock()
+_history_next = 0.0
+
+
+def history_slot() -> None:
+    """Share the read quota across preparation and intraday clients in this process."""
+    global _history_next
+    with _history_lock:
+        delay = _history_next - time.monotonic()
+        if delay > 0:
+            time.sleep(delay)
+        _history_next = time.monotonic() + 0.4
 
 
 class BrokerUnavailable(RuntimeError):
@@ -59,7 +73,7 @@ class RestrictedKiteHTTP:
         if (
             (route, method) == ("market.historical", "GET")
             and token > 0
-            and interval in ("minute", "5minute")
+            and interval in ("minute", "5minute", "day")
         ):
             path = f"/instruments/historical/{int(token)}/{interval}"
         if path is None:
@@ -83,7 +97,7 @@ class RestrictedKiteHTTP:
                     raise BrokerUnavailable("oversized broker response")
                 if route == "market.instruments":
                     return response.text
-                payload = response.json()
+                payload = response.json(parse_float=Decimal)
                 if payload.get("status") != "success":
                     raise BrokerUnavailable("unsuccessful broker response")
                 return payload["data"]
@@ -120,6 +134,7 @@ class RestrictedKiteHTTP:
     ) -> list[dict[str, Any]]:
         if continuous or oi:
             raise BrokerUnavailable("derivative data unsupported")
+        history_slot()
         data = self._request(
             "market.historical",
             "GET",
@@ -240,6 +255,58 @@ class ReadOnlyKite:
             if ordered[index].start - ordered[index - 1].start != timedelta(minutes=minutes):
                 ordered[index] = ordered[index].model_copy(update={"quality": "gap"})
         return ordered
+
+    def get_daily_history(
+        self, instrument: Instrument, start: datetime, end: datetime, as_of: datetime
+    ) -> list[dict[str, Any]]:
+        """Raw completed daily OHLCV, with acquisition time rather than backdated availability."""
+        from datetime import time as clock_time
+
+        from trading_agent.daily_research.dataset import DailyBar
+
+        start, end, as_of = utc(start), utc(end), utc(as_of)
+        if not start < end <= as_of or end - start > timedelta(days=180):
+            raise ValueError("Daily history needs a past range of at most 180 days.")
+        try:
+            rows = self._client.historical_data(
+                instrument.token,
+                start.astimezone(IST),
+                end.astimezone(IST),
+                "day",
+                continuous=False,
+                oi=False,
+            )
+            output = []
+            seen = set()
+            for row in rows:
+                observed = utc(row["date"]).astimezone(IST)
+                day = observed.date()
+                if not start.astimezone(IST).date() <= day <= end.astimezone(IST).date():
+                    raise ValueError
+                if datetime.combine(day, clock_time(15, 30), IST) > as_of:
+                    continue  # Today's incomplete daily candle is not a signal.
+                if day in seen:
+                    raise ValueError
+                seen.add(day)
+                bar = DailyBar(
+                    symbol=instrument.symbol,
+                    session=day,
+                    open=Decimal(str(row["open"])),
+                    high=Decimal(str(row["high"])),
+                    low=Decimal(str(row["low"])),
+                    close=Decimal(str(row["close"])),
+                    volume=row["volume"],
+                    price_available_at=as_of,
+                    basis_reviewed_at=as_of,
+                    basis_reference="UNREVIEWED raw broker observation; not installed",
+                    share_numerator=1,
+                    share_denominator=1,
+                    cash_per_previous_share=Decimal(0),
+                )
+                output.append(bar.model_dump(mode="json"))
+            return sorted(output, key=lambda r: r["session"])
+        except Exception:
+            raise BrokerUnavailable("daily history unavailable, unentitled or malformed") from None
 
 
 def login_url(api_key: str) -> str:

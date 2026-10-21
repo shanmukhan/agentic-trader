@@ -1,5 +1,16 @@
 # Trading desk, approval modes and buy / sell activity
 
+Calendar differences now show saved/proposed hours. Only a separately acknowledged
+unused-account correction can change existing hours; quotes, pinned reviews and
+execution/instruction usage block it. Mode activation waits throughout installation.
+
+Version **0.13.0** adds [in-app genuine-data preparation](strategy-preparation.md).
+Use **Prepare a paper strategy** to download Nifty 100/500 sources and completed Kite
+daily history, review calendar/basis coverage, explicitly select rules-only or a matching
+validated ML policy, and install without editing a profile by hand. Installation keeps
+Manual selected. The **Your next step** cards explain strategy/data, feed, quotes, hours,
+shortlist, model and long-term basis checks before either mode can start.
+
 Version 0.12.0 adds a decision workflow for intraday and long-term **paper** accounts.
 It does not enable real broker orders. The existing account is not automatically
 switched, re-funded or assigned a new universe/model by an upgrade.
@@ -21,7 +32,7 @@ held unsupported classes prevent activation until that accounting/review gap is 
 The daily rank measures completed momentum/trend/liquidity/volatility screen strength,
 not calibrated expected profit. A matching validated ML model filters individual entry
 proposals at trade time. No stock, ranking, high score or historical result guarantees
-profit. Wider automatic data acquisition, current-market net-expectancy validation
+profit. Unattended daily refresh, current-market net-expectancy validation
 and unattended corporate-action source integration remain separate work.
 
 ## Start and navigate
@@ -113,10 +124,14 @@ A queued sale is not a completed liquidation.
 
 ## Install an actual analysis profile
 
+For the UI-managed prospective workflow, follow [Strategy preparation](strategy-preparation.md).
+The manual custom-bundle steps below remain available for cross-year data, point-in-time
+history and specialized reviews. No ML model is created by the new downloader.
+
 This is an operator data/evidence task. Copying a template or marking invented data
-as real is not valid setup. This workspace has not been supplied with a reviewed real
-broad-market daily bundle and matching validated model, so installing code alone does
-not start profit-oriented autonomous selection.
+as real is not valid setup. Genuine sources can now be downloaded in the UI, while
+source/calendar/basis review and matching real ML validation remain separate evidence.
+Installing code alone does not start profit-oriented autonomous selection.
 
 1. Prepare an immutable [daily bundle](daily-research.md) with `manifest.json` and
    `daily.jsonl`: genuine raw completed bars, source/availability clocks, reviewed
@@ -169,8 +184,10 @@ not start profit-oriented autonomous selection.
 Profiles/data/model identities are frozen in memory for a run. Changing source files
 is not a supported incremental-data update: hash checks reject changed inputs and
 pause analysis. Install a new reviewed immutable bundle/profile and restart explicitly.
-Network data subscriptions and login/2FA remain external prerequisites. Automatic daily
-bundle acquisition/fundamentals/classification ingestion is not implemented here.
+Network data subscriptions and login/2FA remain external prerequisites. Version 0.13
+adds operator-requested constituent/calendar/action-source reads and genuine daily
+history acquisition with manual coverage/basis approval. Unattended daily refresh,
+fundamentals ingestion and automatic corporate-action accounting remain separate work.
 
 ## Activity, exact money and unknown outcomes
 

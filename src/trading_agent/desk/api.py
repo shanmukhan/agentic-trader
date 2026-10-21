@@ -10,7 +10,9 @@ from trading_agent.desk.contracts import DecisionAction, ModeRequest
 from trading_agent.desk.service import DeskError
 
 
-def mount_desk(app: Any, desk: Any, setup: Any, authorized: Any, assets: Any, clock: Any) -> None:
+def mount_desk(
+    app: Any, desk: Any, setup: Any, authorized: Any, assets: Any, clock: Any, preparation: Any
+) -> None:
     @app.get("/desk", response_class=HTMLResponse)
     def page() -> str:
         return assets.joinpath("desk.html").read_text()
@@ -27,7 +29,40 @@ def mount_desk(app: Any, desk: Any, setup: Any, authorized: Any, assets: Any, cl
 
     @app.get("/api/desk", dependencies=[Depends(authorized)])
     def status() -> dict:
-        return desk.view(clock())
+        return {**desk.view(clock()), "preparation": preparation.view()}
+
+    @app.get("/preparation.js")
+    def preparation_script() -> HTMLResponse:
+        return HTMLResponse(
+            assets.joinpath("preparation.js").read_text(), media_type="application/javascript"
+        )
+
+    from trading_agent.desk.preparation import DownloadRequest, InstallRequest
+
+    def prepare_action(action: Any) -> dict:
+        from trading_agent.api.setup import SetupError
+
+        try:
+            return action()
+        except SetupError:
+            raise
+        except Exception:
+            raise SetupError(
+                "Preparation could not be saved or validated. Refresh status and "
+                "inspect local preparation files before retrying. No mode was activated."
+            ) from None
+
+    @app.post("/api/desk/preparation/download", dependencies=[Depends(authorized)])
+    def download(body: DownloadRequest) -> dict:
+        return prepare_action(lambda: preparation.start(body))
+
+    @app.post("/api/desk/preparation/cancel", dependencies=[Depends(authorized)])
+    def cancel_download() -> dict:
+        return prepare_action(preparation.cancel)
+
+    @app.post("/api/desk/preparation/install", dependencies=[Depends(authorized)])
+    def install(body: InstallRequest) -> dict:
+        return prepare_action(lambda: preparation.install(body))
 
     @app.post("/api/desk/mode", dependencies=[Depends(authorized)])
     def mode(body: ModeRequest) -> dict:

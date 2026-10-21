@@ -1,5 +1,15 @@
 # Completed daily research and dashboard: LT3a usage
 
+Version **0.13.0** adds optional manifest `universe_kind`: existing bundles default to
+`point_in_time`, preserving the original membership chronology. The new UI downloader
+uses `prospective_snapshot` for current Nifty constituents observed now. It may use
+their prior prices as features for a current/future screen, with genuine retrieval and
+review availability clocks, without backdating membership. Such a manifest allows only
+one current inclusion per symbol; screening before observation cannot see it. Daily
+execution/ML input loading refuses these snapshots as historical validation evidence.
+See [Strategy preparation](strategy-preparation.md) for official source acquisition,
+conservative corporate-action exclusions, review and account/profile installation.
+
 Version 0.7.0 adds an **offline research screen**, reviewed completed daily data and
 point-in-time universe membership. It does not open a trading account, place orders,
 simulate fills, validate a model or change paper risk policy. LT3a is the first

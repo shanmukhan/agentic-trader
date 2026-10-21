@@ -48,6 +48,7 @@ class DailyManifest(DomainModel):
     source: str = Field(min_length=3, max_length=2000, pattern=r".*\S.*")
     notes: str = Field(min_length=3, max_length=4000, pattern=r".*\S.*")
     synthetic: bool = Field(strict=True)
+    universe_kind: Literal["point_in_time", "prospective_snapshot"] = "point_in_time"
     price_basis: Literal["raw-with-explicit-period-benefits"] = "raw-with-explicit-period-benefits"
     sessions: tuple[Session, ...] = Field(min_length=1, max_length=5000)
     universe: tuple[Membership, ...] = Field(min_length=1, max_length=10000)
@@ -65,9 +66,14 @@ class DailyManifest(DomainModel):
         previous: dict[str, Membership] = {}
         for member in self.universe:
             session = sessions.get(member.effective_session)
-            if not session or member.known_at > datetime.combine(session.day, session.open, IST):
+            if not session or (
+                self.universe_kind == "point_in_time"
+                and member.known_at > datetime.combine(session.day, session.open, IST)
+            ):
                 raise ValueError("membership must be knowable before its reviewed session opens")
             old = previous.get(member.symbol)
+            if self.universe_kind == "prospective_snapshot" and (old or not member.included):
+                raise ValueError("prospective snapshots require one current inclusion per symbol")
             if old and (
                 member.effective_session <= old.effective_session or member.included == old.included
             ):

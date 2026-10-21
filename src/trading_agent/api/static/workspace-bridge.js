@@ -27,6 +27,7 @@
       doc.addEventListener('click', event => {
         const anchor = event.target.closest && event.target.closest('a[href]');
         if (!anchor || event.defaultPrevented || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+        if (anchor.getAttribute('href').startsWith('#')) return;
         const url = new URL(anchor.href, win.location.origin);
         if (url.origin === win.location.origin && views[url.pathname]) { event.preventDefault(); send('workspace-navigate', {view:views[url.pathname]}); }
       });

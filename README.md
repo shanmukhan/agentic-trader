@@ -1,12 +1,15 @@
 # Agentic Trader — paper only
 
-Version **0.12.0** adds a **Trading desk** with manual, per-trade approval and automatic
-paper modes, plus a separate **Buy / sell activity** tab explaining decisions, orders,
-fills and fees. Intraday and long-term profiles use separate account/risk contexts.
-The existing five-symbol account is still a manual watchlist until genuine reviewed
-broad-market data and an appropriate policy/model are configured. The upgrade does
-not install profitable-stock evidence or activate trading. See the
-[detailed desk guide](docs/trading-desk.md) for setup, prerequisites and limits.
+Version **0.13.0** adds an in-app **Prepare a paper strategy** workflow: download
+genuine Nifty 100/500 constituent sources and completed Kite daily history, inspect
+coverage/exclusions, review the proposed calendar and basis, then install an explicitly
+chosen rules-only or matching validated-ML policy. The desk explains each disabled
+mode with the next action, market/entry times and per-symbol quote freshness.
+Installation leaves Manual selected; Approval and Automatic remain explicit paper-only
+choices with independent risk checks. Buy / sell activity explains orders and fills.
+Current constituent snapshots are for prospective screening, not historical ML evidence;
+no model or profitable-stock claim is manufactured. Read the
+[step-by-step preparation guide](docs/strategy-preparation.md).
 
 Read-only Zerodha Kite data, deterministic risk checks, durable simulated execution,
 and a local authenticated dashboard for intraday and long-term paper accounts.

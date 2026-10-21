@@ -1,5 +1,52 @@
 # Test and validation plan
 
+## Genuine-data preparation and readiness (0.13.0)
+
+Full local validation: **614 Python tests / 71 JavaScript tests**, **92% Python coverage**.
+Ruff, formatting, mypy (95 source files), frozen offline lock/sync, wheel/sdist build and
+project secret scanning pass. New financial workflow tests exercise the full mocked-provider
+download → source/calendar/policy review → install → current-day basis review → Approval
+and Automatic decisions → later quote-driven fills. Exact fill turnover/fees/cash debit
+are checked independently against persisted account cash and journal reconciliation.
+
+Unit/HTTP tests cover strict review booleans, no GET/download financial writes, request
+idempotence, no ML fallback, current constituent observation clocks, historical execution/
+ML rejection, ETF/ISIN and catalog restrictions, action/coverage exclusions, changed hashes,
+private files, cancellation, restart without replay, stale dates, mode/connection/date
+changes during validation, no arbitrary path/source URLs, redirect/size/credential controls,
+global history read spacing and authenticated same-origin installation. CRLF source bytes
+retain their original hashes through bounded reads. Corrupt or changed profile/data pointers
+cannot select a different policy. Existing point-in-time and financial regression tests pass.
+Additional checks cover mode activation during validation, acquisition across midnight,
+explicit empty-account calendar correction, refusal after quotes/pinned reviews and
+concurrent review usage preventing a previously eligible correction.
+The official Nifty 500 file's temporary 501-row shape is supported conservatively:
+495 regular INE equity-share rows retained, six REIT/trade-to-trade/dummy entries excluded.
+This source parsing check is separate from the completed 65-stock Nifty 100 history run.
+
+UI tests verify no auto-download/approval, blank explicit policy selection, unavailable ML
+explanation, preserved edited reviews across refreshes, exact confirmation payloads, locking,
+progress/failure recovery, server restart guidance and actionable reasons even when the
+socket is connected. A separate headless browser with synthetic temporary data verified
+1440px desktop and 390px mobile widths without horizontal overflow, real DOM form
+preservation across polling, source/policy installation confirmation, retention of Manual,
+remaining current-basis blockers and shared unlock into activity; zero browser exceptions.
+Review checkboxes and their full labels remain accessible touch/click targets.
+
+**Real read-only evidence, 21 October 2026:** official Nifty 100 CSV returned 100 members;
+NSE holiday/action sources produced 60 proposed completed dates and excluded 35 members
+with actions in that interval. All **65** catalog-matched remaining shares returned all
+60 expected daily candles (**3,900 rows**). Saved original source snapshots and the
+unreviewed draft in the private account analysis directory using a read-only SQLite catalog
+adapter; no trading-account/config writes, source-review acknowledgements, strategy/mode
+activation or orders were performed. This is acquisition/coverage evidence, not independent
+calendar completeness, model validation, expected profit, installed-run or device acceptance.
+
+Current-year/normal-hours proposal limits, conservative action exclusions, unavailable
+real-market ML validation, manual refresh and separate execution-basis review are documented
+in [strategy-preparation.md](strategy-preparation.md). No synthetic fixture is real-market
+acceptance evidence.
+
 ## Trading desk / paper mode coverage (0.12.0)
 
 Full local validation: **582 Python tests / 62 JS tests**, **92% coverage**.

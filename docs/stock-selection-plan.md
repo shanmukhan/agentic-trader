@@ -1,9 +1,21 @@
 # Profit-oriented stock discovery: both horizons
 
+**0.13.0 acquisition update:** [Strategy preparation](strategy-preparation.md) now downloads
+genuine current Nifty 100/500 constituents, official holiday/action sources and up to 60
+completed Kite daily sessions. It exposes progress, source hashes, catalog/action/history
+exclusions, explicit reviews and profile/calendar installation. Current constituents are
+prospective snapshots, never substituted for historical membership/ML evidence. A real
+read-only source and one-stock history probe succeeded; broader installed-run acceptance,
+qualified net expectancy and matching real-market ML validation remain uncompleted.
+The subsequent real Nifty 100 download retrieved all 60 expected candles for 65 shares
+(3,900 rows), with 35 action exclusions. It is saved as an unreviewed private draft;
+no strategy or review was installed in the actual account.
+
 Requested 21 October 2026: the operator wants the platform to find candidates with
 potential profit after costs for **both intraday and long-term paper trading**,
 instead of requiring a hand-picked five-symbol list. Version 0.12.0 delivers the reviewed-profile screening, approval/automatic paper
-workflow and activity UI described below. Wider data acquisition and independent
+workflow and activity UI described below. Version 0.13 adds the acquisition path above;
+independent
 current-market profitability acceptance remain unfinished; this is not a stock tip.
 
 ## Current capability and evidence
@@ -19,7 +31,8 @@ quote-executed replays, daily momentum/trend/turnover/volatility research over u
 500 symbols, chronological ML tools and exact paper risk/accounting. The daily
 screen's deterministic research rank is not calibrated expected profit. The Trading desk now connects reviewed daily bundles, broader screening, current
 rule signals and optional validated ML to bounded paper proposals/execution. It does
-not automatically download the wider daily market, fundamentals or action evidence.
+now downloads a supported current-constituent daily subset through explicit UI preparation;
+fundamentals, historical membership sourcing and automatic action accounting remain open.
 
 Read-only inspection on 21 October 2026 found 5,184 catalog instruments, **zero
 accepted account quotes and zero stored candles**. Six daily and sixteen intraday
@@ -43,7 +56,7 @@ independent. Actual buy/sell activity retains reasons, authorization, fills and 
 The original account still has its configured watchlist and no installed reviewed
 real discovery profile/model from this implementation. Code/tests do not fill that
 evidence gap. Synthetic fixtures are rejected by connected profile loading. The
-next delivery is authentic input acquisition/coverage and prospective net-of-cost
+next acceptance work is installed real-input coverage and prospective net-of-cost
 acceptance, including strict class/basis sourcing; no automatic profit claim is made.
 
 ## Define “best” precisely
@@ -65,12 +78,12 @@ current execution checks and does not automatically authorize an order.
 
 ## Implementation sequence and remaining evidence
 
-1. **Real data and acquisition status — acquisition pending.** Expose catalog, historical bars, quote/depth,
+1. **Real data and acquisition status — reviewed UI acquisition delivered in 0.13; full-run acceptance pending.** Expose catalog, historical bars, quote/depth,
    calendar, corporate-action and freshness coverage in the UI. Record source,
    retrieval/availability clocks and missing inputs. Complete real feed/history
    validation; never relabel a synthetic fixture or infer missing prices/reviews.
    Analysis/data acquisition must remain separate from account execution authority.
-2. **Reviewed broad equity universe — bundle support delivered; source ingestion pending.** Start with an explicitly sourced Nifty 500
+2. **Reviewed broad equity universe — current constituent ingestion delivered; historical membership sourcing pending.** Start with an explicitly sourced Nifty 500
    universe as a proposed discovery baseline. NSE Indices describes this universe
    using market capitalisation and average daily turnover; that does not imply its
    members will be profitable. Fetch/version membership, match actual NSE catalog

@@ -34,6 +34,12 @@ test('automatic paper mode requires a reviewable confirmation and one explicit s
  assert.equal(s.instance.canNavigate(),false);s.nodes['confirm-action'].fire('click');s.nodes['confirm-action'].fire('click');await flush();
  const posts=s.calls.filter(c=>c.url==='/api/desk/mode');assert.equal(posts.length,1);assert.deepEqual(JSON.parse(posts[0].opts.body),{mode:'automatic',revision:'a'.repeat(32),acknowledged:true});
 });
+test('connected feed still explains missing strategy and quotes beside disabled mode buttons',async()=>{
+ const s=setup(async()=>ok(status({blockers:['NO_ANALYSIS_PROFILE','NO_FRESH_EXECUTION_QUOTES'],account:{equity:'25000',cash:'25000',feed_connected:true},readiness:{now_ist:'2026-10-21T20:00:00+05:30',next_action:'Prepare and review a strategy below first.',checks:[{key:'strategy',title:'Strategy and historical data',ready:false,detail:'No strategy installed.',action:'Prepare strategy data',href:'#strategy-setup'}],quotes:[{symbol:'NSE:DEMO',usable:false,exchange_time:null,basis_reviewed:false}]}})));
+ await s.unlock();assert.equal(s.nodes.state.textContent,'Feed connected');assert.equal(s.nodes['mode-automatic'].disabled,true);
+ assert.match(s.nodes['mode-status'].textContent,/2 prerequisites/);assert.match(s.nodes['next-action'].textContent,/Prepare and review/);assert.match(s.nodes['readiness-checks'].textContent,/Prepare strategy data/);assert.match(s.nodes['quote-observations'].textContent,/no accepted quote/);
+ assert.equal(s.nodes['readiness-checks'].children[0].children.at(-1).href,'#strategy-setup');
+});
 test('trade preview shows maximum shares/cash/risk before approval and preserves raw signal text safely',async()=>{
  const d=decision({candidate:{reason:'<script>unsafe</script>',stop:'490',target:'520'}});
  const s=setup(async(url)=>url.endsWith('/preview')?ok({...d,preview_sha256:'b'.repeat(64),review:{allowed:true,maximum_quantity:14,maximum_price:'501.00',maximum_cash:'7014.00',maximum_risk:'250.00'}}):ok(status({mode:'approval',blockers:[],decisions:[d]})));

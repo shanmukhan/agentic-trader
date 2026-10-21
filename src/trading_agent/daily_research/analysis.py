@@ -116,6 +116,7 @@ class Window:
 def analyze(dataset: DailyDataset, policy: DailyPolicy, as_of: datetime) -> dict[str, Any]:
     as_of = utc(as_of)
     manifest = dataset.manifest
+    snapshot = manifest.universe_kind == "prospective_snapshot"
     sessions = [
         session
         for session in manifest.sessions
@@ -138,7 +139,11 @@ def analyze(dataset: DailyDataset, policy: DailyPolicy, as_of: datetime) -> dict
             ignored_future += 1
             continue
         members = transitions.get(bar.symbol, [])
-        active_index = bisect_right(effective_dates.get(bar.symbol, []), bar.session) - 1
+        active_index = (
+            (0 if members else -1)
+            if snapshot
+            else bisect_right(effective_dates.get(bar.symbol, []), bar.session) - 1
+        )
         if active_index < 0 or not members[active_index].included:
             windows.pop(bar.symbol, None)
             continue
@@ -150,7 +155,10 @@ def analyze(dataset: DailyDataset, policy: DailyPolicy, as_of: datetime) -> dict
         window = windows.get(bar.symbol)
         included_from = members[active_index].effective_session
         if window and (
-            window.last_index != index - 1 or window.last and window.last.session < included_from
+            window.last_index != index - 1
+            or not snapshot
+            and window.last
+            and window.last.session < included_from
         ):
             gaps += 1
             window = None
@@ -163,7 +171,7 @@ def analyze(dataset: DailyDataset, policy: DailyPolicy, as_of: datetime) -> dict
         effective = [
             member
             for member in transitions[symbol]
-            if latest and member.effective_session <= latest
+            if latest and (snapshot or member.effective_session <= latest)
         ]
         if not effective:
             continue
@@ -204,6 +212,7 @@ def analyze(dataset: DailyDataset, policy: DailyPolicy, as_of: datetime) -> dict
         "as_of": stamp(as_of),
         "latest_reviewed_completed_session": latest.isoformat() if latest else None,
         "synthetic": manifest.synthetic,
+        "universe_kind": manifest.universe_kind,
         "ready_for_live": False,
         "execution_simulated": False,
         "model_validated": False,
@@ -220,6 +229,14 @@ def analyze(dataset: DailyDataset, policy: DailyPolicy, as_of: datetime) -> dict
             "calendar_age_days": (as_of.astimezone(IST).date() - latest).days if latest else None,
         },
         "limitations": [
+            *(
+                [
+                    "Current constituent snapshot: prospective screening only, "
+                    "not historical membership or ML validation evidence."
+                ]
+                if snapshot
+                else []
+            ),
             "Gross analytical total returns include reviewed period benefits before fees and tax.",
             "The index assumes same-close reinvestment and ignores payment/settlement delays.",
             "A screen is not a trade, forecast, backtest or approved investment model.",

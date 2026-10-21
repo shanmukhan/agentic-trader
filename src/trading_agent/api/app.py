@@ -36,9 +36,16 @@ def create_app(
     desk: Any = None,
 ) -> FastAPI:
     from trading_agent.desk.api import mount_desk
+    from trading_agent.desk.preparation import Preparation, saved_profile
     from trading_agent.desk.service import TradingDesk
     from trading_agent.desk.signals import AnalysisWorker
 
+    if desk is None and desk_profile is None and setup is not None:
+        try:
+            desk_profile = saved_profile(engine)
+        except Exception:
+            # Keep the UI available for recovery; never silently enable an alternative policy.
+            desk_profile = engine.settings.database.with_suffix(".invalid-analysis-profile")
     desk = desk or TradingDesk(
         engine, clock(), profile=desk_profile, automation=automation, clock=clock
     )
@@ -51,6 +58,7 @@ def create_app(
 
         setup.connection_observer = feed_state
     analysis = AnalysisWorker(desk, setup, clock)
+    preparation = Preparation(desk, setup, clock)
     stopped = threading.Event()
 
     def watchdog() -> None:
@@ -88,6 +96,7 @@ def create_app(
             yield
         finally:
             stopped.set()
+            preparation.close()
             analysis.close()
             desk.pause(clock(), "SERVER_SHUTDOWN")
             if stream:
@@ -106,6 +115,7 @@ def create_app(
         openapi_url=None,
         lifespan=lifespan,
     )
+    app.state.preparation = preparation
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=["127.0.0.1", "localhost", "[::1]"])
 
     @app.middleware("http")
@@ -144,7 +154,7 @@ def create_app(
                 raise HTTPException(403, "cross-origin controls prohibited")
 
     mount_setup(app, setup, authorized)
-    mount_desk(app, desk, setup, authorized, ASSETS, clock)
+    mount_desk(app, desk, setup, authorized, ASSETS, clock, preparation)
 
     @app.exception_handler(Exception)
     async def safe_error(request: Request, exc: Exception) -> JSONResponse:

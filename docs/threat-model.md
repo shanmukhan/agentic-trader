@@ -1,5 +1,44 @@
 # Threat model and security decisions
 
+## Genuine-data preparation (0.13.0)
+
+Mode activation is blocked throughout installation. An optional strict acknowledgement
+can correct conflicting hours only when execution/quote/candle, pinned review,
+action/payment and portfolio/SIP/desk-instruction tables are unused. The gate is rechecked
+after validation; used definitions cannot be overwritten. IST date changes invalidate
+acquisition/installation rather than mixing different source coverage dates.
+
+New authenticated POSTs under `/api/desk/preparation/{download,cancel,install}` use the
+same bearer/Origin controls as the trading desk. Download requests have an idempotent
+request identity, closed universe enum and mode revision. Install binds the exact
+source hash, edited bounded calendar, explicit policy and three strict acknowledgements.
+No HTTP client may select an arbitrary data/model path or URL. The optional model path
+is server-selected through `TRADING_PREPARATION_MODEL`, validated with existing strict
+loaders and never automatically replaced with rules.
+
+Public reads use a fixed HTTPS host/path allowlist (NSE/NSE Indices), no redirects or
+environment proxies, bounded streamed responses and timeouts. Broker access adds only
+the read-only `day` historical interval, retains the no-order route allowlist and uses
+a shared 400 ms historical-read limiter. Neither broker credentials nor third-party
+exception text are published in job state or artifacts. Data/network work holds no
+quote/risk lock. Private regular server-owned files, bounded reads, hashes and immutable
+job identities protect preparation/restore; changed data cannot be silently selected.
+
+Current constituent snapshots are explicitly prospective. Their observation/review
+clocks cannot establish historical membership/ML validation; offline execution rejects
+them. Missing/empty official action sources fail closed, and every returned action in
+the full interval excludes that stock. Calendar proposals require explicit completeness,
+hours and special-notice review before installation. Installation requires Manual,
+disconnected feed, no pending orders, unchanged revision and compatible existing session
+definitions, rechecked after out-of-lock research loading. Holdings, capital, current-day
+basis reviews and independent protective exits are preserved. Installation never arms.
+
+The active profile/data pointer survives restart, while strategy authority does not.
+Data I/O errors return sanitized preparation failures rather than declaring a financial
+account fault. Partial installation can leave a reviewed calendar configured before the
+profile pointer is committed; remain Manual and inspect/retry the exact review. No
+automatic account recovery, source completeness attestation or profitability claim is made.
+
 ## Strategy authority and decision history (0.12.0)
 
 The new desk/activity frames use the existing exact origin/window/view handoff; public

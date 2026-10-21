@@ -1,5 +1,35 @@
 # Change log
 
+## 2026-10-21 — Genuine-data strategy preparation and clearer readiness (0.13.0)
+
+- Added in-app Nifty 100/500 source/history acquisition, cancellable background progress,
+  official source snapshots/hashes, action/catalog/coverage exclusions and shared historical
+  read pacing. Added read-only daily candles without an order-capable broker transport.
+- Added explicit calendar/basis/policy reviews, editable session CSV, experimental rules
+  choice or separately supplied validated ML, immutable profile installation and hashed
+  restart selection. Installation stays Manual and requires disconnected/no-pending state.
+- Distinguished prospective current constituent snapshots from historical point-in-time
+  membership; retrospective daily execution/ML refuses the former. Retrieval and review
+  clocks are not backdated.
+- Added per-prerequisite actions, current IST/entry/session information, quote age/basis,
+  missing-profile guidance directly beside disabled modes and preserved review form edits.
+- Updated main/detailed usage, source/provenance, test, component and implementation guides.
+  A real read-only probe verified official sources and one full 60-session broker response;
+  no user strategy, review, mode or order was activated by that check.
+- Completed a separate genuine Nifty 100 download into private pending-review artifacts:
+  65 × 60 completed daily rows, 35 conservative action exclusions. Used a read-only
+  catalog connection; no account/configuration writes or review/mode activation.
+- Validation: 614 Python tests, 71 JavaScript tests, 92% coverage; Ruff, mypy, frozen
+  offline environment, build and secret checks. Isolated synthetic desktop/mobile browser
+  checks verified the review/installation flow and shared unlock without exceptions.
+- Show saved/proposed session conflicts and allow a separately acknowledged correction
+  only for an unused account. Quote/review/execution/instruction usage protects history,
+  rechecked after validation. Explain 15:30 exchange close versus 15:15 strategy flatten.
+  Block arming during installation and reject mixed-date source downloads.
+- Handle temporary index constituents above the named count; explicitly exclude REIT/
+  trade-to-trade/dummy rows. Real Nifty 500 parsing retained 495 supported shares from
+  501 source rows; no unsupported class is promoted to an equity share.
+
 ## 2026-10-21 — Trading desk, approval modes and explainable activity (0.12.0)
 
 Added a default Trading desk with actual mode/activation, clear data blockers,

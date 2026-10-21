@@ -16,6 +16,26 @@ TOKEN = "test-operator-credential-" + "a" * 32
 
 
 @pytest.fixture
+def preparation_factory(tmp_path, monkeypatch, engine_factory, long_term_factory):
+    from preparation_support import make_preparation
+
+    preparations = []
+
+    def make(horizon="intraday"):
+        directory = tmp_path / f"preparation-{len(preparations)}"
+        directory.mkdir()
+        result = make_preparation(
+            directory, monkeypatch, long_term_factory if horizon == "long_term" else engine_factory
+        )
+        preparations.append(result.prep)
+        return result
+
+    yield make
+    for prep in preparations:
+        prep.close()
+
+
+@pytest.fixture
 def corporate_account(long_term_factory):
     from trading_agent.execution.delivery import HoldingReview
 
