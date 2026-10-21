@@ -1,5 +1,24 @@
 # Change log
 
+## 2026-10-21 — First live-data paper-session instructions
+
+Added `first-paper-session.md`, linked from the main usage and horizon/feed guides.
+Checked official developer registration, ₹500/month market-data plan, loopback
+redirect and daily authentication lifecycle. Documented hidden token exchange,
+private environment load order, fresh isolated account/catalog/calendar, manual
+intraday API versus long-term portfolio UI, fill verification and daily recovery.
+Distinguished the local simulator with production read-only data from the separately
+documented, unintegrated Kite sandbox. Corrected older long-term wording that still
+said additions/SIP were unavailable. No execution/account behavior changed; no
+broker credentials, subscription, login or live-market acceptance was exercised.
+Validation: 217 local Markdown targets, documented command help, secret-pattern scan
+and whitespace checks passed. A fresh isolated synthetic `portfolio-demo` reconciled
+₹25,273.45 cash, ₹22.35 fees and four acquisition lots; it made no broker requests.
+Read-only default-account preflight preserved ₹25,000.00, zero fees/positions/orders
+and the original policy identity. It correctly remains blocked by the unloaded
+operator token, unreviewed current session and unselected catalog; broker entitlement
+is unverified. Unit/functional suites were not rerun for documentation only.
+
 ## 2026-10-21 — LT3c1 reviewed contributions, acquisition history and SIP (0.9.0)
 
 Started the next portfolio-management dependency after LT3b. Split LT3c into

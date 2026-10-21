@@ -150,6 +150,10 @@ listener. The API has no cookie login and does not enable CORS.
 
 ## 7. Connect read-only Kite market data
 
+For the complete first-session sequence, developer-app registration, current plan
+requirements, private daily-token handling and separate intraday/long-term UI flows,
+follow [First paper session with live Kite data](first-paper-session.md).
+
 An appropriate Kite application and market-data entitlement are required. Verify
 current availability in the [Kite documentation](https://kite.trade/docs/connect/v3/)
 and developer console before purchasing anything. The application uses the official

@@ -16,7 +16,7 @@ live-trading Phase 5. Further long-term milestones remain open.
 | Capital | Own virtual seed, unleveraged shares, exact Decimal accounting |
 | Holding period | No 15:15 forced exit and no ordinary overnight kill |
 | Entry | Manual candidate with stop/target, fresh quotes, reviewed session/raw basis and independent sizing |
-| Position model | One open holding per symbol; partial fills, no averaging/SIP or tax-lot selection |
+| Position model | One pooled holding per symbol; partial fills; 0.9.0 adds reviewed additions/SIP and separate original acquisition history; no tax-lot selection |
 | Protective exits | Stop, target, operator holding exit, kill, daily loss and portfolio drawdown |
 | Restart | Reconcile first, cancel old pending orders, restore persistent requested exits on polling |
 | Delivery costs | Separate observed schedule, cumulative order fees, DP once per symbol/IST date |
@@ -80,6 +80,8 @@ and import the read-only instrument catalog before starting the feed:
 ```
 
 No `--automate`, `--rule-only` or `--model` flag belongs on this long-term service.
+For developer registration and the complete daily-token/first-order sequence, see
+[first-paper-session.md](first-paper-session.md).
 These intraday combinations are refused. Without `--stream` the console runs offline,
 with entries blocked. Broker entitlement/access still require actual external checks.
 Owning commands such as `status`, `verify-db` and `backup` require the service stopped
@@ -135,7 +137,9 @@ intraday accounts or attempts to clear quarantine return 409 without overriding 
 Use the existing `/api/paper/intents` schema from [api-contracts.md](api-contracts.md)
 with a current aware decision time and reviewed symbol/stop/target. The operator
 proposes the hypothesis; the engine chooses quantity and reserves fee-aware cash/risk.
-No client quantity, short, leverage, position addition or cross-account transfer exists.
+This ordinary intent route accepts no client quantity, short, leverage or position
+addition. Use the [portfolio workflow](portfolio-contributions.md) for 0.9.0 reviewed
+cash-budget purchases/additions/SIP. Cross-account transfers remain unsupported.
 A pending entry expires after thirty seconds by default or at the entry/session cutoff.
 An accepted order still needs a strictly later, adverse tick/depth-aware quote to fill.
 

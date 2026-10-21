@@ -5,6 +5,13 @@ Prepared 20 October 2026; updated 21 October 2026. This is the execution record 
 
 ## Implemented scope
 
+The [live-data first paper-session guide](first-paper-session.md) records developer
+registration, officially checked plan requirements, private daily token handling,
+isolated manual intraday/long-term setup and acceptance/recovery steps. This is
+operator documentation, not evidence of an actual broker login/feed session or a
+sandbox integration. External data entitlement and sustained market-feed acceptance
+remain pending.
+
 The repository delivers Phases 1–3 infrastructure/research and Phase 4 supervised
 intraday paper-feed engineering, LT1–LT2 long-term paper mechanics and LT3a daily
 research foundations plus LT3b offline quote-executed daily strategy/ML validation

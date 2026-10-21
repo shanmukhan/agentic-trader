@@ -32,6 +32,8 @@ These are software drills, not evidence of market performance or actual power-lo
 
 Complete the manual authentication, private token, reviewed session CSV and broker
 entitlement steps in [how-to-use.md](how-to-use.md). Keep `TRADING_MODE=paper`.
+The [first-session checklist](first-paper-session.md) covers developer registration,
+daily token capture and a manual order lifecycle before opting into automation.
 Do not paste credentials into command arguments. The normal environment setup remains:
 
 ```sh
