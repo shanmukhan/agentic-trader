@@ -1,5 +1,31 @@
 # Operator API and command contracts
 
+## Trading desk and activity (0.12.0)
+
+New `/desk`, `/activity` and `/desk.js` are public shells/assets. The two pages join
+`/console`, `/setup`, `/portfolio` in the fixed same-origin frame allowlist; no other
+route gains framing access. All private endpoints retain bearer, Host and mutation
+Origin enforcement. JSON mode/approval models forbid extra fields and require strict
+explicit acknowledgement. No HTTP request can supply an analysis/model filesystem path.
+
+| Endpoint | Contract |
+|---|---|
+| `GET /api/desk` | Actual mode/revision, blockers, selected symbols, reviewed discovery/provenance/exclusions, proposed shortlist/hash, latest 100 decisions and virtual account |
+| `POST /api/desk/mode` | `mode` manual/approval/automatic, current 32-hex `revision`, strict `acknowledged: true`; confirmed authority change, cancels previous pending desk buys/proposals |
+| `POST /api/desk/decisions/{id}/preview` | Current bounded preview; no order/cash reservation; persists reviewed proposal and preview hash |
+| `POST /api/desk/decisions/{id}/approve` | Exactly `preview_sha256`; fresh full revalidation; terminal retries return the existing result; no replay |
+| `POST /api/desk/decisions/{id}/reject` | Decline an awaiting proposal, no financial order |
+| `POST /api/desk/shortlist` | Exactly reviewed `preview_sha256`; manual mode, disconnected/no-pending Setup flow; preserves held symbols and updates only feed tokens |
+| `GET /api/activity?before=0&limit=50` | Newest-first order-row cursor; limit 1–100; exact orders, original reason/origin, decision, latest 100 fills, cash debit and next cursor |
+| `GET /api/activity/orders/{id}/fills?before=0` | Up to 100 fills with stable earlier-sequence cursor; 404 unknown order |
+
+Expected workflow conflicts return credential-free 409 reasons. Invalid typed
+requests return 422. An interrupted authorization is not automatically retried.
+Polling GETs do not authorize trades or mutate financial state. Preview is an explicit
+POST that persists review evidence; it does not buy shares. Read-only workspace metadata
+additionally exposes `decision_mode` and `analysis_configured`. A selected mode is not
+proof of activation or qualified market data. See [trading-desk.md](trading-desk.md).
+
 Listener: `http://127.0.0.1:8000`, one process/worker. There is no live trading route.
 OpenAPI and interactive API docs are disabled. Public health responses contain no
 account details. Every `/api/` route requires `Authorization: Bearer <operator token>`.
@@ -90,7 +116,7 @@ It is metadata for guidance, not candidate approval. `/api/setup` additionally r
 The workspace retains the operator token only in memory and hands it to the current
 section using exact origin, frame-window and view checks. The section verifies its
 parent origin/window. Lock/authorization failure clears the whole workspace; no cookie,
-URL credential or browser storage was added. Only `/console`, `/setup` and `/portfolio`
+URL credential or browser storage was added. Only `/console`, `/setup`, `/portfolio`, `/desk` and `/activity`
 permit same-origin framing (`SAMEORIGIN`, `frame-ancestors 'self'`). Workspace/root,
 API and other assets retain framing denial; cross-origin framing remains blocked.
 See [workspace.md](workspace.md) for navigation, active-action guards and limitations.

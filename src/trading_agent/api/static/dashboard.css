@@ -427,3 +427,35 @@ dialog p {
     grid-template-columns: minmax(0,1fr);
   }
 }
+
+/* Trading desk: one clear mode, reviewable proposal cards and responsive touch targets. */
+.desk-value { font-size:1.25rem; font-weight:650; margin:12px 0; }
+.mode-options { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; margin:20px 0; }
+.mode-option { border:1px solid var(--border); border-radius:10px; padding:18px; display:flex; flex-direction:column; gap:12px; }
+.mode-option h3,.trade-card h3 { margin:0; color:var(--text); font-size:1rem; }
+.mode-option p { font-size:.88rem; color:var(--muted); flex:1; }
+.trade-card { display:block; border:1px solid var(--border); border-radius:10px; margin-top:16px; padding:18px; overflow-wrap:anywhere; }
+.trade-card p { margin-top:8px; font-size:.9rem; }
+.trade-card button { margin-top:14px; margin-right:10px; }
+.trade-card details { margin-top:16px; }
+.trade-card pre { max-height:420px; overflow:auto; font-size:.8rem; white-space:pre-wrap; }
+.desk-links { display:flex; flex-wrap:wrap; gap:16px; margin-top:18px; }
+.desk-page select { min-height:44px; background:var(--bg); color:var(--text); border:1px solid var(--border); padding:8px 12px; border-radius:6px; margin:12px; }
+.desk-page .access form { display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
+.desk-page #shortlist-preview { margin:16px 0; }
+@media(max-width:760px) { .mode-options { grid-template-columns:minmax(0,1fr); } .trade-card button { width:100%; margin-right:0; } }
+.workspace-session { display:flex; gap:12px; align-items:center; }
+.workspace-child .masthead .eyebrow { display:none; }
+@media(max-width:640px) {
+  .workspace-header h1 { font-size:1.15rem; }
+  .workspace-header .muted { display:none; }
+  .workspace-header .eyebrow { font-size:.6rem; letter-spacing:.08em; }
+  .workspace-session { flex-direction:column; gap:4px; }
+  .workspace-session button { min-height:32px; padding:6px 8px; font-size:.75rem; white-space:nowrap; }
+  .workspace-nav { flex-wrap:nowrap; overflow-x:auto; padding:6px 0 10px; gap:8px; }
+  .workspace-nav a { flex:0 0 auto; min-height:44px; padding:6px 10px; font-size:.8rem; white-space:nowrap; }
+  .desk-page .metrics { grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+  .desk-page .metric { padding:12px; }
+  .desk-page .metric:last-child { grid-column:1/-1; }
+  .desk-page .desk-value { font-size:1rem; }
+}

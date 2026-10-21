@@ -7,8 +7,10 @@ failure/retry details and follow the [restart/recovery guide](ui-setup.md#after-
 Connected with stale/missing quotes after hours is a valid distinct state: missing
 executable depth is ignored rather than invented, and trading stays blocked.
 
-This is navigation/setup usability work; it does not add automatic stock selection
-or automatic long-term entries.
+Version 0.12.0 adds the [Trading desk and activity workflow](trading-desk.md), including
+profile-driven broad screening and explicit approval/automatic paper modes for both
+horizons. They require genuine reviewed inputs; existing accounts are not activated
+or assigned a new shortlist automatically.
 
 ## Load the new version
 
@@ -27,7 +29,7 @@ another owner of the same account. Inspect holdings/pending work before any stop
 because restart recovery and quote outages retain their existing consequences.
 
 Direct Console/Setup/Portfolio links route to the corresponding workspace section.
-The ordinary root URL routes to **Start here**. Legacy CLI callback URLs containing
+The ordinary root URL and an empty/unknown workspace hash route to **Trading desk**. Legacy CLI callback URLs containing
 a request token remain available for manual capture; handled UI login popups retain
 their guarded callback handoff instead of becoming a navigation request.
 
@@ -36,8 +38,10 @@ their guarded callback handoff instead of becoming a navigation request.
 | Menu | Purpose |
 |---|---|
 | Start here | Actual account mode, feed-request state, configured hours and quote-age limit; next steps and trading-frequency explanation |
-| Trading console | Freshness/readiness, current-session long-term basis review, paper risk/exit controls and orders |
-| Broker & feed setup | Broker session/login, catalog, symbol selection, reviewed calendar and explicit feed connection |
+| Trading desk | Actual manual/approval/automatic mode, proposals, ranked profile coverage, exclusions and safe shortlist review |
+| Buy / sell activity | Recorded buy/sell orders, reasons, authorization, exact fills/fees and rejected/expired proposals |
+| Advanced controls | Freshness/readiness, current-session long-term basis review, paper risk/exit controls and orders |
+| Broker & data | Broker session/login, catalog, symbol selection, reviewed calendar and explicit feed connection |
 | Purchases & SIP | Manual long-term purchase previews/confirmations, recurring plan occurrences, holdings and original acquisition history |
 
 Unlock once with `TRADING_OPERATOR_TOKEN` from your private `.env`. Menu navigation
@@ -63,7 +67,7 @@ server's normal freshness/idempotency checks remain authoritative after navigati
 1. Read **Start here**. It distinguishes *feed not started* from *requested but
    disconnected*, and shows the actual account horizon/automation state and hours.
    The launcher starts the UI without requesting a feed.
-2. Open **Broker & feed setup**. In step 3, **Check saved broker session**. An available
+2. Open **Broker & data**. In step 3, **Check saved broker session**. An available
    token can be expired. If renewal is required, disconnect a requested feed in
    step 6, open Zerodha login/2FA, then explicitly exchange the returned request token.
 3. Step 4 shows the imported catalog and selected symbols. These are subscriptions,
@@ -76,7 +80,7 @@ server's normal freshness/idempotency checks remain authoritative after navigati
 5. In step 6, **Connect paper market data**, review the confirmation and refresh status.
    Connecting can resume existing pending fills/protective exits; it creates no new
    intent. A connected socket alone does not establish accepted quote freshness.
-6. During the relevant IST date, use **Trading console** to review long-term symbols'
+6. During the relevant IST date, use **Advanced controls** to review long-term symbols'
    current price basis, including intervening corporate actions since the last accepted
    quote. Do not attest clear merely to remove a warning. Await new accepted quotes
    after review; quarantines need the supported action workflow.

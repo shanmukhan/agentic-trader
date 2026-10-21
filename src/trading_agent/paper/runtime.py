@@ -37,6 +37,7 @@ class PaperFeed:
         self.engine, self.settings, self.strategy = engine, settings, strategy
         self.catalog = {item.symbol: item for item in instruments}
         self.synthetic = synthetic
+        self.dispatch: Any = None
         self.rules = RuleStrategy(strategy, engine.calendar)
         self.armed = False
         self.armed_day: date | None = None
@@ -394,12 +395,24 @@ class PaperFeed:
                                 policy=self.engine.settings,
                             )
                             probability = self.engine.model.score(vector)
-                        proposals.append((probability, candidate, vector))
+                        proposals.append(
+                            (
+                                probability,
+                                candidate,
+                                vector,
+                                {
+                                    "kind": "intraday",
+                                    "candle": candle.model_dump(mode="json"),
+                                    "features": result.features,
+                                    "signal_key": candidate.intent_id,
+                                },
+                            )
+                        )
                 # A model's age/readiness must hold on every decision, not only on operator arm.
                 if proposals and self.readiness(now):
                     self.disarm(now, "DECISION_NOT_READY")
                     return
-                for rank, (probability, candidate, vector) in enumerate(
+                for rank, (probability, candidate, vector, context) in enumerate(
                     sorted(
                         proposals, key=lambda item: (-item[0], item[1].symbol, item[1].intent_id)
                     ),
@@ -416,7 +429,10 @@ class PaperFeed:
                         },
                         candidate.intent_id,
                     )
-                    self.engine.submit(candidate, now, features=vector, automation=self.digest)
+                    if self.dispatch:
+                        self.dispatch(candidate, now, {**context, "rank": rank})
+                    else:
+                        self.engine.submit(candidate, now, features=vector, automation=self.digest)
                 self.counts["candidates"] += len(proposals)
         except Exception:
             self.fail(now)

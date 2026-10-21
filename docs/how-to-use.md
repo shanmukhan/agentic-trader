@@ -1,7 +1,17 @@
 # How to use Agentic Trader
 
-Updated 21 October 2026 for version 0.11.1. This guide and corresponding detailed
+Updated 21 October 2026 for version 0.12.0. This guide and corresponding detailed
 guides are updated with every feature or changed workflow, as required by [AGENTS.md](../AGENTS.md).
+
+Version 0.12.0 opens **Trading desk** by default and adds a separate **Buy / sell
+activity** menu section. Manual, approval/semi-autonomous and automatic paper modes
+are explicit, confirmed choices. Proposals explain their source and require fresh
+bounded previews; activity distinguishes acceptance from actual quote-driven fills.
+Both intraday and long-term strategy profiles are implemented, with independent risk
+checks and protective exits. Your old five subscriptions are not silently replaced.
+A reviewed real-data profile and matching validated model are prerequisites for
+rules-plus-ML discovery; they are not supplied by this upgrade. Read the
+[complete new workflow and configuration guide](trading-desk.md) before activating.
 
 Version 0.11.1 fixes a verified after-hours feed disconnection: full quote packets
 with an empty bid/ask or zero side quantity are ignored without disconnecting.
@@ -17,19 +27,21 @@ all independent risk/basis checks before trading.
 ## 1. Scope and prerequisites
 
 The operator's latest goal is profit-oriented candidate discovery for **both**
-intraday and long-term accounts, beyond a manually selected watchlist. This is now
-the [next-priority stock-selection plan](stock-selection-plan.md). A current feed
+intraday and long-term accounts, beyond a manually selected watchlist. The
+[stock-selection plan](stock-selection-plan.md) now records profile-driven screening,
+approval/automatic execution and activity UI; real-data acquisition/acceptance remain next. A current feed
 selection is not a stock ranking, and the current research rules/synthetic tests do
 not establish profitable real-market picks. Real data and independent net-of-cost
-validation are prerequisites; automatic broad-market selection is not yet delivered.
+validation are prerequisites; reviewed profile-driven screening is available, while automatic broad-data acquisition
+and empirical qualified-profit rankings remain pending.
 
 This release implements Phases 1–4 engineering: virtual execution/risk controls,
 predeclared rules, isolated backtests, chronological ML research and opt-in
 supervised intraday feed automation, long-term paper holdings/corporate actions and
 offline completed-daily screening, quote execution and separate daily ML validation.
 Long-term accounts also support reviewed cash-budget contributions and explicit-session SIP plans.
-It does not choose an investment universe, produce investment recommendations or
-execute live trades. Sample trades are synthetic. Read
+Reviewed profiles can propose a bounded execution shortlist and paper strategy
+decisions; this does not establish qualified profit forecasts or execute live trades. Sample trades are synthetic. Read
 [risk-policy.md](risk-policy.md) before submitting paper intents.
 
 Use macOS or 64-bit Raspberry Pi OS, a patched Python **3.13.16**, local disk with
@@ -547,7 +559,9 @@ quote consistency, strategy/coverage assumptions, exact fees, independent label
 exclusions, feature identities, purge/calibration/holdout, model availability,
 failure/recovery and performance. Preserve partial failed outputs; absence of a
 finished manifest prevents loading. Correct reviewed inputs and rerun into a new
-directory. Daily models remain offline and cannot arm the long-term service.
+directory. Daily model validation/training remains offline. Version 0.12.0 can
+consume a matching validated real daily model in the separate reviewed
+[Trading desk profile](trading-desk.md); it does not bypass readiness/risk checks.
 LT3c1 now supplies reviewed contributions/SIP. LT3c2 rebalance proposals and LT3c3
 aggregate capital coordination remain next.
 

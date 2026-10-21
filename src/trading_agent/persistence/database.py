@@ -77,6 +77,16 @@ CREATE TABLE IF NOT EXISTS sip_plans (
 CREATE INDEX IF NOT EXISTS acquisition_orders ON orders(side);
 """
 
+DESK_SCHEMA = """
+CREATE TABLE IF NOT EXISTS desk_decisions (
+    id TEXT PRIMARY KEY, time TEXT NOT NULL, state TEXT NOT NULL, payload TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS desk_pending ON desk_decisions(state,time);
+CREATE INDEX IF NOT EXISTS desk_order ON desk_decisions(json_extract(payload,'$.order_id'));
+CREATE INDEX IF NOT EXISTS events_entity_kind ON events(entity,kind,seq);
+CREATE INDEX IF NOT EXISTS fills_order ON fills(order_id,seq);
+"""
+
 
 class Database:
     def __init__(self, path: Path, starting_cash: Decimal):
@@ -112,6 +122,7 @@ class Database:
             self.connection.executescript("BEGIN IMMEDIATE;" + SCHEMA + "COMMIT;")
         self.connection.executescript(CORPORATE_SCHEMA)
         self.connection.executescript(PORTFOLIO_SCHEMA)
+        self.connection.executescript(DESK_SCHEMA)
         # Compatible additive index: runtime candidate lookups must not scan quote history.
         self.connection.execute(
             "CREATE INDEX IF NOT EXISTS events_kind_time ON events(kind,time,seq)"
@@ -176,6 +187,9 @@ class Database:
 
     @staticmethod
     def reconcile(tx: sqlite3.Connection) -> None:
+        from trading_agent.desk.accounting import reconcile_desk
+
+        reconcile_desk(tx)
         from trading_agent.execution.delivery import reconcile_delivery
 
         reconcile_delivery(tx)

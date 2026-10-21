@@ -49,7 +49,7 @@ test('one unlock survives menu changes and sends credentials only to the current
  s.navigate('setup');s.ready('setup');assert.equal(s.nodes['workspace-frame'].src,'/setup');
  assert.equal(s.posts.filter(p=>p[0].type==='workspace-unlock').length,2);
  assert.equal(s.calls.length,1);assert.ok(s.nodes['workspace-access'].hidden);
- s.navigate('__proto__');assert.equal(s.nodes['nav-overview'].attributes['aria-current'],'page');
+ s.navigate('__proto__');assert.equal(s.nodes['nav-desk'].attributes['aria-current'],'page');
 });
 test('lock destroys the active private view and late readiness cannot recover the token',async()=>{
  const s=setup();await s.unlock();s.nodes['workspace-lock'].fire('click');s.posts.length=0;s.ready();

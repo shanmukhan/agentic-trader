@@ -1,5 +1,20 @@
 # Architecture and invariants
 
+Version 0.12.0 adds `desk/` as a proposal/authorization layer above the same independent
+paper broker. Immutable server-selected profiles bind reviewed data, supported share
+classification and model hashes. Separate background daily screening/history I/O feeds
+causal proposals; quote/risk locks are not held during acquisition/parsing/ranking.
+Only selected daily timelines are cached; indexed cursor views bound UI history work.
+Proposal state is journal-backed, with optimistic mode/shortlist/preview generations.
+BUY authorization commits before broker submission, whose transaction verifies and
+journals its exact candidate/features/quantity-cap fingerprint. Restart never replays
+an interrupted authority; it reconciles any committed order. SELL exit linkage is
+atomic. Modes do not weaken risk, change horizon/capital or defer protective exits. Manual
+feed callbacks revoke desk authority on disconnect immediately, independently of
+the one-second watchdog, so a rapid reconnect cannot silently resume trading.
+Profiles are optional and fail closed; no current real bundle/model is fabricated.
+The new fixed `/desk` and `/activity` frames share the existing in-memory unlock.
+
 Version 0.11.1 separates missing executable depth from transport failure. The strict
 full-packet decoder returns usable quotes and unusable symbol observations after
 batch framing/identity validation. Stream callbacks invalidate prior depth per affected
@@ -17,7 +32,7 @@ section navigation; otherwise the old section is unloaded, clearing unsaved form
 Lock destroys the section and invalidates late responses. No persistent browser
 session, new financial authority or backend trading scheduler was introduced.
 
-Only the three section routes may be framed by their own origin; all other routes
+Only the five fixed section routes may be framed by their own origin; all other routes
 retain frame denial. `/api/workspace` provides actual policy/mode/connection metadata
 under the existing bearer boundary, outside the analysis hot path. The launcher
 checks account identity and current UI version before opening an existing workspace.

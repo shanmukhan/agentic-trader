@@ -1,5 +1,11 @@
 # Start, unlock and configure the paper app in your browser
 
+Version 0.12.0 separates day-to-day decisions from setup: use **Trading desk** for
+modes/proposals and **Buy / sell activity** for reasons, actual orders and fills.
+**Broker & data** retains the existing setup steps and **Advanced controls** retains
+basis reviews/kill/flatten. See [Trading desk setup](trading-desk.md) for the additional
+reviewed analysis profile; broker connection alone does not install stock rankings or ML.
+
 Version 0.10.0 added authenticated setup for **manual** paper accounts; 0.11.0 adds
 the [shared workspace menu and step-by-step guide](workspace.md). The existing
 Python 3.13.16 environment and frozen dependencies remain sufficient. The page is
@@ -198,7 +204,9 @@ explicit, not automatic background login or credential probing.
 
 The `EQ` catalog category can include ETFs such as GOLDCASE. Current costs assume
 equity shares; ETF-specific fee/classification support remains pending. A feed
-subscription is not execution approval, and no automatic ETF exclusion was added.
+subscription is not execution approval. Setup still permits monitoring catalog EQ
+rows; the separate Trading desk profile excludes symbols lacking reviewed equity-share
+classification. This does not add ETF fee/accounting support.
 Leave unsupported instruments out of paper order submission and basis approvals.
 
 ## Private persistence and account boundaries

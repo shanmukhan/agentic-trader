@@ -1,5 +1,25 @@
 # Threat model and security decisions
 
+## Strategy authority and decision history (0.12.0)
+
+The new desk/activity frames use the existing exact origin/window/view handoff; public
+shells contain no private account data. Modes require an authenticated explicit
+confirmation and current revision; trade approval requires a server-stored preview
+hash and fresh bounded revalidation. Browser clients cannot create arbitrary strategy
+proposals or provide model/data paths. Data/model loading is bounded, typed JSON/TOML,
+not pickle/code, and production profiles reject synthetic fixtures. A failed ML policy
+never silently falls back to rules. Profile/model/source identities are retained.
+
+Authority is revoked in memory before durable cancellation so a journal fault cannot
+leave an active mode. Quantity/cash/risk caps cannot grow through a changed quote.
+Mode/session/feed/model/risk changes invalidate unsubmitted work; fresh data does not
+implicitly reactivate it. Broker-transaction authority proofs plus journal/table
+reconciliation detect missing/mismatched decision provenance. BUY restart recovery
+links a matching order or cancels unsubmitted authority; it never repeats an order.
+Protective exits remain independent of approvals. These invariants do not protect
+against a fully compromised local OS/operator rewriting all code and evidence.
+Headless preview uses an isolated synthetic database/profile, not operator credentials.
+
 Version 0.11.1 exposes fixed credential-free feed failure codes and bounded retry
 counts through authenticated Setup. Never include raw exception strings, broker text
 messages, socket URLs or headers: these can contain session credentials. Last receipt

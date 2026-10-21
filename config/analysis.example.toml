@@ -1,0 +1,35 @@
+# Template only. Copy to config/analysis.local.toml and supply reviewed REAL inputs.
+# This file cannot create market data, asset-class reviews or ML validation evidence.
+name = "Reviewed market selection"
+daily_dataset = "data/reviewed-daily-bundle"
+strategy_mode = "rules_ml"
+model_directory = "data/validated-model-for-this-horizon"
+approval_seconds = 120
+max_price_drift_bps = "20"
+max_model_age_days = 30
+
+# Replace every example with actual reviewed equity-share classifications.
+# ETF membership in the broker's EQ catalog is not an equity-share classification.
+[[shares]]
+symbol = "NSE:EXAMPLE"
+kind = "equity_share"
+reviewed_at = "2026-01-01T00:00:00Z"
+reference = "REPLACE with genuine instrument-class evidence and review time"
+
+[long_term]
+stop_pct = "2"
+target_pct = "4"
+max_entry_gap_bps = "100"
+max_hold_sessions = 20
+
+[long_term.screen]
+momentum_sessions = 20
+trend_sessions = 50
+min_average_turnover = "10000000"
+max_daily_volatility_pct = "5"
+
+[intraday]
+hypothesis = "opening_range_breakout"
+indicator_period = 14
+volume_lookback = 5
+max_candidates_per_symbol_day = 1

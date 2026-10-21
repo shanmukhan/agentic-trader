@@ -1,5 +1,51 @@
 # Change log
 
+## 2026-10-21 — Trading desk, approval modes and explainable activity (0.12.0)
+
+Added a default Trading desk with actual mode/activation, clear data blockers,
+proposal-first layout and separate Buy / sell activity. Manual, per-trade approval
+and automatic paper modes work with reviewed intraday and long-term profiles; legacy
+bound intraday can route through the same approval workflow. Protective exits remain
+independent. Browser section changes retain one unlock; mobile uses a horizontally
+scrollable menu with accessible header Lock. Fixed a misleading initial locked
+message after successful desk unlock. No real-order capability was added.
+
+Broader discovery reads reviewed real daily bundles for up to 500 symbols, separates
+share classification from catalog EQ, excludes unsupported/unmatched candidates and
+previews a held-preserving catalog shortlist of at most ten. Current quotes and
+completed intraday/prior-daily rules drive proposals. Rules-plus-ML requires a matching
+independently validated model; no synthetic model/data or silent fallback is permitted
+in connected profile loading. This does not supply a real bundle/model, automatic
+broad-data acquisition or empirically qualified expected-profit ranking. The existing
+five-symbol account, capital, mode, reviews and broker session were not changed.
+
+Approval previews enforce expiry, profile/mode generation, live price/signal gaps,
+quantity/cash/price/risk bounds, and fresh independent broker checks. BUY authority is
+journaled before submission and fingerprint-verified/journaled in the broker transaction;
+recovery links a matching committed order or cancels unsubmitted authority without
+replay. A second clock check after durable authorization prevents stale execution
+through a slow write, clock regression, session/expiry or model-age rollover. Manual
+feed callbacks also measure freshness after acquiring the risk lock, so queued stale
+quotes cannot fill another pending order using a clock captured before lock wait. SELL linkage is atomic. Mode/data/risk pauses revoke memory authority before
+I/O and cancel unfilled desk buys. Short feed disconnects notify the desk immediately,
+so reconnecting before the watchdog poll cannot restore authority. Activity retains
+manual/legacy/protective origins, actual fills/fees, declined/expired/blocked proposals
+and exact cash flow with bounded order/fill cursor pages.
+
+Validation: **582 Python tests**, **62 JavaScript tests**, **92% Python coverage**;
+lint/types/secrets, frozen offline environment and source/wheel build checks passed.
+Tests include both signal pipelines, real rule evaluation with mocked history, model
+threshold revalidation, quote/holding/mode changes, approval quantity bounds, immediate
+feed revocation, protective exits without approval, loss-response/restart recovery,
+journal corruption, exact independent ledger checks, held shortlist preservation,
+more than 100 partial fills and nonblocking risk controls during slow history I/O.
+An isolated headless browser verified desktop/390-pixel layouts, no page overflow,
+shared unlock, explicit preview/confirmation and ACCEPTED with zero fills in activity.
+Synthetic small-fixture loopback p99: desk **0.9474 ms**, activity **0.7265 ms**;
+[benchmark scope](benchmark-desk-macos.json) excludes external acquisition, broad-market
+load, real-market profit acceptance and Pi/physical-phone evidence. All browser/demo
+orders used separate temporary synthetic accounts. User-owned services were not restarted.
+
 ## 2026-10-21 — Keep after-hours empty books from disconnecting the feed (0.11.1)
 
 Fixed the verified full-packet parser failure when the broker sends an empty bid/ask

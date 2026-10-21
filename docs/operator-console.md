@@ -1,5 +1,10 @@
 # Operator console: desktop and mobile browsers
 
+Version 0.12.0 moves the normal workflow to [Trading desk](trading-desk.md), with an
+independent Buy / sell activity tab. The existing `/console` is now labeled Advanced
+controls in the shared menu. Its risk/basis controls remain available. The old manual
+watchlist is not relabeled as a profitable-stock selector.
+
 The UI is a local browser application served by FastAPI. It is **paper only**.
 There is no native Android/iOS app, installable PWA, public hosting or real-money
 order screen. Desktop browsers use account cards and two-column readiness/controls;

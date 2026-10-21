@@ -5,6 +5,7 @@ from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
 from importlib.resources import files
+from pathlib import Path
 from typing import TYPE_CHECKING, Annotated, Any
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
@@ -31,7 +32,25 @@ def create_app(
     automation: "PaperFeed | None" = None,
     setup: SetupService | None = None,
     open_browser: bool = False,
+    desk_profile: Path | None = None,
+    desk: Any = None,
 ) -> FastAPI:
+    from trading_agent.desk.api import mount_desk
+    from trading_agent.desk.service import TradingDesk
+    from trading_agent.desk.signals import AnalysisWorker
+
+    desk = desk or TradingDesk(
+        engine, clock(), profile=desk_profile, automation=automation, clock=clock
+    )
+    desk.clock = clock
+    if setup:
+
+        def feed_state(connected: bool) -> None:
+            if not connected and desk.mode != "manual":
+                desk.pause(clock(), "FEED_DISCONNECTED")
+
+        setup.connection_observer = feed_state
+    analysis = AnalysisWorker(desk, setup, clock)
     stopped = threading.Event()
 
     def watchdog() -> None:
@@ -43,6 +62,7 @@ def create_app(
                             automation.tick(clock())
                         else:
                             engine.poll(clock())
+                        desk.tick(clock())
             except Exception:
                 engine.faulted = True
                 engine.set_connected(False)
@@ -53,6 +73,7 @@ def create_app(
         worker = threading.Thread(target=watchdog, name="risk-watchdog", daemon=True)
         if background:
             worker.start()
+            analysis.start()
         try:
             if stream:
                 stream.start()
@@ -67,6 +88,8 @@ def create_app(
             yield
         finally:
             stopped.set()
+            analysis.close()
+            desk.pause(clock(), "SERVER_SHUTDOWN")
             if stream:
                 stream.close()
             if automation and not automation.closed:
@@ -90,7 +113,7 @@ def create_app(
         response = await call_next(request)
         response.headers["Cache-Control"] = "no-store"
         response.headers["X-Content-Type-Options"] = "nosniff"
-        framed = request.url.path in {"/console", "/setup", "/portfolio"}
+        framed = request.url.path in {"/console", "/setup", "/portfolio", "/desk", "/activity"}
         response.headers["X-Frame-Options"] = "SAMEORIGIN" if framed else "DENY"
         response.headers["Referrer-Policy"] = "no-referrer"
         response.headers["Content-Security-Policy"] = (
@@ -121,11 +144,13 @@ def create_app(
                 raise HTTPException(403, "cross-origin controls prohibited")
 
     mount_setup(app, setup, authorized)
+    mount_desk(app, desk, setup, authorized, ASSETS, clock)
 
     @app.exception_handler(Exception)
     async def safe_error(request: Request, exc: Exception) -> JSONResponse:
         engine.faulted = True
         engine.set_connected(False)
+        desk.mode = "manual"
         if automation:
             automation.fail(clock())
         logging.getLogger(__name__).error("operator request failed; entries blocked")
@@ -179,6 +204,8 @@ def create_app(
                 "feed_requested": setup.stream is not None if setup else stream is not None,
                 "automation_enabled": automation is not None,
                 "automation_armed": automation.armed if automation else False,
+                "decision_mode": desk.mode,
+                "analysis_configured": desk.research is not None,
                 "candidate_cap_per_symbol_day": automation.strategy.max_candidates_per_symbol_day
                 if automation
                 else None,
@@ -311,6 +338,7 @@ def create_app(
     @app.post("/api/control/kill", dependencies=[Depends(authorized)])
     def kill() -> dict[str, bool]:
         with engine.lock:
+            desk.pause(clock(), "OPERATOR_KILL")
             if automation:
                 automation.disarm(clock(), "OPERATOR_KILL")
             engine.kill(clock())
@@ -319,6 +347,7 @@ def create_app(
     @app.post("/api/control/flatten", dependencies=[Depends(authorized)])
     def flatten() -> dict[str, bool]:
         with engine.lock:
+            desk.pause(clock(), "OPERATOR_FLATTEN")
             if automation:
                 automation.disarm(clock(), "OPERATOR_FLATTEN")
             engine.flatten(clock())
@@ -359,7 +388,8 @@ def create_app(
             raise HTTPException(409, "paper automation is not configured")
         try:
             with engine.lock:
-                return automation.arm(clock())
+                desk.set_mode("automatic", clock(), desk.revision)
+                return automation.status(clock())
         except ValueError as exc:
             raise HTTPException(409, str(exc)) from None
 
@@ -368,7 +398,7 @@ def create_app(
         if not automation:
             raise HTTPException(409, "paper automation is not configured")
         with engine.lock:
-            automation.disarm(clock())
+            desk.pause(clock(), "OPERATOR_DISARM")
             return automation.status(clock())
 
     return app

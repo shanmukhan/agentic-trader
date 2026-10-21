@@ -1,5 +1,32 @@
 # Implementation plan, enhancements and status
 
+## Trading desk and decision modes (0.12.0)
+
+Delivered a default Trading desk and separate Buy / sell activity section. Explicit
+manual/approval/automatic paper modes control strategy proposals for both horizons.
+Reviewed daily bundles can screen up to 500 symbols, with separate equity-share
+classification, current matching calendar, strict real/synthetic/model provenance and
+bounded held-preserving shortlist review. Intraday uses causal completed five-minute
+rules; long-term uses prior completed daily rules and optional matching validated ML.
+A missing real profile/model is visible and blocks activation; the old five stocks
+are not replaced or called profit picks. Rules-only is an explicit experimental policy.
+
+Durable proposals have preview/expiry/mode-generation/price-gap bounds, quantity/cash/
+risk revalidation and explicit authorization before the independent paper broker.
+The broker journals exact authorization identity with its order transaction; restart
+links a matching committed order or cancels unsubmitted authority without replay.
+Discretionary sells follow the selected mode; protective exits do not wait. Mode/data/
+risk pauses revoke authority before I/O, cancel unfilled desk buys and retain holdings.
+Activity uses indexed cursors and exact Decimal cash-flow/fee/fill evidence. Daily
+ranking/history I/O stay outside risk locks; only the execution daily timeline is held.
+
+This completes the workflow implementation, not the original profit-evidence/data
+acquisition milestones. No genuine daily bundle/model was installed, no actual user
+account or mode was changed and no real/paper order was placed in that account.
+See [trading-desk.md](trading-desk.md) for commands, configuration, recovery and limits.
+Broader automatic data acquisition, qualified net-expectancy ranking and prospective
+real-market acceptance remain the next priority; LT3c2/LT3c3 also remain open.
+
 Prepared 20 October 2026; updated 21 October 2026. This is the execution record for the original
 [project specification](../zerodha_ai_trading_agent_project_spec.md).
 
@@ -42,8 +69,9 @@ The operator clarified that “best” means potential profit, after being asked
 choose five manual feed symbols. The next priority is now the staged
 [stock-selection implementation plan](stock-selection-plan.md): real data coverage,
 reviewed broad equity membership, separate intraday/long-term net-of-cost evaluation,
-explainable candidate/selection UI and prospective paper acceptance. This is pending,
-not a delivered profitable selector. Current account data has no accepted quotes or
+explainable candidate/selection UI and prospective paper acceptance. Profile-driven
+screening, strategy modes and activity UI are now implemented (0.12.0); real-data
+acquisition/qualified profit validation and prospective acceptance remain pending. Current account data has no accepted quotes or
 stored candles; available research inputs inspected were synthetic. Do not substitute
 stock names, demo ranks, index membership or unvalidated gross returns for evidence.
 LT3c2 rebalancing and other outstanding work remain open after this new priority.

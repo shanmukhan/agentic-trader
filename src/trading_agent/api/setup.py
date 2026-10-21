@@ -63,6 +63,7 @@ class SetupService:
         self.lock = threading.RLock()
         self.stream: QuoteStream | None = None
         self.started = False
+        self.connection_observer: Callable[[bool], None] | None = None
         self.verified = False
         self.nonce: tuple[str, float] | None = None
         self.values = {
@@ -396,22 +397,27 @@ class SetupService:
             builders = (CandleBuilder(1), CandleBuilder(5))
 
             def ingest(quote: Quote) -> None:
-                now = self.clock()
-                if self.engine.ingest(quote, now):
-                    try:
-                        for builder in builders:
-                            store_candles(self.engine.db, builder.update(quote), now)
-                    except Exception:
-                        self.engine.faulted = True
-                        self.engine.set_connected(False)
-                        raise
+                with self.engine.lock:
+                    # Include callback lock wait in quote freshness, never freeze an earlier clock.
+                    now = self.clock()
+                    if self.engine.ingest(quote, now):
+                        try:
+                            for builder in builders:
+                                store_candles(self.engine.db, builder.update(quote), now)
+                        except Exception:
+                            self.engine.faulted = True
+                            self.engine.set_connected(False)
+                            raise
 
             def connected(value: bool) -> None:
-                self.engine.set_connected(value)
-                if not value:
-                    for builder in builders:
-                        builder.active.clear()
-                        builder.previous.clear()
+                with self.engine.lock:
+                    self.engine.set_connected(value)
+                    if not value:
+                        for builder in builders:
+                            builder.active.clear()
+                            builder.previous.clear()
+                    if self.connection_observer:
+                        self.connection_observer(value)
 
             def unusable(symbol: str) -> None:
                 with self.engine.lock:
@@ -450,6 +456,8 @@ class SetupService:
                 self.stream.close()
                 self.stream = None
             self.engine.set_connected(False)
+            if self.connection_observer:
+                self.connection_observer(False)
 
     def start(self) -> None:
         with self.lock:

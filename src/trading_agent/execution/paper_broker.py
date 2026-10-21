@@ -31,6 +31,21 @@ class IntentConflict(ValueError):
     """An intent ID was reused for different economic instructions."""
 
 
+def intent_fingerprint(
+    candidate: Candidate, features: Any = None, quantity_limit: int | None = None
+) -> str:
+    normalized = candidate.model_dump(mode="json")
+    normalized["stop"] = format(candidate.stop.normalize(), "f")
+    normalized["target"] = format(candidate.target.normalize(), "f")
+    if quantity_limit is not None:
+        if type(quantity_limit) is not int or quantity_limit <= 0:
+            raise ValueError("quantity limit must be a positive integer")
+        normalized["quantity_limit"] = quantity_limit
+    if features is not None:
+        normalized["features"] = features.model_dump(mode="json")
+    return hashlib.sha256(json.dumps(normalized, sort_keys=True).encode()).hexdigest()
+
+
 class PaperBroker:
     def __init__(
         self,
@@ -47,7 +62,10 @@ class PaperBroker:
         self.automation = automation
         self.charges = charges_for(settings)
         if settings.investment_horizon == "long_term" and (model or automation):
-            raise ValueError("long-term ML/automatic signals require a separate research milestone")
+            raise ValueError(
+                "Long-term strategies use the reviewed Trading desk profile; "
+                "intraday model/automation bindings cannot be used for this horizon."
+            )
         self.long_term = LongTermBook(self) if settings.investment_horizon == "long_term" else None
         self.lock = threading.RLock()
         self.connected = False  # explicitly NOT restored; reconnect must provide fresh data
@@ -323,6 +341,7 @@ class PaperBroker:
         *,
         budget: Decimal | None = None,
         add: bool = False,
+        quantity_limit: int | None = None,
     ) -> RiskDecision:
         tick = self._tick(tx, candidate.symbol)
         price = up(quote.ask * (1 + self.settings.slippage_bps / 10000), tick)
@@ -354,6 +373,7 @@ class PaperBroker:
             position_cap=max(D(0), position_room),
             risk_budget=max(D(0), min(self.settings.max_trade_risk, remaining)),
             charges=self.charges,
+            quantity_limit=quantity_limit,
         )
 
     def submit(
@@ -364,16 +384,25 @@ class PaperBroker:
         features: "FeatureVector | None" = None,
         automation: str | None = None,
         _contribution: "Approval | None" = None,
+        quantity_limit: int | None = None,
+        _decision_reference: str | None = None,
     ) -> dict[str, Any]:
         now = utc(now)
-        normalized = candidate.model_dump(mode="json")
-        normalized["stop"] = format(candidate.stop.normalize(), "f")
-        normalized["target"] = format(candidate.target.normalize(), "f")
-        if features is not None:
-            normalized["features"] = features.model_dump(mode="json")
-        fingerprint = hashlib.sha256(json.dumps(normalized, sort_keys=True).encode()).hexdigest()
+        fingerprint = intent_fingerprint(candidate, features, quantity_limit)
         try:
             with self.lock, self.db.transaction() as tx:
+                if _decision_reference:
+                    from trading_agent.desk.accounting import prepared_fingerprint
+
+                    proof = tx.execute(
+                        "SELECT payload FROM desk_decisions WHERE id=?", (_decision_reference,)
+                    ).fetchone()
+                    authority = json.loads(proof[0]) if proof else {}
+                    if (
+                        authority.get("state") != "authorized"
+                        or prepared_fingerprint(authority) != fingerprint
+                    ):
+                        raise RuntimeError("missing or mismatched trade decision authority")
                 old = tx.execute(
                     "SELECT * FROM orders WHERE id=?", (candidate.intent_id,)
                 ).fetchone()
@@ -446,6 +475,7 @@ class PaperBroker:
                         now,
                         budget=_contribution.request.budget if _contribution else None,
                         add=_contribution is not None,
+                        quantity_limit=quantity_limit,
                     )
                 state = "ACCEPTED" if decision.allowed else "REJECTED"
                 reason = ",".join(decision.reasons)
@@ -475,6 +505,14 @@ class PaperBroker:
                     candidate.intent_id,
                     candidate.model_dump(mode="json"),
                 )
+                if _decision_reference:
+                    self.db.event(
+                        tx,
+                        stamp(now),
+                        "decision_authority",
+                        candidate.intent_id,
+                        {"decision_id": _decision_reference, "fingerprint": fingerprint},
+                    )
                 self.db.event(
                     tx, stamp(now), "order_state", candidate.intent_id, {"state": "CREATED"}
                 )

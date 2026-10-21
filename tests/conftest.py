@@ -314,3 +314,100 @@ def daily_ml_demo(tmp_path_factory):
     directory = tmp_path_factory.mktemp("daily-ml") / "demo"
     result = execution_demo(directory, with_ml=True)
     return directory, result
+
+
+@pytest.fixture
+def desk_factory(tmp_path, engine_factory, long_term_factory):
+    import json
+
+    from trading_agent.desk.service import TradingDesk
+    from trading_agent.execution.delivery import HoldingReview
+
+    def make(*, horizon="intraday", mode="rules", synthetic=True, reviewed=True):
+        e = (
+            long_term_factory(stream_tokens=(1,))
+            if horizon == "long_term"
+            else engine_factory(stream_tokens=(1,))
+        )
+        for symbol, token in [("NSE:BROAD", 257), ("NSE:ETF", 513)]:
+            e.register([Instrument(symbol=symbol, token=token, tick_size=D(".05"))])
+        if e.long_term:
+            e.review_holding(
+                HoldingReview(
+                    symbol="NSE:DEMO",
+                    session_date=NOW.date(),
+                    no_corporate_action=True,
+                    reference="INVENTED basis review",
+                ),
+                NOW,
+            )
+            e.ingest(quote(), NOW)
+        directory = tmp_path / ("daily-" + str(len(list(tmp_path.glob("daily-*")))))
+        directory.mkdir()
+        days = [NOW.date() - timedelta(days=i) for i in range(4, -1, -1)]
+        manifest = {
+            "schema_version": 1,
+            "source": "INVENTED test data",
+            "notes": "Synthetic chronology, not market evidence",
+            "synthetic": synthetic,
+            "sessions": [
+                {"day": str(day), "open": "09:15", "close": "15:30", "source": "INVENTED calendar"}
+                for day in days
+            ],
+            "universe": [
+                {
+                    "symbol": symbol,
+                    "effective_session": str(days[0]),
+                    "included": True,
+                    "known_at": (NOW - timedelta(days=6)).isoformat(),
+                    "reference": "INVENTED membership",
+                }
+                for symbol in ["NSE:DEMO", "NSE:BROAD", "NSE:ETF"]
+            ],
+        }
+        (directory / "manifest.json").write_text(json.dumps(manifest))
+        bars = []
+        for i, day in enumerate(days[:-1]):
+            for symbol in sorted(["NSE:DEMO", "NSE:BROAD", "NSE:ETF"]):
+                price = 497 + i if symbol == "NSE:DEMO" else 100 + i * 2
+                available = (NOW - timedelta(days=4 - i)).replace(hour=11)
+                bars.append(
+                    {
+                        "symbol": symbol,
+                        "session": str(day),
+                        "open": str(price),
+                        "high": str(price),
+                        "low": str(price),
+                        "close": str(price),
+                        "volume": 100000,
+                        "price_available_at": available.isoformat(),
+                        "basis_reviewed_at": available.isoformat(),
+                        "basis_reference": "INVENTED no-action review",
+                        "share_numerator": 1,
+                        "share_denominator": 1,
+                        "cash_per_previous_share": "0",
+                    }
+                )
+        (directory / "daily.jsonl").write_text("".join(json.dumps(b) + "\n" for b in bars))
+        profile = tmp_path / (directory.name + ".toml")
+        profile.write_text(
+            'name = "Synthetic unit profile"\ndaily_dataset = '
+            + json.dumps(str(directory))
+            + "\nstrategy_mode = "
+            + json.dumps(mode)
+            + "\n"
+            + "[long_term.screen]\nmomentum_sessions = 2\ntrend_sessions = 2\n"
+            + 'min_average_turnover = "0"\n'
+            + "".join(
+                "\n[[shares]]\nsymbol = "
+                + json.dumps(s)
+                + '\nkind = "equity_share"\nreviewed_at = '
+                + json.dumps((NOW - timedelta(days=7)).isoformat())
+                + '\nreference = "INVENTED share class"\n'
+                for s in (["NSE:DEMO", "NSE:BROAD"] if reviewed else ["NSE:BROAD"])
+            )
+        )
+        desk = TradingDesk(e, NOW, profile=profile, synthetic=True)
+        return desk, profile, directory
+
+    return make

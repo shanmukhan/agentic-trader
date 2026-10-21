@@ -1,5 +1,13 @@
 # Agentic Trader — paper only
 
+Version **0.12.0** adds a **Trading desk** with manual, per-trade approval and automatic
+paper modes, plus a separate **Buy / sell activity** tab explaining decisions, orders,
+fills and fees. Intraday and long-term profiles use separate account/risk contexts.
+The existing five-symbol account is still a manual watchlist until genuine reviewed
+broad-market data and an appropriate policy/model are configured. The upgrade does
+not install profitable-stock evidence or activate trading. See the
+[detailed desk guide](docs/trading-desk.md) for setup, prerequisites and limits.
+
 Read-only Zerodha Kite data, deterministic risk checks, durable simulated execution,
 and a local authenticated dashboard for intraday and long-term paper accounts.
 Starting virtual cash per isolated account: **₹25,000**.
@@ -50,9 +58,9 @@ controls. The [acceptance guide](docs/acceptance.md) covers `preflight --strict`
 private diagnostic evidence and remaining broker/device work. Node 24 is used only
 for JavaScript tests; serving the console needs no Node or frontend build.
 
-Local validation: **511 Python tests and 36 JavaScript tests passed; 92% Python coverage**, with lint/type checks, dependency
-audit and builds passing. Details are in the change log. Real Kite credentials and
-Raspberry Pi deployment remain unverified.
+Local validation: **582 Python tests and 62 JavaScript tests passed; 92% Python coverage**, with lint/type checks, dependency
+audit and builds passing. Details are in the change log. Sustained real-market strategy/fill acceptance and Raspberry Pi deployment remain
+unverified.
 
 ```sh
 uv run pytest --cov=trading_agent

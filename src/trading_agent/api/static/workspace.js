@@ -2,10 +2,10 @@
   'use strict';
   function createWorkspace(doc, win, request) {
     const el = id => doc.getElementById(id), frame = el('workspace-frame');
-    const routes = { console: '/console', setup: '/setup', portfolio: '/portfolio' };
+    const routes = { desk: '/desk', activity: '/activity', console: '/console', setup: '/setup', portfolio: '/portfolio' };
     let token = '', generation = 0, busy = false, controller = null, current = '', loaded = '';
     function message(text, error = false) { el('workspace-message').textContent = text; el('workspace-message').className = error ? 'error' : ''; }
-    function wanted() { const key = win.location.hash.slice(1); return ['overview','console','setup','portfolio'].includes(key) ? key : 'overview'; }
+    function wanted() { const key = win.location.hash.slice(1); return ['overview', ...Object.keys(routes)].includes(key) ? key : 'desk'; }
     function send(type, value) { if (frame.contentWindow) frame.contentWindow.postMessage({ type, ...(value ? { token: value } : {}) }, win.location.origin); }
     function lock(text = 'Locked. Unlock again to access all menu sections.') {
       generation++; token = ''; busy = false; if (controller) controller.abort(); controller = null;
@@ -41,6 +41,8 @@
     }
     function render(data) {
       const manual = !data.automation_enabled;
+      if (data.analysis_configured || (data.automation_enabled && data.decision_mode)) { el('workspace-mode').textContent = (data.investment_horizon === 'long_term' ? 'Long-term paper' : 'Intraday paper') + ' · '+data.decision_mode+' mode · use Trading desk to review actual activation, proposals and data blockers.'; }
+      else
       el('workspace-mode').textContent = (data.investment_horizon === 'long_term' ? 'Long-term paper' : 'Intraday paper') + (manual ? ' · Manual: entries require explicit operator instructions. No automatic stock picking or trading is running.' : data.automation_armed ? ' · Supervised automation armed; independent gates still apply.' : ' · Supervised automation disarmed; no new automatic entries.');
       el('workspace-feed').textContent = data.feed_connected ? 'Market-data connection established. Freshness and price-basis gates still apply.' : data.feed_requested ? 'Feed requested but disconnected/connecting. Inspect Broker & feed setup; check the session, entitlement and network.' : 'Feed not started. The startup shortcut opens the UI without a feed. Use Broker & feed setup → step 6 → Connect paper market data.';
       el('workspace-time').textContent = 'Last checked ' + new Intl.DateTimeFormat('en-IN', {timeZone:'Asia/Kolkata',dateStyle:'medium',timeStyle:'short'}).format(new Date(data.observed_at)) + ' IST · ' + (data.calendar_open ? 'Reviewed session currently open.' : 'No open reviewed session now.') + ' Quotes must be no older than ' + data.max_quote_age_seconds + ' seconds.';
@@ -71,8 +73,8 @@
         const r = await request('/api/workspace', {cache:'no-store',credentials:'omit',redirect:'error',signal:active.signal,headers:{Authorization:'Bearer '+supplied}});
         const data = await r.json(); if (version !== generation) return;
         if (!r.ok || data.mode !== 'paper') throw Error(r.status === 401 || r.status === 403 ? 'Use TRADING_OPERATOR_TOKEN from your local .env. Zerodha tokens do not unlock this workspace.' : 'Workspace access unavailable. Check the server and local operator configuration.');
-        token = supplied; render(data); el('workspace-access').hidden = true; el('workspace-lock').disabled = false; el('workspace-state').textContent = 'Workspace unlocked';
-        message('Unlocked for all menu sections in this tab. Reloading requires a new unlock.'); navigate();
+        token = supplied; render(data); el('workspace-access').hidden = true; el('workspace-lock').disabled = false; el('workspace-state').textContent = 'Unlocked';
+        message('Unlocked. Access is shared across this tab’s menu.'); navigate();
       } catch (error) { if (version === generation) { lock(); message(error.name === 'AbortError' ? 'Access check timed out. Try again; no trading action was submitted.' : String(error.message), true); } }
       finally { win.clearTimeout(timeout); if (version === generation) { busy = false; controller = null; el('workspace-submit').disabled = false; el('workspace-refresh').disabled = !token; } }
     }
@@ -80,7 +82,7 @@
       if (event.origin !== win.location.origin || event.source !== frame.contentWindow || !event.data) return;
       if (event.data.type === 'workspace-ready' && token && loaded === current && event.data.view === current) send('workspace-unlock', token);
       if (event.data.type === 'workspace-locked' && token) lock('The section locked or rejected authorization. Unlock the workspace again.');
-      if (event.data.type === 'workspace-navigate' && ['overview','console','setup','portfolio'].includes(event.data.view)) { win.location.hash = '#'+event.data.view; }
+      if (event.data.type === 'workspace-navigate' && ['overview', ...Object.keys(routes)].includes(event.data.view)) { win.location.hash = '#'+event.data.view; }
       if (event.data.type === 'workspace-height' && Number.isFinite(event.data.height)) frame.style.height = Math.max(450, Math.min(12000, event.data.height))+'px';
     });
     el('workspace-unlock').addEventListener('submit', event => { event.preventDefault(); unlock(); });

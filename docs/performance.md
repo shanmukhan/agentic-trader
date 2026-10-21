@@ -1,5 +1,20 @@
 # Performance design and measured baseline
 
+## Trading desk reads and analysis isolation (0.12.0)
+
+Daily file parsing/ranking and intraday historical HTTP execute outside the quote/risk
+lock, with a separately cached broad screen and only shortlisted daily timelines.
+Pure bounded features/model inference feed the existing broker. Order/fill pages use
+row/sequence range cursors plus indexed decision links, avoiding whole-history page
+scans. A slow-history concurrency test proves protective pause/kill still completes.
+
+The [isolated small-fixture measurement](benchmark-desk-macos.json) records 100 warm
+loopback HTTP reads per endpoint: p99 **0.9474 ms** desk and **0.7265 ms** activity on
+this Mac. Scope is three synthetic discovery symbols, one execution symbol and one
+unfilled order; it is not a 500-symbol, broker-network, Raspberry Pi or physical-phone
+benchmark. Broker acquisition remains separately quota-spaced and may miss a signal's
+freshness window. No unconditional end-to-end market latency claim is made.
+
 Run `.venv/bin/python scripts/benchmark.py --samples 2000 --output benchmark.json`.
 The committed [Mac baseline](benchmark-macos.json) was generated locally on
 20 October 2026 with Python 3.13.16 and SQLite 3.53.1 on ARM64 macOS.

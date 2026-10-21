@@ -1,5 +1,45 @@
 # Test and validation plan
 
+## Trading desk / paper mode coverage (0.12.0)
+
+Full local validation: **582 Python tests / 62 JS tests**, **92% coverage**.
+New tests exercise default watchlist/no-profile behavior, broader daily screening and
+unsupported class exclusion, approval-only proposals, automatic paper submission,
+preview/repricing bounds, all stale/expired/drift/mode/hash/risk refusals, declined
+signals, mode/feed/all-quote-loss cancellation and no silent reactivation. A journal
+write fault revokes memory authority first. An injected post-authorization clock
+advance proves durable-write delay cannot submit using an older quote time. A
+concurrent manual-feed test holds the engine lock while time advances and verifies
+the waiting callback cannot fill a pending order with its now-stale quote. The bound intraday controller cannot
+approve after disarm, and the manual-profile worker emits actual completed-bar rule
+signals or prior-daily long-term proposals. Synthetic fixtures and missing/failed ML
+profiles cannot activate connected production analysis.
+
+Functional HTTP checks cover bearer/Origin/strict acknowledgement, stale revision,
+preview → approve → later observed fill, terminal retry idempotence, exact independent
+cash/fee reconstruction, linked reasons, unchanged state on reads, cursor pages,
+101 partial fills and held-preserving hash-bound shortlist application. Recovery
+faults are injected before submission and after order commit/before linkage; no
+interrupted authority is replayed. Removing authorization evidence is detected.
+Discretionary SELL approval and independent protective stop paths both reconcile.
+History waits are held on another thread while pause/kill completes, proving network
+work does not own the risk lock. A short feed disconnect revokes mode even with the
+watchdog disabled, preventing transient reconnect from silently resuming it.
+
+JS checks cover no fetch before unlock, truthful manual-watchlist/model status,
+explicit mode confirmation, reviewed money bounds, safe rendering, cancellation,
+late-response lock handling, authorization failure and activity semantics/cursors.
+An isolated headless Chrome with a separate profile/database exercised the actual
+workspace/iframe shared unlock, desktop and 390-pixel responsive rendering, proposal
+review/confirmation and accepted-order activity with zero fills. No root/child page
+horizontal overflow was observed; mobile menu scrolling is intentional. These are
+synthetic browser checks, not physical-phone, real-feed or profitability acceptance.
+
+The [small synthetic loopback benchmark](benchmark-desk-macos.json) has 100 warm
+requests per endpoint with a three-symbol profile/one execution symbol/one unfilled
+order. p99 desk 0.9474 ms, activity 0.7265 ms includes HTTP serialization/DB views,
+not history acquisition, a 500-symbol workload or target-device latency.
+
 ## After-hours transport regression coverage (0.11.1)
 
 Unit cases independently zero best bid/ask prices and quantities, preserve a second

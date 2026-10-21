@@ -1,5 +1,16 @@
 # Local preflight and external paper acceptance
 
+## Trading desk acceptance boundary (0.12.0)
+
+The new profile-driven intraday/long-term approval and automatic paper workflows pass
+synthetic unit/functional/UI checks and an isolated headless desktop/mobile browser
+flow. The browser reviewed and explicitly confirmed a hypothetical BUY, then showed
+ACCEPTED with zero filled shares in the separate activity tab. No real broker/session,
+review attestation, account capital, configured five-stock universe or user-owned
+service was changed by this implementation. Current genuine broad daily data/model
+installation, qualified net-profit selection, sustained observed fills and physical
+phone/Pi acceptance remain external, unfinished gates. See [trading-desk.md](trading-desk.md).
+
 Version 0.4.1 implements the next locally verifiable part of Phase 4 acceptance:
 read-only deployment/account diagnostics and clearer operator supervision. It does
 not complete empirical broker, model, fill-calibration or physical-device acceptance.

@@ -2,7 +2,7 @@
   'use strict';
   const win = window, doc = document;
   const embedded = win.parent !== win;
-  const views = {'/':'overview','/console':'console','/setup':'setup','/portfolio':'portfolio'};
+  const views = {'/':'desk','/desk':'desk','/activity':'activity','/console':'console','/setup':'setup','/portfolio':'portfolio'};
   if (!embedded) {
     if (!win.__kiteCallbackHandled && !new URLSearchParams(win.location.search).has('request_token'))
       win.location.replace('/workspace#'+(views[win.location.pathname] || 'overview'));
@@ -28,7 +28,7 @@
         const anchor = event.target.closest && event.target.closest('a[href]');
         if (!anchor || event.defaultPrevented || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
         const url = new URL(anchor.href, win.location.origin);
-        if (url.origin === win.location.origin && views[url.pathname]) { event.preventDefault(); send('workspace-navigate', {view:url.pathname === '/' ? 'console' : views[url.pathname]}); }
+        if (url.origin === win.location.origin && views[url.pathname]) { event.preventDefault(); send('workspace-navigate', {view:views[url.pathname]}); }
       });
       if (win.ResizeObserver) new win.ResizeObserver(() => send('workspace-height', {height:Math.ceil(doc.body.getBoundingClientRect().height)+32})).observe(doc.body);
       send('workspace-ready', {view:views[win.location.pathname]});

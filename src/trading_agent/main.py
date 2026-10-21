@@ -596,7 +596,14 @@ def execute(args: argparse.Namespace) -> Any:
 
                 stream = PaperService(automation, broker, clock)
             app = create_app(
-                engine, stream=stream, automation=automation, setup=setup, open_browser=args.open
+                engine,
+                stream=stream,
+                automation=automation,
+                setup=setup,
+                open_browser=args.open,
+                desk_profile=Path(os.environ["TRADING_ANALYSIS_PROFILE"])
+                if os.environ.get("TRADING_ANALYSIS_PROFILE")
+                else None,
             )
             uvicorn.run(
                 app,

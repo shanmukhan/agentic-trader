@@ -261,3 +261,51 @@ def test_setup_refuses_to_overwrite_external_economic_policy_changes(setup_servi
         s.select_symbols({"symbols": ["DEMO"]})
     assert s.config.read_text() == changed
     assert s.engine.settings.stream_tokens == ()
+
+
+def test_manual_callback_counts_lock_wait_in_freshness_before_any_fill(setup_service, monkeypatch):
+    import threading
+
+    s = setup_service
+    e = s.engine
+    s.select_symbols({"symbols": ["DEMO"]})
+    monkeypatch.setattr("trading_agent.api.setup.ReadOnlyKite", lambda *a: Mock())
+    factory = Mock()
+    monkeypatch.setattr("trading_agent.api.setup.QuoteStream", factory)
+    s.prepare_stream()
+    ingest = factory.call_args.args[1]
+    e.set_connected(True)
+    e.ingest(quote(1), NOW + timedelta(seconds=1))
+    order = e.submit(
+        candidate("waiting", now=NOW + timedelta(seconds=1)), NOW + timedelta(seconds=1)
+    )
+    assert order["state"] == "ACCEPTED"
+    current = [NOW + timedelta(seconds=2)]
+    started = threading.Event()
+    clock_called = threading.Event()
+    errors = []
+
+    def clock():
+        clock_called.set()
+        return current[0]
+
+    s.clock = clock
+
+    def callback():
+        started.set()
+        try:
+            ingest(quote(2))
+        except Exception as error:
+            errors.append(error)
+
+    worker = threading.Thread(target=callback)
+    with e.lock:
+        worker.start()
+        assert started.wait(1)
+        read_clock_while_blocked = clock_called.wait(0.02)
+        current[0] = NOW + timedelta(seconds=8)
+    worker.join(2)
+    assert not worker.is_alive() and not errors and not read_clock_while_blocked
+    assert e.orders()[0]["state"] == "ACCEPTED" and e.orders()[0]["filled"] == 0
+    assert Decimal(e.snapshot(current[0])["cash"]) == Decimal("25000")
+    assert Decimal(e.snapshot(current[0])["fees"]) == 0

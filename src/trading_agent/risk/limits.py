@@ -16,6 +16,7 @@ def size(
     risk_budget: Decimal,
     target_fill: Decimal,
     charges: Charges,
+    quantity_limit: int | None = None,
 ) -> RiskDecision:
     if not 0 < stop_fill < price < target_fill:
         return RiskDecision(allowed=False, reasons=("INVALID_STOP_OR_TARGET",))
@@ -27,6 +28,10 @@ def size(
             risk_budget / (price - stop_fill),
         )
     )
+    if quantity_limit is not None:
+        if type(quantity_limit) is not int or quantity_limit <= 0:
+            raise ValueError("quantity limit must be a positive integer")
+        upper = min(upper, quantity_limit)
     # Binary search is bounded by log2(quantity), including fees and stop slippage.
     lo, hi = 0, max(0, upper)
     while lo < hi:

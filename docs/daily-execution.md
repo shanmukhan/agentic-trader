@@ -1,13 +1,21 @@
 # Daily delivery execution and model research: LT3b usage
 
+Version 0.12.0 adds a separate connected paper decision workflow in
+[Trading desk](trading-desk.md). It reuses reviewed prior-daily screening and the
+strict daily model loader, then sends approved/automatic proposals through the same
+paper risk broker. The existing offline replay/model evidence remains separate.
+Source/class/calendar/basis/model reviews are required, and code installation does
+not supply current-market qualified profit evidence or enable real orders.
+
 Version 0.8.0 adds offline quote-executed daily strategy research, independent
 delivery outcome labels, separate chronological daily ML and a later scored replay.
 Use Python 3.13.16 and the existing `.venv`; `uv sync --frozen --all-extras` includes
 the optional training and test packages. Pure Python model loading/scoring does not
 import NumPy or scikit-learn. No broker credentials or operator token are needed.
 
-This is paper research. The model cannot attach to the connected long-term service,
-arm an account, submit broker orders or allocate real money. A completed result
+These commands remain paper research and cannot arm an account, submit broker orders
+or allocate real money. Version 0.12.0 can consume a matching validated real daily
+artifact through its separate Trading desk profile and paper authority/risk gates. A completed result
 means the documented internal checks passed, not that a strategy is profitable or
 accepted for deployment. Intraday research and its model namespace remain separate.
 

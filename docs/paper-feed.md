@@ -1,5 +1,13 @@
 # Phase 4: supervised live-feed paper trading
 
+Version 0.12.0 optionally routes an explicitly selected bound intraday strategy mode
+through the [Trading desk](trading-desk.md): queue per-trade approval or submit eligible
+paper entries automatically. It preserves the existing strategy/model/feed fingerprint,
+warmup, per-symbol candidate cap and disarm safeguards. A disarmed/unready controller
+cannot approve an older proposal. The normal manual-profile desk also supplies a
+separate current-quote/prior-daily long-term pipeline. This does not turn broker
+catalog access into profitable stock selection; reviewed real inputs remain required.
+
 The 0.11.1 transport fix ignores full packets whose best bid/ask price or quantity
 is zero. A real after-hours observation previously caused Quote validation to throw
 and disconnect the socket. These packets now produce no executable Quote or callback;

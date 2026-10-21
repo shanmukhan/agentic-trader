@@ -1,4 +1,4 @@
-"""Separate daily JSON model identity; validated offline only, never a live controller."""
+"""Separate daily JSON model identity, validated offline and used by bounded paper decisions."""
 
 import hashlib
 import platform

@@ -2,8 +2,9 @@
 
 Requested 21 October 2026: the operator wants the platform to find candidates with
 potential profit after costs for **both intraday and long-term paper trading**,
-instead of requiring a hand-picked five-symbol list. This document is an enhanced
-implementation plan, not a delivered automatic selector or a current stock tip.
+instead of requiring a hand-picked five-symbol list. Version 0.12.0 delivers the reviewed-profile screening, approval/automatic paper
+workflow and activity UI described below. Wider data acquisition and independent
+current-market profitability acceptance remain unfinished; this is not a stock tip.
 
 ## Current capability and evidence
 
@@ -16,8 +17,9 @@ when a reviewed shortlist is applied.
 The repository already supplies causal five-minute intraday rule hypotheses,
 quote-executed replays, daily momentum/trend/turnover/volatility research over up to
 500 symbols, chronological ML tools and exact paper risk/accounting. The daily
-screen's deterministic research rank is not calibrated expected profit. None of
-these components currently downloads and ranks the wider live market automatically.
+screen's deterministic research rank is not calibrated expected profit. The Trading desk now connects reviewed daily bundles, broader screening, current
+rule signals and optional validated ML to bounded paper proposals/execution. It does
+not automatically download the wider daily market, fundamentals or action evidence.
 
 Read-only inspection on 21 October 2026 found 5,184 catalog instruments, **zero
 accepted account quotes and zero stored candles**. Six daily and sixteen intraday
@@ -25,6 +27,24 @@ input manifests declared synthetic data; none declared a real reviewed research
 bundle. Counts describe this workspace at that observation, not every possible data
 directory or future session. Catalog access and a connected socket alone do not
 establish usable history or demonstrated profitability.
+
+## Delivered workflow (0.12.0)
+
+The [Trading desk](trading-desk.md) reads an explicitly installed real-data profile,
+screens up to 500 declared symbols, excludes unreviewed equity-share classes, shows
+candidate/exclusion evidence and previews a catalog-matched execution shortlist of at
+most ten while preserving every held symbol. Daily screen rank is not net expectancy.
+Model filtering is applied to causal trade-time features, with no silent fallback
+when rules-plus-ML validation is missing or incompatible. Both horizons can queue
+per-trade approvals or submit eligible paper orders automatically after explicit mode
+activation. Discretionary daily sells follow the selected mode; protective exits stay
+independent. Actual buy/sell activity retains reasons, authorization, fills and fees.
+
+The original account still has its configured watchlist and no installed reviewed
+real discovery profile/model from this implementation. Code/tests do not fill that
+evidence gap. Synthetic fixtures are rejected by connected profile loading. The
+next delivery is authentic input acquisition/coverage and prospective net-of-cost
+acceptance, including strict class/basis sourcing; no automatic profit claim is made.
 
 ## Define “best” precisely
 
@@ -43,14 +63,14 @@ Keep separate intraday and long-term rankings, accounts and risk policies. Exist
 per-account virtual cash is not a shared capital pool. A final candidate still needs
 current execution checks and does not automatically authorize an order.
 
-## Implementation sequence — next priority
+## Implementation sequence and remaining evidence
 
-1. **Real data and acquisition status.** Expose catalog, historical bars, quote/depth,
+1. **Real data and acquisition status — acquisition pending.** Expose catalog, historical bars, quote/depth,
    calendar, corporate-action and freshness coverage in the UI. Record source,
    retrieval/availability clocks and missing inputs. Complete real feed/history
    validation; never relabel a synthetic fixture or infer missing prices/reviews.
    Analysis/data acquisition must remain separate from account execution authority.
-2. **Reviewed broad equity universe.** Start with an explicitly sourced Nifty 500
+2. **Reviewed broad equity universe — bundle support delivered; source ingestion pending.** Start with an explicitly sourced Nifty 500
    universe as a proposed discovery baseline. NSE Indices describes this universe
    using market capitalisation and average daily turnover; that does not imply its
    members will be profitable. Fetch/version membership, match actual NSE catalog
@@ -58,18 +78,18 @@ current execution checks and does not automatically authorize an order.
    instruments with explicit reasons. Do not treat every catalog `EQ` row as an
    equity share. Backtests need historical point-in-time membership including removals;
    today's constituents are not a historical universe.
-3. **Intraday screen and validation.** Predeclare liquidity, usable depth/spread,
+3. **Intraday screen and validation — connected profile signals delivered; empirical acceptance pending.** Predeclare liquidity, usable depth/spread,
    volatility, completed-bar trend/VWAP/relative-volume and entry rules. Use contiguous
    session data, exact cost-aware sizing, later observed quote fills and current
    tradability. Rank only with adequate independent out-of-sample evidence and show
    data clock, net expectancy, sample size, loss/drawdown and exclusion reasons.
-4. **Long-term screen and validation.** Acquire reviewed completed daily history and
+4. **Long-term screen and validation — connected profile signals delivered; empirical acceptance pending.** Acquire reviewed completed daily history and
    action-aware price/return basis, then evaluate momentum/trend/liquidity/volatility
    and delivery costs. Genuine business-quality/valuation claims additionally need
    point-in-time fundamental/filing data; price-only features cannot stand in for
    those inputs. Validate holding/exit rules and later quote-executed results across
    chronological regimes, avoiding selection/tuning on the final holdout.
-5. **Stock-selection UI.** Show two separate lists with as-of time, universe/coverage,
+5. **Stock-selection UI — profile/evidence, approval modes and activity delivered.** Show two separate lists with as-of time, universe/coverage,
    rank basis, evidence, estimated costs and risk. “No qualified candidate” and
    “insufficient data” are valid outcomes. Explain why individual symbols were
    excluded. Preview a bounded proposed feed selection, preserve all held symbols,

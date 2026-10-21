@@ -357,9 +357,9 @@ def test_same_day_two_stocks_have_independent_dp_charges(long_term_factory):
 def test_delivery_rejects_intraday_automation_and_ml_before_mutating_account(long_term_factory):
     engine = long_term_factory()
     before = engine.orders()
-    with pytest.raises(ValueError, match="separate research"):
+    with pytest.raises(ValueError, match="intraday model/automation"):
         PaperBroker(engine.db, engine.settings, engine.calendar, automation="intraday-controller")
-    with pytest.raises(ValueError, match="separate research"):
+    with pytest.raises(ValueError, match="intraday model/automation"):
         PaperBroker(engine.db, engine.settings, engine.calendar, model=object())
     assert engine.orders() == before
 

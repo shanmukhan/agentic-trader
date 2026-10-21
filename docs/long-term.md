@@ -2,9 +2,10 @@
 
 Version 0.5.0 added a separate **long-term, long-only NSE cash-equity paper account**;
 version 0.6.0 extends it with [reviewed corporate-action accounting](corporate-actions.md).
-Holdings persist across closes, weekends and restarts. Entries remain explicit
-operator hypotheses; the existing intraday rule/ML pipeline cannot automatically
-trade this account. No real order, custody, withdrawal or settlement capability exists.
+Holdings persist across closes, weekends and restarts. Manual entries remain explicit
+operator hypotheses. Version 0.12.0 optionally adds [Trading desk](trading-desk.md)
+approval/automatic paper decisions from reviewed prior-daily profiles and matching
+validated daily models. The intraday model/strategy namespace cannot be reused here. No real order, custody, withdrawal or settlement capability exists.
 This is LT1 in the [extended plan](implementation-plan.md), not the original future
 live-trading Phase 5. Further long-term milestones remain open.
 
@@ -240,7 +241,8 @@ claims, separate receipts, atomic idempotency and independent reconstruction. It
 LT3a now adds [completed daily data and causal screening](daily-research.md) with an
 offline explanatory dashboard. LT3b now supplies [offline daily quote execution/ML](daily-execution.md)
 with independent labels, chronological validation and later scored replays. This does
-not enable connected long-term automation. LT3c portfolio allocation/SIP/rebalancing
+not itself enable connected long-term automation. Version 0.12.0 adds a separate
+reviewed Trading desk profile workflow; real-data/evidence and activation remain required. LT3c portfolio allocation/SIP/rebalancing
 remains pending. LT4 requires actual
 read-only custody/sellable-holdings/settlement reconciliation and supervised evidence.
 Corporate-action quarantine, custody and cash settlement are not automatically solved
