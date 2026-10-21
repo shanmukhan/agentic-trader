@@ -11,6 +11,10 @@ isolated manual intraday/long-term setup and acceptance/recovery steps. This is
 operator documentation, not evidence of an actual broker login/feed session or a
 sandbox integration. External data entitlement and sustained market-feed acceptance
 remain pending.
+The first-session recovery instructions also distinguish copied-config port
+selection, a diagnostic-only preflight, offline UI startup and the nonempty catalog
+selection required by streaming. Local UI availability does not establish live-data
+or session readiness.
 
 The repository delivers Phases 1–3 infrastructure/research and Phase 4 supervised
 intraday paper-feed engineering, LT1–LT2 long-term paper mechanics and LT3a daily

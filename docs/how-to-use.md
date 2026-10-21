@@ -153,6 +153,11 @@ listener. The API has no cookie login and does not enable CORS.
 For the complete first-session sequence, developer-app registration, current plan
 requirements, private daily-token handling and separate intraday/long-term UI flows,
 follow [First paper session with live Kite data](first-paper-session.md).
+If the example URL refuses connections, follow its
+[dashboard startup checks](first-paper-session.md#if-the-dashboard-url-does-not-open):
+the copied config's port must match the URL, preflight does not start a server,
+and streaming cannot start with an empty token selection. An offline `serve`
+can load the console while keeping entries blocked until feed setup is complete.
 
 An appropriate Kite application and market-data entitlement are required. Verify
 current availability in the [Kite documentation](https://kite.trade/docs/connect/v3/)

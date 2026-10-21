@@ -1,5 +1,24 @@
 # Change log
 
+## 2026-10-21 — First-session dashboard startup diagnosis
+
+Diagnosed the local first-session config retaining the long-term template's 8001
+port and an empty stream selection. Corrected its local listener to 8004 without
+changing financial identity or the existing account/database path. Started the
+manual console without a feed while the operator selects instruments; an unrelated
+older preview on 8001 remains running. Local loopback HTTP verification returned
+200 for `/`, `/portfolio`, `/health` and authenticated `/api/status`; `/ready` is
+correctly 503 without market/session prerequisites. Pre-start read-only accounting
+reconciled ₹25,000.00, zero fees, no pending orders and no positions.
+
+Expanded usage/first-session recovery instructions: preflight is not a server,
+its limitations are informational, copied ports must match the browser URL, and
+streaming requires an actual nonempty catalog selection. No broker login, market
+session review, universe choice or order was performed. The operator's local config
+and private credentials are not included in the documentation commit. Documentation
+checks cover local links, secret patterns and whitespace; no application source or
+financial behavior changed, so unit/functional suites were not rerun.
+
 ## 2026-10-21 — First live-data paper-session instructions
 
 Added `first-paper-session.md`, linked from the main usage and horizon/feed guides.

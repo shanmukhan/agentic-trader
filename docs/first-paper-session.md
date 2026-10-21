@@ -178,6 +178,38 @@ Resolve the specific preflight findings. A passing local preflight does not prov
 broker entitlement or a functioning network feed. This starts **manual** paper
 execution; no automation flag belongs on a long-term service.
 
+### If the dashboard URL does not open
+
+`preflight` prints a diagnostic and exits; it does **not** start a web server. Its
+`limitations` list is expected explanatory text, not a startup error. A strict
+preflight can pass local required checks while still listing a missing current
+session or stream selection. Those findings still need resolving for entries.
+
+Check `port` in the **copied** config: the long-term template defaults to **8001**,
+so it will not serve the example URL on **8004** until you explicitly change it.
+Use the same `--config` path on every account command. An older preview may already
+own 8001; leave that process alone and choose an unused port for the new account.
+Changing only the listener port does not change the financial policy identity.
+
+To verify just the dashboard after initializing the intended account, run:
+
+```sh
+.venv/bin/trading-agent --config config/first-paper-session.toml serve
+```
+
+Keep this terminal running, then open the configured URL. Without `--stream`, the
+dashboard can load while `/ready` returns 503 and entries remain blocked. Unlock
+using the operator token from the environment loaded in that server's terminal.
+Stop this process before switching the same account to `serve --stream`; do not
+start two owners of one database or reinitialize/change its economic policy.
+
+`serve --stream` requires **one to ten selected catalog tokens**. An empty
+`stream_tokens = []` cannot start the stream, even after a successful profile and
+catalog download, and currently produces the CLI's generic `ValueError` message.
+Confirm the selection locally, set the actual catalog tokens in TOML and restart
+with `--stream`. The generic error deliberately omits raw exception details, which
+can contain credentials; do not publish token files or raw request traces to debug it.
+
 ## 5. Run and inspect the first virtual order
 
 1. Open <http://127.0.0.1:8004/> and unlock with `TRADING_OPERATOR_TOKEN`. Verify
@@ -219,6 +251,8 @@ for private remote/mobile access.
 
 | Symptom | What to check |
 |---|---|
+| Browser cannot connect to 8004 | Ensure the copied config says `port = 8004`, then actually run `serve` and leave it running; preflight alone does not start the UI |
+| Generic `ValueError` starting `serve --stream` | First check for empty `stream_tokens` or selected tokens missing from the account catalog; a successful profile/catalog import does not select a universe |
 | `profile` authentication error | Matching app key/client ID, loaded private environment, fresh successful token exchange |
 | Exchange fails or file already exists | Retry login for a fresh request token; select a new output file before exchanging; do not repeatedly reuse a spent token |
 | Profile works, feed fails/403 | Correct paid app's key, active data entitlement, fresh access token and network; profile alone does not verify WebSocket permission |
