@@ -29,7 +29,7 @@ function createPortfolio(doc,win,fetcher){
  }
  async function call(path,method,body,signal){
   const r=await fetcher(base+path,{method,signal,cache:'no-store',credentials:'omit',redirect:'error',headers:{Authorization:'Bearer '+token,...(body?{'Content-Type':'application/json'}:{})},body:body?JSON.stringify(body):undefined});
-  if(!r.ok){const data=await r.json();const detail=Array.isArray(data.detail)?data.detail.map(d=>d.loc.slice(1).join('.')+': '+d.msg).join('; '):data.detail;const error=Error(r.status===401||r.status===403?'Authorization failed. Unlock again.':detail||'Request failed');error.authorization=r.status===401||r.status===403;error.status=r.status;throw error;}
+  if(!r.ok){const data=await r.json();const detail=Array.isArray(data.detail)?data.detail.map(d=>d.loc.slice(1).join('.')+': '+d.msg).join('; '):data.detail;const error=Error(r.status===401||r.status===403?'Operator authorization failed. Use TRADING_OPERATOR_TOKEN from your local .env. Zerodha request/access tokens do not unlock this app.':detail||'Request failed');error.authorization=r.status===401||r.status===403;error.status=r.status;throw error;}
   return r.json();
  }
  async function operation(path,body,success){

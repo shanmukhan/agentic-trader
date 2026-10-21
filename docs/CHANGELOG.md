@@ -1,5 +1,47 @@
 # Change log
 
+## 2026-10-21 — Browser broker setup and repeatable UI startup (0.10.0)
+
+Clarified all local unlock screens/errors: `TRADING_OPERATOR_TOKEN` is the local
+credential, while the Zerodha redirect value is a short-lived request token for
+broker exchange. Added `/setup` for authenticated manual-account credentials,
+official login popup, origin/window/state-bound token handoff, explicit exchange
+and profile verification, catalog import, exact selected-symbol/token/tick validation,
+reviewed current/future calendar additions and feed connect/disconnect. Setup cannot
+submit/arm, override risk, omit held symbols, change economic policy or rewrite
+existing session definitions. Confirmations disclose resumed pending fills/exits.
+
+UI broker values persist in a private atomic server-side file, not browser storage.
+Secret request bodies are bounded and errors do not echo credentials. Login states
+expire and are consumed before external exchange. Manual CLI redirects remain
+supported. Calendar snapshots are written before config replacement; failures leave
+the prior live/configured definition intact. The manual feed uses explicit server
+credentials without mutating process environment; supervised automation stays separate.
+
+Added executable `scripts/start_ui.sh`, safe authenticated reuse of a matching local
+server, and `serve --open`. The shortcut loads trusted private environment files,
+defaults to the workspace's existing first-session config, starts without a feed and
+opens a browser. Existing server checks reject redirects, proxies and mismatched
+account identity. No new dependency was added. Updated main/detailed usage, API,
+operator, architecture, security, test and plan documents. External registration,
+subscription payment and login/2FA still happen on Zerodha; policy/bootstrap,
+complex corporate actions and research/model workflows are not all browser actions.
+
+Validation: **535 Python tests passed**, **45 JavaScript tests passed**, **93% overall
+Python coverage**; Ruff, mypy, secret-pattern/whitespace/shell checks, frozen offline
+lock verification/environment sync and source/wheel build passed. No dependency was
+added. The updated 8004 service returns 200 for console, portfolio, Setup/assets and
+health; unauthenticated setup returns 401 and the correct local operator token works.
+The selected five-symbol read-only stream reconnects, while calendar/basis gates
+correctly leave readiness 503. Exact account reconciliation preserves ₹25,000.00,
+zero fees/orders/positions and economic identity. The private `.env` selector was
+corrected from the old 8001 config to the existing 8004 account. Actual shortcut reuse
+preserved the running PID and opened the browser without another account process.
+Private `config/*-session.toml` copies are now ignored by Git/source packaging.
+Browser popup/2FA and physical phone/pixel acceptance remain operator-run; simulated
+callback/DOM tests do not establish those checks. No actual token exchange, calendar
+attestation, price-basis clearance, arming or order was submitted during this upgrade.
+
 ## 2026-10-21 — Operator-selected first read-only feed connection
 
 Validated the operator's five supplied symbols/tokens/tick sizes against the local

@@ -8,6 +8,13 @@ controls are at least 44 CSS pixels high. Intermediate widths wrap the access fo
 
 ## Start and unlock
 
+For the current workspace, `./scripts/start_ui.sh` opens the configured account,
+including reusing a matching running server safely. [Browser Setup](ui-setup.md)
+adds broker login/session exchange, catalog/symbol selection, reviewed calendar and
+feed controls for manual accounts. The local unlock value is `TRADING_OPERATOR_TOKEN`
+from `.env`, never a Zerodha redirect/request/access token. Each page needs its own
+unlock; no cross-page credential persistence was added.
+
 Follow the [environment/token instructions](how-to-use.md) first. From the repository
 root, with the private operator environment loaded:
 
@@ -27,7 +34,10 @@ before leaving an armed account unattended.
 No operator token means the public shell/health work but private account access is
 disabled. Starting without `--stream` requires no Kite credentials, has no market
 connection and normally shows blocked entries. Never enter a Kite API secret or
-access token in the dashboard: it uses the separate operator token.
+access token in the dashboard unlock field: it uses the separate operator token.
+Broker API key/secret and one-time request token belong only in the labeled Setup
+forms after local authentication. Secrets are not returned in setup status; the
+public app key appears in its official login URL.
 
 ## Read the account
 

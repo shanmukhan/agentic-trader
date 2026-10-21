@@ -314,11 +314,17 @@ class QuoteStream:
         on_quote: Callable[[Quote], None],
         on_connection: Callable[[bool], None],
         clock: Callable[[], datetime],
+        *,
+        credentials: tuple[str, str] | None = None,
     ):
         self.instruments = {item.token: item for item in instruments}
         if not 1 <= len(self.instruments) <= 10:
             raise ValueError("stream requires one to ten reviewed instruments")
-        key, token = os.environ.get("KITE_API_KEY", ""), os.environ.get("KITE_ACCESS_TOKEN", "")
+        key, token = (
+            credentials
+            if credentials is not None
+            else (os.environ.get("KITE_API_KEY", ""), os.environ.get("KITE_ACCESS_TOKEN", ""))
+        )
         if not key or not token:
             raise BrokerUnavailable("missing broker stream credentials")
         self._url = "wss://ws.kite.trade/?" + urlencode({"api_key": key, "access_token": token})

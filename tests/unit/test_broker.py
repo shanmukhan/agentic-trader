@@ -160,3 +160,18 @@ def test_malformed_stream_and_expiry_disable_connection(monkeypatch, message):
     monkeypatch.setattr(stream._stop, "wait", lambda timeout: stream._stop.set())
     stream._run()
     assert states == [True, False] and not quotes
+
+
+def test_stream_accepts_server_owned_credentials_without_global_environment(monkeypatch):
+    monkeypatch.delenv("KITE_API_KEY", raising=False)
+    monkeypatch.delenv("KITE_ACCESS_TOKEN", raising=False)
+    stream = QuoteStream(
+        [Instrument(symbol="NSE:DEMO", token=1, tick_size=D(".05"))],
+        lambda q: None,
+        lambda connected: None,
+        lambda: NOW,
+        credentials=("serverkey", "serversession"),
+    )
+    assert "api_key=serverkey" in stream._url
+    assert "access_token=serversession" in stream._url
+    stream.close()

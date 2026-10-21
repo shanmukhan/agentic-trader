@@ -12,6 +12,7 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from trading_agent.api.console import console_snapshot
+from trading_agent.api.setup import SetupService, mount_setup
 from trading_agent.execution.delivery import HoldingExit, HoldingReview
 from trading_agent.execution.paper_broker import IntentConflict, PaperBroker
 from trading_agent.models import Candidate
@@ -28,6 +29,8 @@ def create_app(
     stream: Any = None,
     background: bool = True,
     automation: "PaperFeed | None" = None,
+    setup: SetupService | None = None,
+    open_browser: bool = False,
 ) -> FastAPI:
     stopped = threading.Event()
 
@@ -53,6 +56,14 @@ def create_app(
         try:
             if stream:
                 stream.start()
+            if open_browser:
+                import webbrowser
+
+                # Schedule after lifespan startup so the browser reaches a listening socket.
+                host = "[::1]" if engine.settings.host == "::1" else "127.0.0.1"
+                threading.Timer(
+                    0.5, webbrowser.open, args=[f"http://{host}:{engine.settings.port}/"]
+                ).start()
             yield
         finally:
             stopped.set()
@@ -106,6 +117,8 @@ def create_app(
             }
             if origin is not None and origin not in permitted:
                 raise HTTPException(403, "cross-origin controls prohibited")
+
+    mount_setup(app, setup, authorized)
 
     @app.exception_handler(Exception)
     async def safe_error(request: Request, exc: Exception) -> JSONResponse:

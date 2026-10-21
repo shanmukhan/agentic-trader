@@ -14,6 +14,8 @@ build/
 .env.*
 !.env.example
 data/
+# Private per-account copies used by the setup UI and deployment guides.
+config/*-session.toml
 logs/
 backups/
 *.db*

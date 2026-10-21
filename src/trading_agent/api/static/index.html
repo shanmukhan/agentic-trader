@@ -7,6 +7,7 @@
   <title>Paper trading operator console</title>
   <link rel="stylesheet" href="/dashboard.css">
   <script src="/money.js" defer></script>
+  <script src="/kite-callback.js" defer></script>
   <script src="/dashboard.js" defer></script>
 </head>
 <body>
@@ -17,7 +18,7 @@
     <div class="connection"><span id="horizon" class="badge">Paper account</span> <span id="feed" class="badge">Locked</span><p id="updated" class="muted">No account data loaded</p></div>
   </header>
   <section class="panel access" aria-labelledby="access-heading">
-    <div><h2 id="access-heading">Operator access</h2><p class="muted">Use your local operator token. It stays in this tab's memory.</p></div>
+    <div><h2 id="access-heading">Local operator access</h2><p class="muted">Use <strong>TRADING_OPERATOR_TOKEN</strong> from your private local .env. Zerodha request/access tokens will not unlock this app. It stays in this tab's memory.</p><p><a href="/setup">Kite login, feed selection and session setup →</a></p></div>
     <form id="unlock" autocomplete="off">
       <label for="token" class="sr-only">Operator token</label>
       <input id="token" type="password" autocomplete="off" placeholder="Operator token" spellcheck="false" required>

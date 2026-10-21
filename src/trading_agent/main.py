@@ -11,16 +11,14 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from trading_agent.broker.readonly_kite import (
-    QuoteStream,
     ReadOnlyKite,
     exchange_token,
     login_url,
 )
 from trading_agent.execution.paper_broker import PaperBroker
 from trading_agent.market_data.calendar import SessionCalendar
-from trading_agent.market_data.candles import CandleBuilder
 from trading_agent.market_data.repository import store_candles
-from trading_agent.models import Instrument, Quote
+from trading_agent.models import Instrument
 from trading_agent.observability.logging import configure_logging
 from trading_agent.persistence.database import Database
 from trading_agent.replay import demo, run_events
@@ -73,6 +71,7 @@ def parser() -> argparse.ArgumentParser:
     historical.add_argument("--end", required=True, type=datetime.fromisoformat)
     historical.add_argument("--minutes", type=int, choices=(1, 5), default=5)
     serve = commands.add_parser("serve")
+    serve.add_argument("--open", action="store_true", help="open the local dashboard in a browser")
     serve.add_argument(
         "--stream", action="store_true", help="enable authenticated read-only Kite feed"
     )
@@ -570,7 +569,19 @@ def execute(args: argparse.Namespace) -> Any:
 
             configure_logging()
             stream: Any = None
-            if args.stream:
+            setup = None
+            if not automation:
+                from trading_agent.api.setup import SetupService
+
+                setup = SetupService(
+                    engine,
+                    Path(args.config or os.environ.get("TRADING_CONFIG", "config/paper.toml")),
+                    clock,
+                )
+                if args.stream:
+                    setup.prepare_stream()
+                stream = setup
+            elif args.stream:
                 broker = ReadOnlyKite.from_environment()
                 broker.get_profile()
                 with db.transaction() as tx:
@@ -581,33 +592,12 @@ def execute(args: argparse.Namespace) -> Any:
                     ]
                 if len(catalog) != len(settings.stream_tokens):
                     raise ValueError("configured tokens missing from reviewed catalog")
-                builders = (CandleBuilder(1), CandleBuilder(5))
+                from trading_agent.paper.service import PaperService
 
-                def ingest(quote: Quote) -> None:
-                    now = clock()
-                    if engine.ingest(quote, now):
-                        try:
-                            for builder in builders:
-                                store_candles(db, builder.update(quote), now)
-                        except Exception:
-                            engine.faulted = True
-                            engine.set_connected(False)
-                            raise
-
-                def connection_changed(connected: bool) -> None:
-                    engine.set_connected(connected)
-                    if not connected:
-                        for builder in builders:
-                            builder.active.clear()
-                            builder.previous.clear()
-
-                if automation:
-                    from trading_agent.paper.service import PaperService
-
-                    stream = PaperService(automation, broker, clock)
-                else:
-                    stream = QuoteStream(catalog, ingest, connection_changed, clock)
-            app = create_app(engine, stream=stream, automation=automation)
+                stream = PaperService(automation, broker, clock)
+            app = create_app(
+                engine, stream=stream, automation=automation, setup=setup, open_browser=args.open
+            )
             uvicorn.run(
                 app,
                 host=settings.host,

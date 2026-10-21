@@ -159,7 +159,7 @@
         headers: { Authorization: 'Bearer ' + token, ...(body ? { 'Content-Type': 'application/json' } : {}) } });
       if (!response.ok) {
         if (response.status === 401 || response.status === 403) {
-          const error = Error('Operator authorization failed. Unlock again.');
+          const error = Error('Operator authorization failed. Use TRADING_OPERATOR_TOKEN from your local .env. Zerodha request/access tokens do not unlock this app.');
           error.authorization = true;
           throw error;
         }

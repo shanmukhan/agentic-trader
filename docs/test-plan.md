@@ -1,5 +1,23 @@
 # Test and validation plan
 
+## Browser setup coverage (0.10.0)
+
+Unit and functional tests cover operator/Origin authorization, bounded secret bodies
+without validation echoes, redacted upstream failures, private atomic credential
+files and symlink/permission refusal, login state expiry/replay, persisted catalog
+selection, pending-order/held-symbol guards, unchanged economic identity and exact
+cash/fees/orders/positions. Calendar tests require strict review, preserve existing
+definitions, verify idempotence and keep live/configured calendars unchanged on a
+save failure. Feed callback tests receive synthetic quotes without creating orders
+and latch candle-storage faults. The launcher probes only the correct account,
+rejects redirects/mismatches and starts another process only after connection refusal.
+
+JavaScript tests exercise locked/private state, credential clearing before awaits,
+late-response suppression, callback origin/window/state binding, one-time explicit
+exchange, safe text rendering and confirmation/cancellation for symbols, calendar
+and feed changes. Legacy manual callback capture remains covered. Real broker login
+and 2FA are not automated, and no phone/pixel acceptance is inferred from DOM tests.
+
 All automated tests use virtual capital and synthetic or mocked market data.
 No broker credentials, real orders or funds are used. Run from the repository root:
 

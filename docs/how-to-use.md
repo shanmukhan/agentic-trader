@@ -1,6 +1,6 @@
 # How to use Agentic Trader
 
-Updated 21 October 2026 for version 0.9.0. This guide and corresponding detailed
+Updated 21 October 2026 for version 0.10.0. This guide and corresponding detailed
 guides are updated with every feature or changed workflow, as required by [AGENTS.md](../AGENTS.md).
 
 ## 1. Scope and prerequisites
@@ -124,6 +124,22 @@ policy are not supported; leave them closed. Restart after calendar edits.
 
 ## 6. Start the dashboard without Kite
 
+For the easiest repeat start and browser setup, run:
+
+```sh
+./scripts/start_ui.sh
+```
+
+The workspace shortcut selects the existing first-session config (currently port
+8004), opens a matching running server or starts one without a feed, and opens your
+browser. Keep its terminal running; Ctrl+C stops a server started there. See
+[ui-setup.md](ui-setup.md) for selection precedence, first setup, repeated starts,
+daily login, credentials, catalog/symbol selection, sourced calendar and feed controls.
+`TRADING_OPERATOR_TOKEN` from your private `.env` unlocks the local app;
+**Zerodha request/access tokens do not**. Each page must be unlocked independently.
+
+The lower-level command with an explicitly loaded environment remains:
+
 ```sh
 trading-agent serve
 ```
@@ -149,6 +165,11 @@ operation, use a private connection with an SSH local port forward to the loopba
 listener. The API has no cookie login and does not enable CORS.
 
 ## 7. Connect read-only Kite market data
+
+Version 0.10.0 provides the [browser Setup workflow](ui-setup.md) at `/setup` on
+manual services. Login/2FA and app registration remain on Zerodha's site, while
+the local page handles explicit exchange/profile, catalog import, symbol selection,
+reviewed session additions and connect/disconnect. The CLI steps below remain valid.
 
 For the complete first-session sequence, developer-app registration, current plan
 requirements, private daily-token handling and separate intraday/long-term UI flows,

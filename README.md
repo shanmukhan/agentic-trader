@@ -26,6 +26,10 @@ mobile browser layouts; there is no native mobile app. `/ready` returns 503 unti
 are met. The demo uses synthetic data and its own isolated database, with no network.
 
 Read the [complete usage guide](docs/how-to-use.md) before connecting market data.
+After initial local configuration, `./scripts/start_ui.sh` starts/opens your account
+and browser. The new [browser setup guide](docs/ui-setup.md) covers Kite login,
+session exchange, catalog/symbols, reviewed dates and feed controls. Unlock with the
+local `TRADING_OPERATOR_TOKEN`, not a Zerodha redirect token.
 See [implementation status](docs/implementation-plan.md), [risk policy](docs/risk-policy.md),
 [architecture](docs/architecture.md), [API contracts](docs/api-contracts.md),
 [operator runbook](docs/runbook.md), [threat model](docs/threat-model.md),

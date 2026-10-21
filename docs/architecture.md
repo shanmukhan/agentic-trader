@@ -1,5 +1,22 @@
 # Architecture and invariants
 
+Version 0.10.0 introduces `api/setup.py` for the manual service's browser setup and
+feed lifecycle. It owns private broker credentials and a replaceable `QuoteStream`,
+while the same `PaperBroker`/database owner continues to enforce every financial
+gate. Broker profile/login/catalog I/O runs outside the quote/risk lock; setup HTTP
+actions run in the worker thread pool. Short catalog, configuration and calendar
+updates serialize with the engine. Setup is not on the quote analysis hot path and
+its status fetch resolves at most ten selected rows, rather than serializing the
+full imported catalog. The supervised `PaperService` remains a distinct bound flow.
+
+UI session credentials are persisted as a private atomic JSON file beside the
+database, overriding environment broker values for the manual service only. A
+reviewed calendar is committed as a new private snapshot before the selected TOML
+points to it. This preserves the previous referenced calendar on configuration
+failure; an orphan snapshot may remain. No economic setting, balance, position or
+used date definition can be rewritten by the Setup API. See
+[ui-setup.md](ui-setup.md) and [API contracts](api-contracts.md).
+
 The application is a Python 3.13 modular monolith. `main.py` owns startup, CLI and
 shutdown. HTTP/WebSocket market data flows through `broker/readonly_kite.py`, typed
 models, the paper risk/execution boundary and SQLite. Stream candles are persisted

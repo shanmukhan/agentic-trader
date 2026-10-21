@@ -1,8 +1,13 @@
 # First paper session with live Kite data
 
-Verified against the local 0.9.0 implementation and official Zerodha documentation
+Verified against the local 0.10.0 implementation and official Zerodha documentation
 on 21 October 2026. Run commands from the repository root. This guide describes
 manual paper trading first; supervised intraday automation is a separate workflow.
+
+**Browser alternative:** run `./scripts/start_ui.sh`, unlock with your local
+`TRADING_OPERATOR_TOKEN`, and follow [ui-setup.md](ui-setup.md) at `/setup`. Most
+daily broker/feed setup no longer requires terminal commands. The CLI path below
+remains supported; the two workflows use different private credential storage.
 
 ## What can be tested now
 
@@ -101,8 +106,9 @@ overriding any `TRADING_CONFIG` left in your environment.
 
 Open the returned `login_url` in your browser. Complete Zerodha login and 2FA yourself.
 After success, the browser redirects to your registered URL with a `request_token`
-query parameter. Copy **only that parameter's value**. There is no automatic callback
-handler in this project. Before the service starts, the loopback page may report a
+query parameter. Copy **only that parameter's value**. The CLI workflow uses manual
+capture; the newer Setup popup can hand off the token to its originating tab using
+matching origin/window/login state. Before the service starts, the loopback page may report a
 connection failure; the redirected address still contains the token. Do not change
 the configured redirect merely to bypass an actual broker authentication error.
 

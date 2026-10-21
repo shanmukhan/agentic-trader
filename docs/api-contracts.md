@@ -71,6 +71,43 @@ response bypasses the per-intent gate.
 
 ## CLI and database ownership
 
+### Manual-service setup (0.10.0)
+
+`GET /setup`, `/setup.js` and `/kite-callback.js` serve public shells/assets without
+private account values. `/api/setup` and all its actions require the existing local
+operator bearer/Host/Origin checks. This is the separate operator credential, never
+a broker request/access token. The Setup manager is attached by the manual CLI
+service; automation-bound/custom apps without one return a safe 409.
+
+| Route | Contract |
+|---|---|
+| `GET /api/setup` | Credential-presence/profile-run flags, stream requested/connected, catalog count, selected symbol/token/tick rows, today/session definitions, private account-path hash for launcher identity |
+| `POST /api/setup/credentials` | Exactly `api_key`, `api_secret`; private save, clears saved access token; active feed must be disconnected |
+| `POST /api/setup/login` | Empty object; official HTTPS login URL and random five-minute state; no account password/2FA bypass |
+| `POST /api/setup/exchange` | Exactly `request_token`, `state`; single-attempt exchange/profile verification, private token persistence; raw secrets are never returned |
+| `POST /api/setup/profile` | Empty object; explicit external read-only profile check; status only, no personal fields |
+| `POST /api/setup/catalog` | Empty object; read-only catalog download, atomic existing mapping validation/import; disconnect first |
+| `POST /api/setup/symbols` | Exactly `symbols`, 1–10 distinct current catalog names; accepts `NSE:` or bare uppercase; no pending orders, preserves every held symbol; persists tokens/config |
+| `POST /api/setup/session` | Exactly `date`, `open`, `close`, `source`, strict `reviewed: true`; current/future sourced supported IST session; existing definitions cannot change |
+| `POST /api/setup/connect` | Empty object; verifies profile/selection and requests full stream; no intent or arming; fresh quotes may resume existing pending fills/exits |
+| `POST /api/setup/disconnect` | Empty object; stops stream, blocks quote-dependent entries/fills; no liquidation |
+
+Setup bodies are bounded to 8192 bytes and parsed without framework validation that
+could echo credential input. Known/third-party setup failures return credential-free
+409 messages; independent financial controls are not faulted merely because a login
+fails. Successful actions return refreshed status, except `login`, which returns
+its URL/state. An API key appears in that official URL; API secret/access token do
+not. No auto retry exists; inspect status after an uncertain response, and begin a
+fresh login after an uncertain exchange. The single active login state is consumed
+before the external exchange attempt.
+
+The popup callback strips its URL query and posts the request token only to its own
+origin; Setup additionally verifies popup identity and matching state. A legacy
+CLI redirect without a matching Setup popup stays available for manual capture.
+No callback GET writes a token or changes account authority. Private credential
+files, config selection, calendar snapshot boundaries and remaining CLI-only work
+are documented in [ui-setup.md](ui-setup.md).
+
 `trading-agent --config PATH COMMAND` selects an explicit TOML file. Commands:
 `environment`, `init-db`, `status`, `verify-db`, `login-url`, `exchange-token`,
 `profile`, `instruments`, `historical`, `serve`, `backup`, `demo`, `replay`.

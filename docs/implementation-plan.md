@@ -5,6 +5,24 @@ Prepared 20 October 2026; updated 21 October 2026. This is the execution record 
 
 ## Implemented scope
 
+### Browser setup and repeat startup (0.10.0)
+
+Implemented in response to actual operator-token/request-token confusion and manual
+setup friction. `/setup` now separates local authorization from Kite credentials,
+opens the official login with state-bound popup handoff, explicitly exchanges and
+verifies the session, imports a catalog, validates/persists selected symbols, adds
+operator-reviewed immutable session definitions and controls the manual feed.
+`scripts/start_ui.sh` opens a matching running account or starts its UI/browser;
+`serve --open` remains the lower-level option. No secret is returned in status or
+stored in browser persistence, and the independent broker/risk boundary is retained.
+
+The real app registration/payment/login/2FA remain external. First local runtime,
+operator credential and economic-policy setup, bound automation, complex corporate
+actions and research/model acceptance retain their documented workflows. This does
+not complete LT3c2 rebalancing, ETF-specific accounting or real-market acceptance.
+The [new detailed usage guide](ui-setup.md) covers commands, private persistence,
+failure/recovery and limits. Test evidence is recorded in the change log.
+
 The [live-data first paper-session guide](first-paper-session.md) records developer
 registration, officially checked plan requirements, private daily token handling,
 isolated manual intraday/long-term setup and acceptance/recovery steps. This is

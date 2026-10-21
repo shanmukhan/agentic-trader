@@ -1,5 +1,32 @@
 # Threat model and security decisions
 
+## Authenticated browser setup (0.10.0)
+
+The new manual-account `/setup` shell has no private values until local operator
+authentication. Existing Host/Origin/bearer controls apply to every setup API; broker
+credentials cannot unlock it. Secret-bearing bodies are bounded and parsed without
+validation input echoes; third-party exceptions are replaced with fixed messages.
+No browser path, endpoint or shell command is accepted. The API never returns a
+stored secret/access token. The public API key appears in the official HTTPS login
+URL. UI inputs clear before requests, lock clears all private state/late responses,
+and no browser persistence or external script was introduced.
+
+Credential/session storage is an atomic mode-0600 plaintext file beside the account,
+not encryption. Symlink/nonprivate stored credential files fail closed. The browser
+popup requires matching origin, opener window and random five-minute state; the
+server consumes a login attempt before exchange, and the popup callback removes its
+query. CLI manual redirects remain explicit. A stolen operator credential still
+grants local account/setup authority; this is not broker-scope isolation or protection
+against the same OS user. The launcher refuses redirects/proxies and verifies the
+authenticated account-path hash before reusing a running server.
+
+Calendar additions require explicit operator review, immutable existing definitions
+and a private snapshot committed before config replacement. The UI cannot verify
+that an operator's source/attestation is truthful. No price-basis, quarantine, loss,
+kill, model or financial-policy override was added. Quote connection/reconnection
+may resume existing paper fills/exits; confirmations explain that distinction.
+See [ui-setup.md](ui-setup.md) for persisted-file and recovery limits.
+
 Assets include Kite credentials, operator token, market data, simulated account
 integrity and the host. The goal is to prevent live execution paths and accidental
 loss of paper-account correctness. A hostile local administrator can change Python
