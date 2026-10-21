@@ -1,5 +1,13 @@
 # Long-term paper investing: LT1 engineering and usage
 
+The 0.13.1 combined preparation review can explicitly authorize a listed batch of
+**today's** price-basis reviews together with source/calendar/policy installation. Only
+source-covered, supported unheld symbols without quarantine or an uncovered prior quote
+basis are eligible. Held positions, unresolved actions and gaps still need the existing
+individual/offline review flow. No future review is inferred. New usable quotes are still
+required, and setup stays Manual. See [strategy-preparation.md](strategy-preparation.md).
+
+
 Version 0.5.0 added a separate **long-term, long-only NSE cash-equity paper account**;
 version 0.6.0 extends it with [reviewed corporate-action accounting](corporate-actions.md).
 Holdings persist across closes, weekends and restarts. Manual entries remain explicit

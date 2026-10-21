@@ -1,9 +1,10 @@
 # Agentic Trader — paper only
 
-Version **0.13.0** adds an in-app **Prepare a paper strategy** workflow: download
+Version **0.13.1** adds an in-app **Prepare a paper strategy** workflow: download
 genuine Nifty 100/500 constituent sources and completed Kite daily history, inspect
-coverage/exclusions, review the proposed calendar and basis, then install an explicitly
-chosen rules-only or matching validated-ML policy. The desk explains each disabled
+coverage/exclusions, choose a rules-only or matching validated-ML policy and confirm
+one setup summary. The server coordinates installation, ranked shortlist, eligible
+reviews for today and feed reconnection; CSV and individual controls stay under Advanced. The desk explains each disabled
 mode with the next action, market/entry times and per-symbol quote freshness.
 Installation leaves Manual selected; Approval and Automatic remain explicit paper-only
 choices with independent risk checks. Buy / sell activity explains orders and fills.

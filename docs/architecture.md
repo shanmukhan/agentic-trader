@@ -1,5 +1,18 @@
 # Architecture and invariants
 
+Version 0.13.1 adds `desk/guided.py` as an orchestration layer over existing preparation,
+SetupService selection/feed controls and LongTermBook review authority. Preview performs
+pure default-policy screening from hash-checked source data; it does not manufacture a
+reviewed dataset or profile. One explicitly acknowledged, two-minute summary binds source,
+calendar, account revision, policy, selection, catalog, holdings, cash, order states and
+basis/quarantine evidence. It durably records phase before effects and holds the strategy
+installation gate throughout disconnect/install/select/listed-review/connect. No network,
+model loading or streaming-worker join holds the quote/risk lock. Final canonical research
+must agree with the previewed selection before it is applied. Partial steps remain visible;
+no financial history rollback or automatic replay occurs. A completed identical retry is
+read-only. Mode activation stays independent; no overnight deferred activation is stored.
+
+
 Version 0.12.0 adds `desk/` as a proposal/authorization layer above the same independent
 paper broker. Immutable server-selected profiles bind reviewed data, supported share
 classification and model hashes. Separate background daily screening/history I/O feeds

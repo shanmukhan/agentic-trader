@@ -1,5 +1,16 @@
 # Trading desk, approval modes and buy / sell activity
 
+Version **0.13.1** simplifies the normal setup to **Download strategy data → choose a
+policy → Review and finish setup → one acknowledgement and Confirm and prepare**.
+The combined summary shows exact stocks, source links, all session dates, calendar
+corrections and reviews included for today. The server handles installation, shortlist,
+eligible reviews and feed reconnection. No freeform notes or manual CSV copying are needed.
+Advanced calendar/individual controls remain available. The outcome stays Manual; check
+readiness before separately choosing Approval or Automatic. Existing holdings/quarantines
+and uncovered price histories are never auto-cleared. See the updated
+[preparation guide](strategy-preparation.md) for failure/retry and closed-hour behavior.
+
+
 Calendar differences now show saved/proposed hours. Only a separately acknowledged
 unused-account correction can change existing hours; quotes, pinned reviews and
 execution/instruction usage block it. Mode activation waits throughout installation.

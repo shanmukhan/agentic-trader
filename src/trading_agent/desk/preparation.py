@@ -188,7 +188,8 @@ class Preparation:
             "can_correct_unused_calendar": can_correct,
             "job": job,
             "sources": {
-                "universe": "https://www.niftyindices.com/indices/equity/broad-based-indices/nifty-500",
+                "universe": "https://www.niftyindices.com/indices/equity/broad-based-indices/"
+                + ("nifty-100" if job and job.get("universe") == "nifty100" else "nifty-500"),
                 "calendar": sources.HOLIDAY_PAGE,
                 "hours": sources.HOURS,
                 "actions": sources.ACTION_PAGE,
@@ -423,12 +424,13 @@ class Preparation:
                 return self._install(body)
             with self.desk.engine.lock:
                 self._manual(body.revision)
+                previous = self.desk.installing
                 self.desk.installing = True
             try:
                 return self._install(body)
             finally:
                 with self.desk.engine.lock:
-                    self.desk.installing = False
+                    self.desk.installing = previous
 
     def _install(self, body: InstallRequest) -> dict[str, Any]:
         with self.lock:
@@ -675,5 +677,6 @@ class Preparation:
                     review_reference=reference,
                     calendar_csv=body.calendar_csv,
                     installed_at=stamp(self.clock()),
+                    installed_revision=self.desk.revision,
                 )
             return self.view()

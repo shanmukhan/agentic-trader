@@ -1,5 +1,25 @@
 # Operator API and command contracts
 
+## Combined preparation setup (0.13.1)
+
+All routes below retain the same bearer, Host and mutation-Origin checks. Extra fields
+are forbidden; expected conflicts return credential-free 409 reasons and invalid typed
+requests return 422. There is no browser-supplied path, model, arbitrary symbol list or
+financial policy override.
+
+| Endpoint | Contract |
+|---|---|
+| `POST /api/desk/preparation/guided/preview` | Current 32-hex `revision`, explicit `strategy_mode` rules/rules_ml; validates same-day downloaded evidence and returns exact setup summary, 64-hex preview hash and two-minute expiry; persists only a private review record |
+| `POST /api/desk/preparation/guided/confirm` | Exactly `preview_sha256` and strict `acknowledged: true`; validates complete binding again, then coordinates disconnect/install/shortlist/listed current-day reviews/connect while staying Manual |
+| `GET /api/desk` | Additionally returns bounded `guided_setup` state/phase/message/summary, excluding the private binding |
+
+The private guided record persists before side effects. Confirmed repeats after completion
+return the saved outcome; stopped/interrupted attempts require a new preview. Restart
+never replays unfinished steps. Errors can leave earlier saved steps in place; inspect
+phase/readiness/activity. Reconnection can resume protective exits; no strategy mode is
+activated. Read [strategy-preparation.md](strategy-preparation.md) for review eligibility.
+
+
 ## Trading desk and activity (0.12.0)
 
 New `/desk`, `/activity` and `/desk.js` are public shells/assets. The two pages join

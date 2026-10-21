@@ -2,18 +2,19 @@
 const {test}=require('node:test'), assert=require('node:assert/strict'),{readFileSync}=require('node:fs');
 const {createPreparation}=require('../../src/trading_agent/api/static/preparation.js');
 class Element{
- constructor(){this.events={};this.children=[];this.value='';this.disabled=false;this.checked=false;}
+ constructor(){this.events={};this.children=[];this.value='';this.disabled=false;this.checked=false;this.style={};}
  set textContent(v){this.text=String(v);this.children=[];}get textContent(){return(this.text||'')+this.children.map(n=>n.textContent).join('');}
  set innerHTML(_){throw Error('unsafe HTML');}append(...items){this.children.push(...items);}replaceChildren(...items){this.text='';this.children=items;}
  addEventListener(name,fn){this.events[name]=fn;}fire(name){if(!this.disabled&&this.events[name])this.events[name]({preventDefault(){}});}
+ showModal(){this.open=true;}close(){this.open=false;}focus(){this.focused=true;}
 }
 const flush=()=>new Promise(r=>setImmediate(r));
 const job=(extra={})=>({job_id:'a'.repeat(32),state:'ready_for_review',stage:'review',total:98,completed:98,eligible:97,completed_sessions:60,symbols:['NSE:A000'],calendar_csv:'date,open,close\n2026-10-21,09:15,15:30\n',preview_sha256:'b'.repeat(64),excluded:[{symbol:'NSE:DIV',reason:'CORPORATE_ACTION_IN_HISTORY'}],...extra});
-function setup(){
+function setup(response,windowOptions={}){
  const nodes=Object.fromEntries([...readFileSync('src/trading_agent/api/static/desk.html','utf8').matchAll(/\bid="([^"]+)"/g)].map(m=>[m[1],new Element()]));
  const calls=[],dialogs=[];let refreshes=0;
  const data={mode:'manual',revision:'c'.repeat(32)},doc={getElementById:id=>{assert.ok(nodes[id],id);return nodes[id];},createElement:()=>new Element()};
- const ui=createPreparation(doc,{crypto:{getRandomValues:a=>a.fill(9)}},async(path,body)=>{calls.push({path,body});return{available:true,ml_configured:false,job:job({state:'installed'})};},async()=>{refreshes++;},(title,text,action)=>dialogs.push({title,text,action}),()=>data);
+ const ui=createPreparation(doc,{crypto:{getRandomValues:a=>a.fill(9)},...windowOptions},async(path,body)=>{calls.push({path,body});return response?await response(path,body):{available:true,ml_configured:false,job:job({state:'installed'})};},async()=>{refreshes++;},(title,text,action)=>dialogs.push({title,text,action}),()=>data);
  const view={available:true,ml_configured:false,job:job(),sources:{actions:'https://www.nseindia.com/companies-listing/corporate-filings-actions'}};
  return{nodes,ui,calls,dialogs,data,view,get refreshes(){return refreshes;}};
 }
@@ -59,4 +60,38 @@ test('calendar conflicts show old/proposed hours and never pre-approve empty-acc
  const s=setup();s.ui.render({...s.view,calendar_conflicts:[{date:'2026-10-21',existing:'09:15–15:15',proposed:'09:15–15:30'}],can_correct_unused_calendar:true});
  assert.match(s.nodes['prep-calendar-conflicts'].textContent,/saved 09:15–15:15/);assert.equal(s.nodes['prep-correction-label'].hidden,false);assert.equal(s.nodes['prep-calendar-correction'].checked,false);
  s.ui.render({...s.view,can_correct_unused_calendar:false});assert.equal(s.nodes['prep-calendar-correction'].disabled,true);assert.equal(s.nodes['prep-correction-label'].hidden,true);
+});
+const guided=()=>({preview_sha256:'e'.repeat(64),state:'review',plan:{horizon:'long_term',cash:'25000.00',strategy_mode:'rules',eligible:65,completed_sessions:60,history_start:'2026-07-27',history_end:'2026-10-20',symbols:['NSE:EXAMPLE'],held_symbols:[],basis_reviews:['NSE:EXAMPLE'],manual_basis_reviews:[],session_date:'2026-10-21',calendar_conflicts:[{date:'2026-10-21',existing:'09:15–15:15',proposed:'09:15–15:30'}],calendar_csv:'date,open,close\n2026-10-21,09:15,15:30',entry_start:'09:30',entry_end:'14:30',sources:{calendar:'https://www.nseindia.com/'}}});
+test('guided path hides advanced forms by default and requires an explicit policy and one unchecked review',async()=>{
+ const s=setup(()=>guided());s.ui.render(s.view,null);
+ const html=readFileSync('src/trading_agent/api/static/desk.html','utf8');assert.match(html,/<details id="prep-advanced">/);assert.doesNotMatch(html,/<details id="prep-advanced"[^>]*open/);
+ s.nodes['guided-review'].fire('click');assert.equal(s.calls.length,0);assert.match(s.nodes['guided-result'].textContent,/Choose a decision policy/);
+ s.nodes['prep-policy'].value='rules';s.nodes['guided-review'].fire('click');await flush();
+ assert.equal(s.calls[0].path,'/api/desk/preparation/guided/preview');assert.equal(s.nodes['guided-dialog'].open,true);assert.equal(s.ui.canNavigate(),false);
+ assert.equal(s.nodes['guided-ack'].checked,false);assert.equal(s.nodes['guided-confirm'].disabled,true);
+ assert.match(s.nodes['guided-summary'].textContent,/NSE:EXAMPLE/);assert.match(s.nodes['guided-summary'].textContent,/09:15–15:15 → 09:15–15:30/);assert.match(s.nodes['guided-summary'].textContent,/No mode is activated/);
+ s.nodes['guided-cancel'].fire('click');assert.equal(s.ui.canNavigate(),true);assert.equal(s.calls.length,1);
+});
+test('one acknowledgement submits only the server preview identity, then refreshes completion status',async()=>{
+ const s=setup(path=>path.endsWith('preview')?guided():{state:'complete',message:'Setup complete; Manual stays selected.'});s.ui.render(s.view,null);s.nodes['prep-policy'].value='rules';
+ s.nodes['guided-review'].fire('click');await flush();s.nodes['guided-ack'].checked=true;s.nodes['guided-ack'].fire('change');assert.equal(s.nodes['guided-confirm'].disabled,false);
+ s.nodes['guided-confirm'].fire('click');s.nodes['guided-confirm'].fire('click');await flush();
+ assert.equal(s.calls.length,2);assert.deepEqual(s.calls[1],{path:'/api/desk/preparation/guided/confirm',body:{preview_sha256:'e'.repeat(64),acknowledged:true}});
+ assert.equal(s.refreshes,1);assert.match(s.nodes['guided-result'].textContent,/Manual stays selected/);
+});
+test('locking during a guided preview discards late private data and clears an open review',async()=>{
+ let finish;const s=setup(()=>new Promise(resolve=>{finish=resolve;}));s.ui.render(s.view,null);s.nodes['prep-policy'].value='rules';s.nodes['guided-review'].fire('click');s.ui.clear();finish(guided());await flush();
+ assert.notEqual(s.nodes['guided-dialog'].open,true);assert.equal(s.nodes['guided-summary'].textContent,'');assert.equal(s.nodes['guided-review'].disabled,true);
+});
+test('saved guided completion or partial failure tells the operator the outcome after refresh',()=>{
+ const s=setup();s.ui.render(s.view,{state:'stopped',message:'Setup stopped during connection. Saved steps remain.'});assert.match(s.nodes['guided-result'].textContent,/Saved steps remain/);
+ s.ui.render(s.view,{state:'complete',message:'Setup complete. Waiting for market hours; Manual.'});assert.match(s.nodes['guided-result'].textContent,/Waiting for market hours/);
+ s.ui.clear();assert.equal(s.nodes['guided-result'].textContent,'');
+});
+test('embedded review fits the visible parent viewport and removes parent listeners when closed',async()=>{
+ const listeners=new Map(),parent={innerHeight:844,addEventListener:(type,fn)=>listeners.set(type,fn),removeEventListener:type=>listeners.delete(type)};
+ const s=setup(()=>guided(),{parent,frameElement:{getBoundingClientRect:()=>({top:-2900})}});s.ui.render(s.view,null);s.nodes['prep-policy'].value='rules';s.nodes['guided-review'].fire('click');await flush();
+ assert.equal(s.nodes['guided-dialog'].style.maxHeight,'692px');assert.equal(s.nodes['guided-dialog'].style.top,'2976px');assert.equal(listeners.size,2);
+ parent.innerHeight=1100;listeners.get('resize')();assert.equal(s.nodes['guided-dialog'].style.maxHeight,'902px');
+ s.nodes['guided-cancel'].fire('click');assert.equal(listeners.size,0);
 });

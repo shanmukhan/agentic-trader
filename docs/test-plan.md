@@ -1,5 +1,34 @@
 # Test and validation plan
 
+## Combined guided setup (0.13.1)
+
+New invented-data unit and HTTP tests cover read-only previews, exact ranked shortlist,
+listed current-day basis reviews, unused-calendar correction, strict acknowledgement,
+authorization/origin/extra-field rejection, expiry/date/revision/cash/source/kill changes,
+quarantine preservation, ML refusal without fallback, connection partial failure/recovery,
+interrupted attempts, no repeat on a completed retry and Manual throughout setup.
+HTTP tests proceed through the one-confirmation flow, then independently choose Approval
+or Automatic, ingest later invented quotes and reconcile exact persisted cash against
+sum(fill price × quantity + fees) using Decimal and the existing ledger reconstruction.
+
+Browser-controller checks cover hidden advanced forms, explicit policy, an initially
+unchecked combined review, summary/correction text, cancellation, exact hash-only confirm
+payload, duplicate click suppression, partial outcome, locks and late private responses.
+Desktop/mobile visual evidence uses an isolated invented-data account, separate Chrome
+profile and port 8016. It is not broker, actual-market or device acceptance.
+
+
+Validation completed locally: **630 Python tests**, **77 JavaScript tests**, **92%**
+overall Python coverage; Ruff lint/format (152 files), mypy (96 source files), frozen
+offline lock/sync, sdist/wheel build and project secret checks passed. Isolated Chrome
+checks at 1440 × 1100 and 390 × 844 verified no horizontal overflow, visible bounded
+review dialog, initially unchecked acknowledgement, consolidated confirmation, Manual
+outcome, current-day review persistence and shared unlock into activity, with no browser
+exceptions. The embedded-parent resize/scroll listeners are removed on close/lock/unload. A separate
+controller case verifies visible-parent sizing and listener cleanup for the existing
+mode/trade confirmation as well.
+No actual account reviews, strategy or mode were applied during validation.
+
 ## Genuine-data preparation and readiness (0.13.0)
 
 Full local validation: **614 Python tests / 71 JavaScript tests**, **92% Python coverage**.

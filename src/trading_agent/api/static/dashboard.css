@@ -476,3 +476,12 @@ dialog p {
   .desk-page .metric:last-child { grid-column:1/-1; }
   .desk-page .desk-value { font-size:1rem; }
 }
+/* Guided setup keeps the common path short; evidence remains accessible. */
+#guided-dialog { width:min(720px,calc(100vw - 40px)); max-width:720px; max-height:85vh; overflow:auto; box-sizing:border-box; }
+#guided-dialog p,#guided-dialog label { overflow-wrap:anywhere; }
+#guided-dialog pre { max-height:230px; overflow:auto; white-space:pre-wrap; font-size:.85rem; }
+#guided-dialog .check { display:flex; align-items:flex-start; gap:12px; padding:12px 0; }
+#guided-dialog input[type=checkbox] { width:22px; height:22px; flex:0 0 22px; margin:2px 0; }
+#prep-advanced { margin:20px 0; }
+#guided-review { width:100%; min-height:48px; }
+@media(max-width:640px) { #guided-dialog { padding:18px; } #guided-dialog .dialog-actions { flex-direction:column; } #guided-dialog button { width:100%; } }

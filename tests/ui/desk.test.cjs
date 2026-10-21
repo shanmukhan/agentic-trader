@@ -2,7 +2,7 @@
 const {test}=require('node:test');const assert=require('node:assert/strict');const {readFileSync}=require('node:fs');
 const {createDesk}=require('../../src/trading_agent/api/static/desk.js');
 class Element{
- constructor(){this.events={};this.children=[];this.value='';this.disabled=false;this.open=false;}
+ constructor(){this.events={};this.children=[];this.value='';this.disabled=false;this.open=false;this.style={};}
  set textContent(v){this.text=String(v);this.children=[];}get textContent(){return(this.text||'')+this.children.map(n=>n.textContent).join('');}
  set innerHTML(_){throw Error('unsafe HTML sink');}
  append(...n){this.children.push(...n);}replaceChildren(...n){this.text='';this.children=n;}
@@ -12,10 +12,10 @@ class Element{
 const flush=()=>new Promise(r=>setImmediate(r));const ok=data=>({ok:true,status:200,json:async()=>data});
 const decision=(extra={})=>({id:'signal',side:'BUY',symbol:'NSE:DEMO',created_at:'2026-10-20T04:30:00Z',expires_at:'2026-10-20T04:32:00Z',state:'awaiting_approval',mode:'approval',candidate:{reason:'Completed daily trend',stop:'490',target:'520'},context:{kind:'daily'},...extra});
 const status=(extra={})=>({mode:'manual',revision:'a'.repeat(32),mode_reason:'STARTUP_DISARMED',horizon:'long_term',observed_at:'2026-10-20T04:30:00Z',blockers:['NO_ANALYSIS_PROFILE'],selected:[{symbol:'NSE:DEMO'}],decisions:[],selection_basis:'operator_watchlist',strategy_mode:'unconfigured',model_available:false,bound_intraday_controller:false,account:{equity:'25000.00',cash:'25000.00'},...extra});
-function setup(fetcher=async()=>ok(status()),activity=false){
+function setup(fetcher=async()=>ok(status()),activity=false,windowOptions={}){
  const nodes=Object.fromEntries([...readFileSync('src/trading_agent/api/static/'+(activity?'activity':'desk')+'.html','utf8').matchAll(/\bid="([^"]+)"/g)].map(m=>[m[1],new Element()]));
  if(activity)nodes['side-filter'].value='ALL';
- const calls=[],intervals=[];const win={AgenticMoney:require('../../src/trading_agent/api/static/money.js'),setTimeout:()=>1,clearTimeout(){},setInterval:f=>intervals.push(f)};
+ const calls=[],intervals=[];const win={AgenticMoney:require('../../src/trading_agent/api/static/money.js'),setTimeout:()=>1,clearTimeout(){},setInterval:f=>intervals.push(f),...windowOptions};
  const doc={getElementById:id=>{assert.ok(nodes[id],id);return nodes[id];},createElement:()=>new Element(),hidden:false};
  const instance=createDesk(doc,win,async(url,opts)=>{calls.push({url,opts});return fetcher(url,opts);},activity);
  async function unlock(){nodes.token.value='test-token-long-enough-1234567890';nodes.access.fire('submit');await flush();}
@@ -33,6 +33,12 @@ test('automatic paper mode requires a reviewable confirmation and one explicit s
  assert.ok(s.nodes.confirm.open);assert.equal(s.calls.length,1);assert.match(s.nodes['confirm-text'].textContent,/without individual approval/);
  assert.equal(s.instance.canNavigate(),false);s.nodes['confirm-action'].fire('click');s.nodes['confirm-action'].fire('click');await flush();
  const posts=s.calls.filter(c=>c.url==='/api/desk/mode');assert.equal(posts.length,1);assert.deepEqual(JSON.parse(posts[0].opts.body),{mode:'automatic',revision:'a'.repeat(32),acknowledged:true});
+});
+test('mode confirmation stays in the visible embedded viewport and clears parent listeners on lock',async()=>{
+ const listeners=new Map(),parent={innerHeight:844,addEventListener:(type,fn)=>listeners.set(type,fn),removeEventListener:type=>listeners.delete(type)};
+ const s=setup(async()=>ok(status({blockers:[]})),false,{parent,frameElement:{getBoundingClientRect:()=>({top:-1800})}});await s.unlock();s.nodes['mode-automatic'].fire('click');
+ assert.equal(s.nodes.confirm.style.top,'1876px');assert.equal(s.nodes.confirm.style.maxHeight,'692px');assert.equal(listeners.size,2);
+ s.instance.lock();assert.equal(listeners.size,0);assert.equal(s.nodes.confirm.open,false);assert.equal(s.calls.filter(c=>c.url==='/api/desk/mode').length,0);
 });
 test('connected feed still explains missing strategy and quotes beside disabled mode buttons',async()=>{
  const s=setup(async()=>ok(status({blockers:['NO_ANALYSIS_PROFILE','NO_FRESH_EXECUTION_QUOTES'],account:{equity:'25000',cash:'25000',feed_connected:true},readiness:{now_ist:'2026-10-21T20:00:00+05:30',next_action:'Prepare and review a strategy below first.',checks:[{key:'strategy',title:'Strategy and historical data',ready:false,detail:'No strategy installed.',action:'Prepare strategy data',href:'#strategy-setup'}],quotes:[{symbol:'NSE:DEMO',usable:false,exchange_time:null,basis_reviewed:false}]}})));

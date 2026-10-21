@@ -13,6 +13,11 @@ from trading_agent.desk.service import DeskError
 def mount_desk(
     app: Any, desk: Any, setup: Any, authorized: Any, assets: Any, clock: Any, preparation: Any
 ) -> None:
+    from trading_agent.desk.guided import GuidedConfirm, GuidedPreview, GuidedSetup
+
+    guided = GuidedSetup(preparation)
+    app.state.guided_setup = guided
+
     @app.get("/desk", response_class=HTMLResponse)
     def page() -> str:
         return assets.joinpath("desk.html").read_text()
@@ -29,7 +34,11 @@ def mount_desk(
 
     @app.get("/api/desk", dependencies=[Depends(authorized)])
     def status() -> dict:
-        return {**desk.view(clock()), "preparation": preparation.view()}
+        return {
+            **desk.view(clock()),
+            "preparation": preparation.view(),
+            "guided_setup": guided.view(),
+        }
 
     @app.get("/preparation.js")
     def preparation_script() -> HTMLResponse:
@@ -63,6 +72,14 @@ def mount_desk(
     @app.post("/api/desk/preparation/install", dependencies=[Depends(authorized)])
     def install(body: InstallRequest) -> dict:
         return prepare_action(lambda: preparation.install(body))
+
+    @app.post("/api/desk/preparation/guided/preview", dependencies=[Depends(authorized)])
+    def guided_preview(body: GuidedPreview) -> dict:
+        return prepare_action(lambda: guided.preview(body))
+
+    @app.post("/api/desk/preparation/guided/confirm", dependencies=[Depends(authorized)])
+    def guided_confirm(body: GuidedConfirm) -> dict:
+        return prepare_action(lambda: guided.confirm(body))
 
     @app.post("/api/desk/mode", dependencies=[Depends(authorized)])
     def mode(body: ModeRequest) -> dict:

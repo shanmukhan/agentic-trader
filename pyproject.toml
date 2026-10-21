@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "agentic-trader"
-version = "0.13.0"
+version = "0.13.1"
 description = "Intraday and long-term paper accounts, read-only Kite data, and causal research"
 readme = "README.md"
 requires-python = ">=3.13,<3.14"

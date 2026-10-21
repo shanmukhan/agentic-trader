@@ -1,5 +1,46 @@
 # Implementation plan, enhancements and status
 
+## Simplified combined preparation review (0.13.1)
+
+Implemented the requested shorter setup: download → choose policy → review one summary
+and acknowledgement → confirm. Existing same-day completed downloads are reused.
+The authenticated summary binds exact at-most-ten ranked stocks, held symbols, source
+coverage, all calendar dates/hours, unused-account corrections, eligible current-day
+basis reviews and entry hours. Confirmation coordinates existing disconnect, immutable
+install, shortlist, listed reviews and connection controls. No freeform reference or
+separate feed/shortlist click is required on this path. Advanced CSV/individual controls
+remain available. Every mode activation stays a separate explicit choice after readiness.
+
+The two-minute preview expires on time, source/account/shortlist changes or newly
+completed missing history. Pending orders, used calendar conflicts, faults and no
+candidates refuse action. Held positions, quarantines and uncovered earlier quote basis
+are excluded from combined current-day attestations. Setup persists phase/outcome before
+side effects, reports partial completion, never automatically retries after failure or
+restart, and returns identical completed confirmations without repeating connection/reviews.
+Model/data/ranking work remains outside the engine lock; the streaming worker is joined
+without that lock. The installation gate covers the whole coordinated operation.
+
+UI: one primary finish button, source/calendar/stock review dialog, unchecked consolidated
+acknowledgement, clear Manual/closed-hour outcome, hidden advanced forms, and an embedded
+workspace dialog sized/positioned to the visible parent viewport. Locks discard private
+summaries and late responses; pending reviews block menu navigation and periodic refresh.
+Detailed usage and recovery: [strategy-preparation.md](strategy-preparation.md).
+
+Validation is recorded in [test-plan.md](test-plan.md). All new provider/execution tests
+use invented data, including independent Decimal cash/fee reconciliation. The user's
+running server, saved account, actual review assertions and mode were not changed.
+External market/ML/device gates below remain open; this work does not establish profit.
+
+
+Validation completed locally: **630 Python tests**, **77 JavaScript tests**, **92%**
+overall Python coverage; Ruff lint/format (152 files), mypy (96 source files), frozen
+offline lock/sync, sdist/wheel build and project secret checks passed. Isolated Chrome
+checks at 1440 × 1100 and 390 × 844 verified no horizontal overflow, visible bounded
+review dialog, initially unchecked acknowledgement, consolidated confirmation, Manual
+outcome, current-day review persistence and shared unlock into activity, with no browser
+exceptions. The embedded-parent resize/scroll listeners are removed on close/lock/unload.
+No actual account reviews, strategy or mode were applied during validation.
+
 ## Genuine strategy preparation and actionable readiness (0.13.0)
 
 Implemented operator-requested genuine-data acquisition in Trading desk: fixed official

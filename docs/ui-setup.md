@@ -1,5 +1,14 @@
 # Start, unlock and configure the paper app in your browser
 
+Version **0.13.1** combines the strategy setup steps on Trading desk. Once the broker
+session/catalog and same-day download are available, choose a policy, select **Review
+and finish setup**, inspect the sources/dates/stocks, check one acknowledgement and
+confirm. The server handles feed disconnection, installation, shortlist, listed eligible
+current-day reviews and reconnection. No trading mode is activated. The previous calendar
+CSV and individual controls remain under Advanced. See
+[strategy-preparation.md](strategy-preparation.md) for the full simplified process.
+
+
 The strategy wizard also shows saved/proposed calendar differences and can correct an
 unused account after a separate explicit acknowledgement. Any accepted quote/candle,
 pinned review or execution/instruction usage prevents correction, rechecked after

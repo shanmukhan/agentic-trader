@@ -1,5 +1,25 @@
 # Change log
 
+## 2026-10-21 — One combined paper setup review (0.13.1)
+
+- Replaced the normal CSV/notes/multiple-review workflow with policy selection and one
+  source/calendar/stock summary and acknowledgement. Advanced individual controls remain.
+- Coordinated disconnect, strategy/calendar installation, held-preserving ranked shortlist,
+  explicitly listed eligible reviews for today and feed reconnection. Setup stays Manual;
+  Approval/Automatic still need separate confirmation after actual readiness passes.
+- Added two-minute account/source-bound previews, durable phase/outcome reporting,
+  completed-retry idempotence and interruption recovery without replay. Pending orders,
+  used-calendar conflicts, faults and unqualified stocks cannot be bypassed. Held-position
+  basis, quarantines and uncovered histories keep their separate review requirements.
+- Added visible-parent viewport sizing/positioning for embedded setup and mode/trade confirmation dialogs, private
+  summary clearing on lock, navigation/poll guards and specific timeout recovery messaging.
+- Corrected Nifty 100 source links; updated main/detailed usage, component, API, architecture,
+  implementation and validation guides. No actual account review, mode or trade was activated.
+
+
+- Validation: 630 Python and 77 JavaScript tests, 92% coverage; lint/format/types, frozen
+  offline environment, build, secrets and isolated desktop/mobile browser flow passed.
+
 ## 2026-10-21 — Genuine-data strategy preparation and clearer readiness (0.13.0)
 
 - Added in-app Nifty 100/500 source/history acquisition, cancellable background progress,

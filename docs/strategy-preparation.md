@@ -1,6 +1,6 @@
 # Prepare a genuine-data paper strategy in the UI
 
-Version 0.13.0, 21 October 2026. This workflow fills the missing data/profile setup
+Version 0.13.1, 21 October 2026. This workflow fills the missing data/profile setup
 between a connected market-data socket and the Approval/Automatic paper controls.
 It does not enable real-money orders or establish profitable expected returns.
 
@@ -24,6 +24,64 @@ It does not enable real-money orders or establish profitable expected returns.
 3. Choose **Manual** before preparation. Open **Prepare a paper strategy** on Trading
    desk. Preparation is available on the manual service with read-only broker setup;
    an existing bound legacy controller retains its original workflow.
+
+## Recommended: one combined setup review
+
+After a same-day download reaches **Ready for review**, choose the decision policy and
+select **Review and finish setup**. Already downloaded data can be reused; this action
+only previews the setup and saves a private review record. It does not install a profile,
+change the feed/configuration, attest a source review, place orders or change money.
+
+The review shows the exact at-most-ten ranked execution symbols, retained held symbols,
+policy, history coverage, source links, complete proposed calendar, saved/proposed hours,
+entry hours, virtual cash and current-day basis reviews included or left for manual review.
+Open the dates/source links and review notices, special sessions and action exclusions.
+The displayed normal-hours proposal is not proof of market opening. A source snapshot
+is not historical membership evidence, an ML validation or a profit forecast.
+
+Check the single unchecked acknowledgement and select **Confirm and prepare** within
+two minutes. This explicitly authorizes the displayed calendar, source/basis and policy
+reviews and any shown unused-calendar correction. The server performs these existing
+controls in order:
+
+1. Disconnect market data and recheck the account/source/shortlist binding.
+2. Install the reviewed immutable strategy/calendar if this run is not already installed.
+3. Apply exactly the previewed shortlist, retaining all held symbols.
+4. Save only the listed eligible reviews for the **current IST date** on long-term accounts.
+5. Request a new market-data connection. A socket request is not usable quote evidence.
+
+No freeform review reference is required: the server generates a reference bound to the
+summary hash and retains its private evidence in `<database stem>.analysis/guided.json`.
+Historical/source reviews and current execution reviews remain separate records, covered
+by the same explicit acknowledgement. Current reviews are eligible only for supported,
+source-covered, unheld symbols without quarantine or an uncovered earlier quote basis.
+Held positions, quarantines and gaps still require Advanced review. Nothing is attested
+for future dates, and the following session requires new current-day reviews.
+
+Setup stays **Manual**. Reconnection can resume independent protective exits on holdings;
+review that consequence before confirming. Choose Approval or Automatic separately when
+the readiness checks pass. Closed markets, stale/empty depth, entry windows, validated
+model age/embargo, cash/fees and risk gates are never relaxed. No deferred activation is
+scheduled. Intraday still needs completed five-minute warmup/signals; daily setup alone
+does not produce an intraday signal. Long-term uses prior completed daily information.
+
+Pending orders, account/kill faults, unsupported held assets, no qualifying candidates,
+used calendar conflicts, stale downloads, changed evidence or a mismatching model stop
+the combined flow. Changes to revision, selection, catalog, holdings, cash, order states,
+source inputs, calendar or basis reviews invalidate the preview. Ordinary changing quote
+prices do not invalidate it; source coverage is checked again before current reviews.
+If a daily session closes while the review is open, get fresh completed history first.
+
+A failed step leaves prior saved steps in place and reports the phase. Inspect readiness
+and activity, correct the issue and obtain a new summary to continue. No automatic retry
+or rollback of account history is attempted. Identical completed confirmation retries
+return the saved outcome without another connection or review. A server restart marks
+pending reviews/attempts interrupted; it never resumes them. Keep the terminal running.
+
+**Advanced: edit dates and install separately** retains the original CSV, notes, three
+review checkboxes and individual controls below. Use it for necessary session edits;
+those edits are not used by the combined summary until separately installed. Additional
+sessions require complete fresh source data. Do not change hours to allow evening trades.
 
 ## Download, inspect, review
 
@@ -69,7 +127,7 @@ Closing/locking the browser does not cancel the worker. A server restart marks a
 unfinished download Interrupted and does not replay it. Start a new run explicitly.
 The browser refreshes status without clearing your edited review form.
 
-## Install the policy explicitly
+## Advanced: install the policy separately
 
 After **Review required** appears:
 
@@ -123,14 +181,18 @@ requires fresh source coverage for the new IST date.
 
 ## Reach Approval or Automatic
 
+If the combined setup completed, shortlist selection, the listed eligible basis reviews
+and connection request are already done. Skip the corresponding separate controls below;
+inspect readiness and activate your mode only when it permits.
+
 1. Inspect the screen, candidate exclusions and proposed **execution shortlist** on Trading
    desk. Rank describes observed momentum/screen strength, not calibrated expected profit.
    There may be no qualified stocks; do not loosen evidence or force an order to get activity.
-2. Confirm **Use reviewed ranked shortlist** while in Manual, disconnected, with no pending
-   orders. Every held symbol is retained, and execution remains limited to ten symbols.
+2. For the separate Advanced flow, confirm **Use reviewed ranked shortlist** while in
+   Manual, disconnected, with no pending orders. Every held symbol is retained, and execution remains limited to ten symbols.
    Unsupported held assets remain blockers; this does not make ETFs supported equity shares.
-3. In long-term accounts, complete **today's** corporate-action/price-basis review per
-   supported selected stock in Advanced controls. Historical basis review at installation
+3. If not included in a combined confirmed review, complete **today's** corporate-action/
+   price-basis review per supported selected stock in Advanced controls. Historical basis review at installation
    and a calendar review do not approve the current execution basis. Intervening actions,
    including after a weekend/outage, remain subject to the existing quarantine workflow.
 4. Reconnect explicitly in Broker & data and wait for new usable quotes. A connected
@@ -161,8 +223,8 @@ returns its prior result; changing a completed run requires a new immutable down
 
 Snapshots are not incrementally edited while a strategy runs. To refresh after a new
 completed day, membership/action change or coverage issue: choose Manual, download a
-new run, inspect/review sources, disconnect/resolve pending orders, install, review/apply
-the shortlist and reactivate explicitly when readiness permits. Today's prepared but
+new run, inspect/review sources and use **Review and finish setup** again (or the separate
+Advanced controls). Reactivate explicitly when readiness permits. Today's prepared but
 uninstalled snapshot expires for installation at the next IST date; get fresh sources.
 
 | Problem | Recovery |
