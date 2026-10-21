@@ -5,6 +5,13 @@ guides are updated with every feature or changed workflow, as required by [AGENT
 
 ## 1. Scope and prerequisites
 
+The operator's latest goal is profit-oriented candidate discovery for **both**
+intraday and long-term accounts, beyond a manually selected watchlist. This is now
+the [next-priority stock-selection plan](stock-selection-plan.md). A current feed
+selection is not a stock ranking, and the current research rules/synthetic tests do
+not establish profitable real-market picks. Real data and independent net-of-cost
+validation are prerequisites; automatic broad-market selection is not yet delivered.
+
 This release implements Phases 1–4 engineering: virtual execution/risk controls,
 predeclared rules, isolated backtests, chronological ML research and opt-in
 supervised intraday feed automation, long-term paper holdings/corporate actions and

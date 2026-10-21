@@ -1,5 +1,20 @@
 # Change log
 
+## 2026-10-21 — Clarified profit-oriented discovery scope and data gap
+
+Recorded the operator's selection goal for both intraday and long-term paper trading:
+broader candidates evaluated for potential net profit rather than a fixed five-symbol
+watchlist. Added `stock-selection-plan.md` with data/universe acquisition, chronological
+cost-aware validation, independent horizon rankings, explainable UI, execution approval
+separation and prospective paper acceptance. This is pending work, not a stock-pick
+or profitability claim. Read-only inspection found 5,184 catalog rows, no accepted
+quotes/candles, six synthetic daily and sixteen synthetic intraday bundles, and no
+declared-real input bundles of those inspected formats. No feed/account change or
+order was performed. Linked main usage/implementation status and clarified that
+Setup's disabled login requires disconnect only when replacing a session.
+Validation: Markdown links, secret-pattern and whitespace checks; documentation-only,
+so financial/unit/functional suites were not rerun.
+
 ## 2026-10-21 — Browser broker setup and repeatable UI startup (0.10.0)
 
 Clarified all local unlock screens/errors: `TRADING_OPERATOR_TOKEN` is the local

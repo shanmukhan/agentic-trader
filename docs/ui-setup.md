@@ -171,6 +171,7 @@ local investigation; setup does not silently discard a stored session.
 |---|---|
 | Local authorization failed | Use the operator value from the `.env` loaded by the server; a redirect token is not the local credential |
 | Credential/login/catalog/selection controls disabled | Disconnect the existing requested feed first; automation-bound accounts use their dedicated workflow |
+| Zerodha login disabled but session is verified | No new login is needed. To replace the session, confirm Disconnect in step 6, refresh status, then use step 3; no need to restart the server |
 | Token expired or exchange outcome uncertain | Refresh status, disconnect, open a fresh login and exchange the new one-time token; no automatic action retries |
 | Profile passes, feed fails | Check paid data entitlement, current app key/session and network; reconnect only after inspecting status |
 | Page locks during a pending operation | Sensitive fields and late responses clear; the server may have completed the operation, so unlock/refresh before retrying |
@@ -182,3 +183,7 @@ local investigation; setup does not silently discard a stored session.
 Complex corporate-action batches/receipts, policy changes, research/model approval,
 OS deployment and physical-device recovery remain the documented offline workflows.
 This release does not turn every administrative task into a browser action.
+
+The selected symbols are a manual feed universe. Automatic profit-oriented discovery
+for both horizons is specified in [stock-selection-plan.md](stock-selection-plan.md)
+and is not implemented by the symbol-selection form.

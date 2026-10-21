@@ -5,6 +5,18 @@ Prepared 20 October 2026; updated 21 October 2026. This is the execution record 
 
 ## Implemented scope
 
+### New priority: broader profit-oriented discovery for both horizons
+
+The operator clarified that “best” means potential profit, after being asked to
+choose five manual feed symbols. The next priority is now the staged
+[stock-selection implementation plan](stock-selection-plan.md): real data coverage,
+reviewed broad equity membership, separate intraday/long-term net-of-cost evaluation,
+explainable candidate/selection UI and prospective paper acceptance. This is pending,
+not a delivered profitable selector. Current account data has no accepted quotes or
+stored candles; available research inputs inspected were synthetic. Do not substitute
+stock names, demo ranks, index membership or unvalidated gross returns for evidence.
+LT3c2 rebalancing and other outstanding work remain open after this new priority.
+
 ### Browser setup and repeat startup (0.10.0)
 
 Implemented in response to actual operator-token/request-token confusion and manual
