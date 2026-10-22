@@ -1,5 +1,40 @@
 # Test and validation plan
 
+## Light workspace and saved-data analysis (0.14.0, 22 October 2026)
+
+Final validation: `.venv/bin/pytest -q` **660 passed**;
+`node --test tests/ui/*.test.cjs` **117 passed**. Ruff lint, changed-Python format
+checks, mypy on **98** source files and `git diff --check` passed.
+
+New checks cover the real served light-page markup, unique IDs, structural balance
+and label/ARIA targets; same-origin framing on Strategies/Analysis; route migration,
+shared-token origin/window boundaries, lock/late responses, contextual onboarding
+and navigation without mutation. Broker checks verify relevant first-step selection,
+keyboard-native summaries, step navigation without API calls, edit/open-state
+preservation, inline failure recovery and private overview clearing. Dashboard/UI
+checks retain exact huge/fractional server money, account P&L date, stale/incomplete
+valuation disclosure, missing values, separate strategies and scoped activity counts.
+
+Invented local chart datasets/candles validate daily availability/completion and
+fingerprints, exact Decimal SMA arithmetic, bounded minute reads, exclusions/gaps,
+malformed input recovery, symbol/interval validation and credential-free public shells.
+Independent SQLite connections compare full dumps before/after authenticated analysis
+reads, including exact ₹25,000 cash and zero orders/fills/positions. A read beyond a
+pending proposal's expiry neither expires it nor changes Approval mode. The chart
+frontend tests preserve source decimals in tables, show real missing/provenance/stale
+states, label usable quotes as snapshots, filter saved symbols, abort timeouts and
+clear late/locked data. These checks use explicitly invented inputs; they do not
+contact a broker or place test orders in the operator account.
+
+Interactive acceptance is separate. A disposable empty-account local preview server
+was started with no broker connection and then stopped. Firefox's native capture
+returned mismatched/stale images rather than a reliable preview rendering, and no
+supported isolated browser was available. Desktop/mobile visual layout, touch,
+keyboard operation, screen-reader usability and real broker/device acceptance are
+therefore **not claimed** by the automated DOM/HTTP tests. The operator process was
+not restarted, its mode was not changed and no setup/trade confirmation was sent.
+
+
 ## Live quote ties and cancellation/idle-mode evidence (22 October 2026)
 
 Full suite: **650 Python**, **99 JavaScript** tests passed; Ruff lint/format, mypy and

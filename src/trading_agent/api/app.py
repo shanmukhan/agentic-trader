@@ -123,7 +123,15 @@ def create_app(
         response = await call_next(request)
         response.headers["Cache-Control"] = "no-store"
         response.headers["X-Content-Type-Options"] = "nosniff"
-        framed = request.url.path in {"/console", "/setup", "/portfolio", "/desk", "/activity"}
+        framed = request.url.path in {
+            "/console",
+            "/setup",
+            "/portfolio",
+            "/desk",
+            "/activity",
+            "/strategies",
+            "/analysis",
+        }
         response.headers["X-Frame-Options"] = "SAMEORIGIN" if framed else "DENY"
         response.headers["Referrer-Policy"] = "no-referrer"
         response.headers["Content-Security-Policy"] = (
@@ -155,6 +163,13 @@ def create_app(
 
     mount_setup(app, setup, authorized)
     mount_desk(app, desk, setup, authorized, ASSETS, clock, preparation)
+    from trading_agent.api.analysis import mount_analysis
+
+    mount_analysis(app, desk, authorized, ASSETS, clock)
+
+    @app.get("/strategies", response_class=HTMLResponse)
+    def strategies_page() -> str:
+        return ASSETS.joinpath("desk.html").read_text(encoding="utf-8")
 
     @app.exception_handler(Exception)
     async def safe_error(request: Request, exc: Exception) -> JSONResponse:

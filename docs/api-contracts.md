@@ -1,5 +1,39 @@
 # Operator API and command contracts
 
+## Saved market analysis (0.14.0)
+
+`GET /api/analysis?symbol=NSE:SYMBOL&timeframe=1d|1m|5m` uses the existing bearer/Host
+and no-store contracts. Omit symbol to choose the first saved subscription/research
+stock; an empty setup returns no symbol/bars. Unknown saved-universe symbols return
+404; malformed symbols/unsupported intervals return 422. POST is unsupported. No
+browser paths or data-source overrides are accepted. `/analysis` and `/strategies`
+are same-origin framed shells; scripts remain non-frameable. Strategy mutation routes
+remain unchanged.
+
+Response schema version 1 includes observed_at, selected symbol/timeframe, bounded
+symbol choices (subscription and daily-history flags), existing quote usability plus
+exact last/bid/ask strings, market_session_open, bars and screening context. Each bar
+has time/session, exact decimal-string open/high/low/close, integer volume, quality,
+nullable decimal-string sma20/sma50 and daily available_at. `bar_limit=300`, truncated,
+excluded_candles, data_state (available/missing/unavailable), message and limitations
+explain omissions. Minute reads inspect at most 600 persisted rows; insufficient
+history produces null averages. Daily averages are computed before display truncation.
+
+Daily source.kind is installed_reviewed_daily; its synthetic flag is a declared dataset
+flag, not independent certification. Minute source.kind is stored_completed_candles
+and synthetic is null: individual persisted candles do not record broker/replay
+provenance. Source text also declares raw prices without inferred corporate-action
+adjustment. Daily data must pass fingerprints and completed/available-time checks;
+minute candles must pass validation, completion and quality checks. Bad chart inputs
+return unavailable chart data without repairing the file or faulting the account.
+
+This GET never refreshes strategy decisions, expires proposals, polls the risk engine,
+downloads broker history, changes subscriptions/reviews or submits an order. Exact
+accounting and full persisted-state equality are verified in synthetic API tests.
+The chart uses display-only numeric coordinates while the table retains exact values.
+See [market-analysis.md](market-analysis.md) for inputs, recovery and material limits.
+
+
 ## Pause causes and handled daily signals (22 October 2026)
 
 New cancelled proposal records include `pause_reasons`; existing `outcome` codes remain

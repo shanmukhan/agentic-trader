@@ -1,5 +1,44 @@
 # Implementation plan, enhancements and status
 
+## Light workspace and real saved-data analysis (0.14.0, 22 October 2026)
+
+Implemented the supplied light/sidebar direction using the existing self-hosted
+HTML/JavaScript architecture. Six main areas have distinct entry points; a secondary
+purchase/SIP link and contextual onboarding retain existing capabilities. Dashboard
+shows server-decimal account estimates, dated daily P&L, position count, valuation
+limits, market status, next action, proposal queue and confirmed operating modes.
+Strategy preparation and shortlist move to `/strategies` without changing installation,
+review or trading authority. Legacy desk fragments migrate through the guarded shell.
+Risk Center prioritizes emergency/entry controls and basis reviews; broker and feed
+administration remains separate. Broker steps use native keyboard disclosures and
+explicit navigation while preserving confirmation and first-unlock default hours.
+
+`api/analysis.py` adds a bounded, authenticated, side-effect-free saved-data view.
+Installed reviewed daily data is checked for integrity and availability; saved
+completed minute candles exclude gaps, unknown volume and incomplete bars. Return at
+most 300 display bars, calculate Decimal SMA 20/50 before display truncation, expose
+raw OHLC/source limitations and separate existing quote usability. The SVG is a visual
+approximation with exact accessible table data; no broker requests or order controls.
+Minute provenance is unknown because it is absent from persisted Candle records.
+
+No framework or external asset dependency was added. The existing same-origin section
+frames remain; native scroll fallback is retained for documents over the bounded
+height. No graphical backtest, arbitrary strategy builder, notification permission,
+financial policy editor or real-order capability was invented. Existing CLI research
+and financial actions retain their reviewed workflows. Release version is 0.14.0 in
+package metadata/runtime/lockfile so older Python services require explicit restart.
+
+Validation: 660 Python and 117 UI tests, Ruff lint/format and mypy (98 source files)
+passed. Coverage includes real served markup labels/structure, route/framing/authorization,
+private-state clearing, step navigation without mutation, exact huge/fractional money,
+stale valuation/date labels and independent SQLite equality for analysis requests,
+including an expired pending proposal that must remain untouched by reading. See the
+[test plan](test-plan.md) for final automated counts. A disposable no-broker preview
+server was used only for local checks; Firefox capture was unreliable, so desktop/mobile
+visual and device acceptance remain unverified. No operator account restart, activation,
+setup confirmation or test order was performed.
+
+
 ## Same-second quote handling, cancellation causes and idle-mode explanation (22 October 2026)
 
 Live journal inspection traced six Approval proposals created at 10:52:31 IST to a

@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light"><title>Market &amp; Analysis · Paper only</title>
+  <link rel="stylesheet" href="/dashboard.css">
+  <script src="/money.js" defer></script><script src="/workspace-bridge.js" defer></script><script src="/analysis.js" defer></script>
+</head>
+<body class="analysis-page">
+  <a class="skip" href="#main">Skip to market analysis</a>
+  <header class="masthead"><div><p class="eyebrow">AGENTIC TRADER <span class="pill">PAPER ONLY</span></p><h1>Market &amp; Analysis</h1><p class="muted">Explore saved price history and understand the research behind your shortlist.</p></div><span id="state" class="badge">Locked</span></header>
+  <section class="access panel"><form id="access" autocomplete="off"><label for="token">Local operator token</label><input id="token" type="password" autocomplete="off" required><button id="unlock">Unlock / refresh</button><button id="lock" type="button" class="quiet" disabled>Lock</button></form></section>
+  <p id="message" role="status" aria-live="polite">Unlock to view saved market data.</p>
+  <main id="main" hidden>
+    <section class="panel analysis-toolbar" aria-label="Chart selection">
+      <div><label for="stock-search">Find a stock</label><input id="stock-search" type="search" placeholder="Search saved research and shortlist" autocomplete="off" aria-describedby="stock-help"></div>
+      <div><label for="stock">Stock</label><select id="stock" aria-describedby="stock-help"></select></div>
+      <div><label for="timeframe">Candle interval</label><select id="timeframe"><option value="1d">Daily</option><option value="1m">1 minute</option><option value="5m">5 minutes</option></select></div>
+      <button id="open-chart" type="button">Open chart</button><button id="refresh" type="button" class="quiet">Refresh saved data</button>
+      <p id="stock-help" class="muted">Search covers saved research and subscribed stocks. Opening a chart never starts a download or adds a subscription.</p>
+    </section>
+    <section class="metrics" aria-label="Current quote">
+      <article class="panel metric"><h2>Last accepted price</h2><p id="last-price" class="desk-value">—</p><p id="quote-time" class="muted"></p></article>
+      <article class="panel metric"><h2>Quote status</h2><p id="quote-state" class="desk-value">—</p><p id="quote-detail" class="muted"></p></article>
+      <article class="panel metric"><h2>Reviewed market session</h2><p id="session-state" class="desk-value">—</p><p id="subscription" class="muted"></p></article>
+    </section>
+    <div class="analysis-layout">
+      <section class="panel" aria-labelledby="chart-title"><div class="section-heading"><div><p class="eyebrow">PRICE HISTORY</p><h2 id="chart-title">Saved candles</h2></div><span id="chart-count" class="badge"></span></div><p id="chart-status" role="status" aria-live="polite"></p><div id="price-chart" class="analysis-chart"></div><p class="muted">Teal: close at or above open · red: close below open · blue: SMA 20 · amber: SMA 50. Volume appears below. Moving averages use available raw closes and are not trade signals.</p><p id="chart-source" class="muted"></p><p id="chart-period" class="muted"></p></section>
+      <aside class="panel analysis-summary" aria-labelledby="screen-title"><p class="eyebrow">PRIOR DAILY RESEARCH</p><h2 id="screen-title">Screening context</h2><p id="screen-state" class="desk-value">—</p><div id="screen-metrics" class="indicator-grid"></div><p id="screen-reasons" class="muted"></p><p id="screen-date" class="muted"></p><a href="/desk#strategy-setup">Review strategy data →</a><p class="notice">A research candidate is not an order or an approval. Quote quality, price-basis review and independent risk checks still apply.</p></aside>
+    </div>
+    <section class="panel"><details><summary>Accessible candle data and moving averages</summary><p class="muted">Exact saved prices are listed below. The drawing uses approximate display coordinates; this table preserves the source decimal values. Newest candles appear first.</p><div class="analysis-table-wrap"><table><caption id="data-caption">Saved OHLC and volume</caption><thead><tr><th scope="col">Time (IST)</th><th scope="col">Open</th><th scope="col">High</th><th scope="col">Low</th><th scope="col">Close</th><th scope="col">Volume</th><th scope="col">SMA 20</th><th scope="col">SMA 50</th></tr></thead><tbody id="candle-data"></tbody></table></div></details></section>
+    <section class="panel"><details><summary>Data coverage and limitations</summary><ul id="limitations" class="muted"></ul><p>No data here represents a backtest, expected return or a recommendation. Use Strategies to download and explicitly review new history; use Broker &amp; Settings to troubleshoot a live feed.</p><div class="desk-links"><a href="/desk#strategy-setup">Prepare strategy data →</a><a href="/setup#feed-connection">Check market-data feed →</a></div></details></section>
+    <p id="updated" class="muted"></p>
+  </main>
+</body></html>

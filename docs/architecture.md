@@ -1,5 +1,22 @@
 # Architecture and invariants
 
+## Light workspace and read-only analysis (0.14.0)
+
+The same-origin workspace shell owns a responsive sidebar and the local operator token
+in memory. Existing isolated section controllers still handle their own financial
+previews/confirmations. `/strategies` reuses the desk controller with a distinct visible
+section set; legacy desk preparation/shortlist fragments resolve to that page. Light
+styles use system fonts and locally served assets. Onboarding is conditional guidance,
+not an activation mechanism. Broker steps disclose existing forms progressively.
+
+The new `api/analysis.py` reads validated installed daily data and bounded saved
+completed candles, independent of strategy refresh and engine polling. It returns
+exact Decimal strings, historical availability/integrity/quality state and separate
+quote usability. The frontend draws candles/averages with SVG and retains exact data
+in an accessible table. Minute provenance is explicitly unknown; chart visibility
+cannot certify broker data, adjust corporate actions or grant execution authority.
+
+
 Version 0.13.1 adds `desk/guided.py` as an orchestration layer over existing preparation,
 SetupService selection/feed controls and LongTermBook review authority. Preview performs
 pure default-policy screening from hash-checked source data; it does not manufacture a

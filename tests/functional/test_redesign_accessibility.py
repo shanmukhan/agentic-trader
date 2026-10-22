@@ -1,0 +1,54 @@
+"""Navigation/label contracts across the real served shells, without account actions."""
+
+from html.parser import HTMLParser
+
+from conftest import NOW
+from fastapi.testclient import TestClient
+
+from trading_agent.api.app import create_app
+
+
+class PageLabels(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.ids = set()
+        self.references = []
+        self.sections = []
+
+    def handle_starttag(self, tag, attrs):
+        values = dict(attrs)
+        if identifier := values.get("id"):
+            assert identifier not in self.ids, f"Duplicate ID: {identifier}"
+            self.ids.add(identifier)
+        for attribute in ("for", "aria-labelledby", "aria-describedby"):
+            self.references.extend((values.get(attribute) or "").split())
+        if tag in {"section", "details", "main", "nav", "aside", "form", "dialog"}:
+            self.sections.append(tag)
+
+    def handle_endtag(self, tag):
+        if tag in {"section", "details", "main", "nav", "aside", "form", "dialog"}:
+            assert self.sections and self.sections.pop() == tag, f"Misnested {tag}"
+
+
+def test_redesigned_shells_keep_accessible_labels_and_balanced_workflows(engine):
+    with TestClient(
+        create_app(engine, clock=lambda: NOW, background=False), base_url="http://127.0.0.1"
+    ) as client:
+        for route in (
+            "/workspace",
+            "/desk",
+            "/strategies",
+            "/analysis",
+            "/activity",
+            "/portfolio",
+            "/console",
+            "/setup",
+        ):
+            response = client.get(route)
+            assert response.status_code == 200
+            page = PageLabels()
+            page.feed(response.text)
+            assert not page.sections, route
+            assert set(page.references) <= page.ids, route
+            assert 'content="light"' in response.text, route
+            assert 'type="password"' in response.text, route

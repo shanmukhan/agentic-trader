@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="color-scheme" content="dark">
-  <title>Paper trading operator console</title>
+  <meta name="color-scheme" content="light">
+  <title>Risk Center · Paper only</title>
   <link rel="stylesheet" href="/dashboard.css">
   <script src="/money.js" defer></script>
   <script src="/kite-callback.js" defer></script>
@@ -15,7 +15,7 @@
   <a class="skip" href="#main">Skip to account</a>
   <header class="masthead">
     <div><p class="eyebrow">AGENTIC TRADER <span class="pill">PAPER ONLY</span></p>
-      <h1>Trading console</h1><p class="muted">NSE cash equity · Virtual money · Live execution unavailable</p></div>
+      <h1>Risk Center</h1><p class="muted">Exposure, quote readiness and protective controls · Virtual INR</p></div>
     <div class="connection"><span id="horizon" class="badge">Paper account</span> <span id="feed" class="badge">Locked</span><p id="updated" class="muted">No account data loaded</p></div>
   </header>
   <section class="panel access" aria-labelledby="access-heading">
@@ -27,7 +27,7 @@
     </form>
   </section>
   <p id="message" role="status" aria-live="polite">Locked. Enter an operator token to view the account.</p>
-  <main id="main">
+  <main id="main"><nav class="subnav" aria-label="Risk views"><a href="/console" aria-current="page">Risk &amp; controls</a><a href="/console#long-term">Price-basis reviews</a><a href="/setup">Broker &amp; administration</a></nav>
     <section class="metrics" aria-label="Virtual account overview">
       <article class="panel metric"><h2>Virtual equity</h2><p id="equity" class="amount">—</p><p class="muted">After estimated exit costs</p></article>
       <article class="panel metric"><h2>Available cash</h2><p id="cash" class="amount">—</p><p id="reserved" class="muted">Reserved: —</p></article>
@@ -41,7 +41,7 @@
         <h3>Observed quotes</h3><div id="quotes" class="records"><p class="muted">Locked</p></div>
       </section>
       <section class="panel" aria-labelledby="controls-heading">
-        <div class="section-heading"><h2 id="controls-heading">Paper controls</h2><span id="armed" class="badge">Locked</span></div>
+        <div class="section-heading"><h2 id="controls-heading">Emergency &amp; entry controls</h2><span id="armed" class="badge">Locked</span></div>
         <p id="risk" class="muted">Unlock to inspect risk state.</p>
         <div class="controls">
           <button id="kill" class="danger" disabled>Activate kill switch</button>
@@ -72,15 +72,15 @@
         <button id="review-submit" type="submit" disabled>Record paper review</button>
       </form>
     </section>
-    <section class="panel" aria-labelledby="positions-heading">
+    <details id="positions-panel" class="panel"><summary>Positions &amp; protection levels</summary>
       <div class="section-heading"><h2 id="positions-heading">Open positions</h2><span id="valuation" class="muted">Locked</span></div>
       <div id="positions" class="records"><p class="muted">Locked</p></div>
-    </section>
-    <section class="panel" aria-labelledby="orders-heading">
+    </details>
+    <details class="panel"><summary>Open orders &amp; reservations</summary>
       <div class="section-heading"><h2 id="orders-heading">Paper orders</h2><span id="order-count" class="muted">Locked</span></div>
       <p class="muted">Most recently recorded first. Accepted orders have reserved capacity; fills require a later quote.</p>
       <div id="orders" class="records"><p class="muted">Locked</p></div>
-    </section>
+    </details>
     <details class="panel"><summary>Account and automation details</summary><pre id="details">Locked</pre></details>
   </main>
   <footer class="muted">Local operator console · Desktop and mobile browser layout · Refreshes every 3 seconds while visible<br>Prices and money retain the server's decimal values. Session rules and displayed update times use IST.</footer>

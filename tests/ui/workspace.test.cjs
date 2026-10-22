@@ -120,12 +120,13 @@ test('direct desk fragment survives redirect into a bookmarkable workspace route
 });
 test('workspace retains destination fragments, guards section changes and scrolls below sticky navigation',async()=>{
  const s=setup();await s.unlock();s.navigate('desk/apply-shortlist');
- assert.equal(s.nodes['workspace-frame'].src,'/desk#apply-shortlist');
- s.ready('desk');assert.equal(s.posts.at(-1)[0].type,'workspace-unlock');
+ assert.equal(s.nodes['workspace-frame'].src,'/strategies#apply-shortlist');
+ assert.equal(s.win.location.hash,'#strategies/apply-shortlist');
+ s.ready('strategies');assert.equal(s.posts.at(-1)[0].type,'workspace-unlock');
  s.navigate('desk/execution-shortlist');assert.equal(s.posts.at(-1)[0].type,'workspace-anchor');
  assert.equal(s.posts.at(-1)[0].anchor,'execution-shortlist');
  s.child.AgenticNavigation.canNavigate=()=>false;s.navigate('setup/feed-connection');
- assert.equal(s.win.location.hash,'#desk/execution-shortlist');
+ assert.equal(s.win.location.hash,'#strategies/execution-shortlist');
  s.win.scrollY=500;s.win.scrollTo=value=>{s.scrolled=value;};
  s.nodes['workspace-frame'].getBoundingClientRect=()=>({top:-100});
  s.nodes['workspace-nav'].getBoundingClientRect=()=>({height:70});
@@ -157,4 +158,28 @@ test('embedded links preserve fragments and reveal legacy shortlist after unlock
  const count=posts.length;clicks.click({target:{closest:()=>anchor},ctrlKey:true});assert.equal(posts.length,count);
  events.message({origin:'https://evil.test',source:win.parent,data:{type:'workspace-anchor',anchor:'execution-shortlist'}});assert.equal(focused,1);
  events.message({origin:win.location.origin,source:win.parent,data:{type:'workspace-anchor',anchor:'execution-shortlist'}});assert.equal(focused,2);
+});
+
+test('new sidebar sections preserve the same private handoff and ordinary navigation is read-only',async()=>{
+ const s=setup(); await s.unlock();
+ for(const view of ['analysis','strategies','activity','portfolio','console','setup']) {
+  s.navigate(view); s.ready(view);
+  assert.equal(s.nodes['workspace-frame'].src,'/'+view);
+  assert.equal(s.nodes['nav-'+view].attributes['aria-current'],'page');
+  assert.equal(s.posts.at(-1)[0].type,'workspace-unlock');
+ }
+ assert.equal(s.calls.length,1);
+ assert.equal(s.nodes['workspace-title'].textContent,'Broker & Settings');
+ assert.match(s.nodes['nav-portfolio'].className,/nav-secondary/);
+ s.nodes['workspace-lock'].fire('click');
+ assert.equal(s.nodes['workspace-onboarding'].hidden,true);
+});
+test('contextual onboarding reflects missing setup and clears on lock without activating anything',async()=>{
+ const s=setup(async()=>ok({...info(),analysis_configured:true,calendar_today:true,feed_requested:true}));
+ await s.unlock(); assert.equal(s.nodes['workspace-onboarding'].hidden,true);
+ assert.equal(s.calls.length,1);
+ const t=setup();await t.unlock();
+ assert.equal(t.nodes['workspace-onboarding'].hidden,false);
+ assert.equal(t.nodes['onboarding-action'].href,'#strategies');
+ t.nodes['workspace-lock'].fire('click');assert.equal(t.nodes['workspace-onboarding'].hidden,true);
 });

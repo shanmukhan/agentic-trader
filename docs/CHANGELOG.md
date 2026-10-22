@@ -1,5 +1,32 @@
 # Change log
 
+## 2026-10-22 — 0.14.0 light workspace and saved-data analysis
+
+- Replace the dark tab strip with a responsive light sidebar: Dashboard, Market &
+  Analysis, Strategies, Paper Trading, Risk Center and Broker & Settings. Keep
+  Purchases & SIP as a subordinate workflow and Help/onboarding outside the main areas.
+- Lead Dashboard with exact account equity/cash, dated daily P&L, position count,
+  stale/incomplete valuation notices, market status and next action. Separate strategy
+  preparation/shortlist at `/strategies`; preserve existing preview/confirmation and
+  legacy desk fragments. Activity counts state their page/window scope.
+- Guide broker setup with actual connection/session/calendar/subscription state and
+  six keyboard-accessible disclosure steps. Open the relevant first step once;
+  preserve operator edits/open steps on refresh. Navigation does not save settings.
+- Add authenticated read-only `/api/analysis` and the Market & Analysis screen: saved
+  completed daily/1m/5m OHLC, volume, SMA 20/50, exact table, quote status and prior
+  screening context. No broker download, subscription, strategy evaluation or trade
+  occurs on viewing. Preserve raw basis, data gaps/integrity/availability checks and
+  explicit unknown minute-bar provenance. See [market-analysis.md](market-analysis.md).
+- Keep in-memory unlock, origin/window checks, financial gates and operator action
+  contracts. No new strategy builder, graphical backtest or performance promise is
+  supplied. Version alignment prevents the launcher silently reusing an older server.
+- Validation: 660 Python and 117 UI tests, Ruff lint/format and mypy (98 source files)
+  passed; details and limits are recorded in [test-plan.md](test-plan.md).
+  The running operator account was not restarted or used for test orders. Firefox
+  capture did not reliably render the disposable preview; visual/device acceptance
+  remains outstanding.
+
+
 ## 2026-10-22 — Prevent false quote-order pauses and explain cancelled signals
 
 - Fix live whole-second Kite handling: ignore unchanged repeats without refreshing

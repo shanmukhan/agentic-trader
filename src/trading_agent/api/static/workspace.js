@@ -2,7 +2,8 @@
   'use strict';
   function createWorkspace(doc, win, request) {
     const el = id => doc.getElementById(id), frame = el('workspace-frame');
-    const routes = { desk: '/desk', activity: '/activity', console: '/console', setup: '/setup', portfolio: '/portfolio' };
+    const routes = { desk: '/desk', analysis: '/analysis', strategies: '/strategies', activity: '/activity', console: '/console', setup: '/setup', portfolio: '/portfolio' };
+    const titles = {desk:'Dashboard',analysis:'Market & Analysis',strategies:'Strategies',activity:'Paper Trading',console:'Risk Center',setup:'Broker & Settings',portfolio:'Purchases & SIP',overview:'Help & onboarding'};
     let token = '', generation = 0, busy = false, controller = null, current = '', loaded = '', currentAnchor = '';
     const cleanAnchor = value => typeof value === 'string' && /^[A-Za-z][A-Za-z0-9_-]{0,99}$/.test(value) ? value : '';
     function message(text, error = false) { el('workspace-message').textContent = text; el('workspace-message').className = error ? 'error' : ''; }
@@ -15,6 +16,7 @@
       el('workspace-lock').disabled = true; el('workspace-submit').disabled = false;
       el('workspace-refresh').disabled = true;
       el('workspace-state').textContent = 'Locked';
+      el('workspace-onboarding').hidden = true;
       el('workspace-mode').textContent = 'Unlock to inspect the current account and its actual settings.';
       for (const id of ['workspace-feed', 'workspace-time', 'workspace-hours']) el(id).textContent = '';
       message(text);
@@ -24,25 +26,41 @@
       catch (_) { return true; }
     }
     function navigate() {
-      const target = wanted();
+      let target = wanted();
       const anchor = cleanAnchor(win.location.hash.slice(1).split('/')[1]);
+      if (target === 'desk' && ['strategy-setup','execution-shortlist','apply-shortlist'].includes(anchor)) {
+        target = 'strategies';
+        win.history.replaceState(null, '', '#strategies/'+anchor);
+      }
       if (target !== current && !canLeave()) {
         win.history.replaceState(null, '', '#'+current+(currentAnchor?'/'+currentAnchor:''));
         message('Finish or cancel the active request, confirmation or login window before changing sections.', true); return;
       }
+      const changed = current !== target;
       current = target; currentAnchor = anchor;
+      if (changed && win.scrollTo) win.scrollTo({top:0,behavior:'instant'});
       for (const name of ['overview', ...Object.keys(routes)]) {
-        const link = el('nav-'+name); link.className = name === target ? 'active' : '';
+        const link = el('nav-'+name); link.className = (name === 'portfolio' ? 'nav-secondary ' : '') + (name === target ? 'active' : '');
         if (name === target) link.setAttribute('aria-current', 'page'); else link.removeAttribute('aria-current');
       }
+      el('workspace-title').textContent = titles[target];
       el('workspace-overview').hidden = target !== 'overview';
       el('workspace-section-note').hidden = target === 'overview';
       frame.hidden = target === 'overview' || !token;
       if (target === 'overview' || !token) { frame.src = 'about:blank'; loaded = ''; if (token) refreshInfo(); return; }
-      if (loaded !== target) { loaded = target; frame.src = routes[target]+(anchor?'#'+anchor:''); frame.title = el('nav-'+target).textContent; }
+      if (loaded !== target) { loaded = target; frame.src = routes[target]+(anchor?'#'+anchor:''); frame.title = titles[target]; }
       else if (frame.contentWindow) frame.contentWindow.postMessage({type:'workspace-anchor',anchor}, win.location.origin);
+      if (changed && target === 'desk') refreshInfo();
     }
     function render(data) {
+      const needsStrategy = !data.analysis_configured;
+      const needsCalendar = !data.calendar_today;
+      const needsFeed = !data.feed_requested;
+      el('workspace-onboarding').hidden = !(needsStrategy || needsCalendar || needsFeed);
+      el('onboarding-title').textContent = needsStrategy ? 'Prepare your paper strategy' : needsCalendar ? 'Review the exchange session' : 'Connect your market data';
+      el('onboarding-detail').textContent = needsStrategy ? 'A guided review helps you prepare genuine data and choose a decision policy. Manual purchases remain available.' : needsCalendar ? 'Today has no saved reviewed session. Review the actual exchange date and hours before trading.' : 'Your strategy is configured. Check the saved broker session, then explicitly connect the read-only feed.';
+      el('onboarding-action').textContent = needsStrategy ? 'Set up a strategy →' : 'Open broker setup →';
+      el('onboarding-action').href = needsStrategy ? '#strategies' : '#setup/'+(needsCalendar?'setup-step-5':'feed-connection');
       const manual = !data.automation_enabled;
       if (data.analysis_configured || (data.automation_enabled && data.decision_mode)) { el('workspace-mode').textContent = (data.investment_horizon === 'long_term' ? 'Long-term paper' : 'Intraday paper') + ' · '+data.decision_mode+' mode · use Trading desk to review actual activation, proposals and data blockers.'; }
       else

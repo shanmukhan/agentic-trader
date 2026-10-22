@@ -1,9 +1,19 @@
-# Operator console: desktop and mobile browsers
+# Risk Center: desktop and mobile browsers
 
-Version 0.12.0 moves the normal workflow to [Trading desk](trading-desk.md), with an
-independent Buy / sell activity tab. The existing `/console` is now labeled Advanced
-controls in the shared menu. Its risk/basis controls remain available. The old manual
-watchlist is not relabeled as a profitable-stock selector.
+Version **0.14.0**, 22 October 2026, labels the existing `/console` **Risk Center**
+in the light sidebar workspace. It keeps detailed entry readiness, exposure,
+long-term basis reviews and emergency/entry controls together. Broker credentials,
+session login, catalog, subscriptions, exchange-calendar setup and feed
+administration belong in **Broker & Settings**.
+
+Use **Dashboard** for portfolio summary, market status, the next action, modes and
+proposals; **Strategies** for setup and shortlist review; **Paper Trading** for
+orders/fills and proposal outcomes, with **Purchases & SIP** beneath it. **Market &
+Analysis** offers [actual saved-candle charts](market-analysis.md), without starting
+broker downloads on view. Incomplete setup shows contextual onboarding, and
+**Help & onboarding** remains at the sidebar bottom. See [workspace.md](workspace.md)
+for the six main areas and routes. This reorganization retains the existing token,
+confirmations, risk gates and paper-only execution behavior.
 
 The UI is a local browser application served by FastAPI. It is **paper only**.
 There is no native Android/iOS app, installable PWA, public hosting or real-money
@@ -21,6 +31,12 @@ from `.env`, never a Zerodha redirect/request/access token. Version 0.11.0's
 [shared workspace](workspace.md) keeps one in-memory unlock across menu sections.
 Reload/new workspace tabs require another unlock; no browser credential storage or
 cross-tab session synchronization was added. Ordinary page URLs route to the menu.
+
+If an older process owns the configured port, stop it in its owning terminal with
+Ctrl+C and run `./scripts/start_ui.sh` again; the launcher does not reload Python
+modules inside that process. Unlock again after restart, inspect holdings/pending
+work and explicitly reconnect or select a mode when ready. Navigation never submits
+a financial change or re-arms a paused strategy.
 
 Follow the [environment/token instructions](how-to-use.md) first. From the repository
 root, with the private operator environment loaded:
@@ -106,12 +122,13 @@ protected, such as a suitable authenticated tunnel that preserves the allowed
 Host/Origin and configured port. Do not change the host to `0.0.0.0`, add broad CORS,
 or expose this port publicly to make a phone connect. No tunnel is provisioned here.
 
-Desktop Safari was visually checked on this Mac, including account values, readiness,
+Before the 0.14.0 redesign, desktop Safari was visually checked on this Mac, including account values, readiness,
 lock/unlock and the kill/reset confirmation flow in an isolated preview account.
 JavaScript tests cover interaction and race handling, not browser layout or touch
 behavior. Native phone/tablet rendering, small-screen visual acceptance and remote
 access remain unverified; the available browser tooling did not provide reliable
-mobile visual evidence. Complete those checks with the actual device before relying
+mobile visual evidence. Those historical checks do not establish browser or device
+acceptance of the 0.14.0 redesign. Complete those checks with the actual device before relying
 on it for supervision. Keep a verified desktop operator path available.
 
 See [acceptance.md](acceptance.md) for local preflight and remaining external work.

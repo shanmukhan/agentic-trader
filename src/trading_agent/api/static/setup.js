@@ -3,12 +3,85 @@
   function createSetup(doc, win, request) {
     const el = id => doc.getElementById(id);
     let token = '', generation = 0, busy = false, controller = null, state = '', popup = null, pending = null, latest = null;
+    let recommendedStep = 1;
     const secretFields = ['token', 'api-key', 'api-secret', 'request-token'];
     const actionIds = ['save-credentials', 'login', 'profile', 'exchange-button', 'catalog', 'save-symbols', 'save-session', 'connect', 'disconnect', 'refresh-status'];
+    const stepIds = ['setup-step-1', 'setup-step-2', 'setup-step-3', 'setup-step-4', 'setup-step-5', 'feed-connection'];
+    const stepTitles = ['Register your Kite app', 'Save app credentials', 'Sign in to Zerodha', 'Choose stock subscriptions', 'Review an exchange session', 'Connect market data'];
+    function positionConfirmation() {
+      if (!win.parent || win.parent === win || !win.frameElement) return;
+      const dialog = el('confirm'), frame = win.frameElement.getBoundingClientRect();
+      const viewport = win.parent.visualViewport;
+      const viewportTop = viewport ? viewport.offsetTop : 0;
+      const viewportBottom = viewportTop + (viewport ? viewport.height : win.parent.innerHeight);
+      const top = Math.max(viewportTop, frame.top) + 16;
+      const bottom = Math.min(viewportBottom, frame.bottom) - 16;
+      const space = Math.max(0, bottom - top);
+      // A modal's native viewport is the entire expanded iframe, not the portion
+      // visible in the workspace. Translate the parent's visible center into it.
+      dialog.style.position = 'fixed';
+      dialog.style.top = (top + space / 2 - frame.top) + 'px';
+      dialog.style.bottom = 'auto';
+      dialog.style.margin = '0 auto';
+      dialog.style.transform = 'translateY(-50%)';
+      dialog.style.maxHeight = space + 'px';
+      dialog.style.overflow = 'auto';
+    }
+    function stopConfirmationPositioning() {
+      if (!win.parent || win.parent === win) return;
+      win.parent.removeEventListener('resize', positionConfirmation);
+      win.parent.removeEventListener('scroll', positionConfirmation);
+      win.parent.visualViewport?.removeEventListener('resize', positionConfirmation);
+      win.parent.visualViewport?.removeEventListener('scroll', positionConfirmation);
+    }
+    function closeConfirmation() { stopConfirmationPositioning(); el('confirm').close(); }
     function message(text, error = false) { el('message').textContent = text; el('message').className = error ? 'error' : ''; }
     function sessionMessage(text, error = false) { el('session-feedback').textContent = text; el('session-feedback').className = error ? 'error' : ''; }
     function sessionStatus(data) {
       el('session-state').textContent = (data.access_token_available ? 'A broker access token is available. ' : 'No broker access token is available. ') + (data.profile_verified_this_run ? 'Profile verified this run; streaming entitlement still needs a feed check.' : 'Saved credentials have not been verified this run.');
+    }
+    function stepProgress(number) { el('setup-progress').textContent = 'Step ' + number + ' of 6 · ' + stepTitles[number - 1]; }
+    function openStep(number, focus = false) {
+      if (!token || number < 1 || number > stepIds.length) return;
+      stepIds.forEach((id, index) => { el(id).open = index === number - 1; });
+      stepProgress(number);
+      if (focus) el('setup-step-title-' + number).focus();
+    }
+    function overview(data) {
+      const diagnostic = data.feed_diagnostics;
+      const connected = data.feed_connected, requested = data.stream_requested;
+      el('connection-status').textContent = connected ? 'Data connected' : requested ? diagnostic?.state === 'failed' ? 'Connection needs attention' : 'Connecting / reconnecting' : 'Data disconnected';
+      el('connection-description').textContent = connected ? 'Zerodha market data is connected. Quote freshness, liquidity and today’s price-basis reviews determine whether a quote can be used for paper execution.' : requested ? 'A connection has been requested. The streaming status below explains progress and recovery; fresh usable quotes are still required.' : 'Your paper account is not receiving new market data. Review the next step below to prepare the connection.';
+      el('overview-session').textContent = data.profile_verified_this_run ? 'Verified this run' : data.access_token_available ? 'Saved · not checked this run' : 'Sign-in needed';
+      el('overview-symbols').textContent = data.selected.length + ' of 10 stocks';
+      el('overview-calendar').textContent = data.calendar_today ? 'Today reviewed' : 'Today needs review';
+      let label, guidance;
+      if (!data.manual) {
+        recommendedStep = 6; label = 'Review account connection';
+        guidance = 'This account is managed by a dedicated automation/model workflow. Connection settings cannot be changed here.';
+      } else if (!data.credentials_configured) {
+        recommendedStep = 1; label = 'Start broker setup';
+        guidance = 'Register a Kite app with market-data access, then save its API key and secret privately.';
+      } else if (requested && !connected) {
+        recommendedStep = 6; label = 'Review connection recovery';
+        guidance = diagnostic?.state === 'failed' ? 'Connection retries are exhausted. Resolve the reported cause, then review Disconnect and Connect in step 6.' : 'Review the connection status in step 6. Refresh status to check progress; disconnect before replacing a broker session.';
+      } else if (!data.access_token_available || (!data.profile_verified_this_run && !connected)) {
+        recommendedStep = 3; label = data.access_token_available ? 'Check saved broker session' : 'Sign in to Zerodha';
+        guidance = data.access_token_available ? 'A saved token can expire. Open step 3 and explicitly check the saved session before connecting.' : 'Open Zerodha login, complete 2FA and exchange the one-time request token in step 3.';
+      } else if (!data.catalog_count || !data.selected.length) {
+        recommendedStep = 4; label = 'Choose stock subscriptions';
+        guidance = 'Download the NSE catalog and review up to ten saved stock subscriptions. Navigation alone does not save a selection.';
+      } else if (!data.calendar_today) {
+        recommendedStep = 5; label = 'Review today’s exchange session';
+        guidance = 'Today’s session needs an explicit review against exchange notices. The default hours do not approve the date.';
+      } else {
+        recommendedStep = 6; label = connected ? 'Review feed & quote readiness' : 'Review market-data connection';
+        guidance = connected ? 'Review trading readiness after checking the feed. A connected socket alone does not make a quote usable or authorize an order.' : 'Review the saved subscriptions and connection confirmation in step 6. Connecting can resume pending paper fills and protective exits.';
+      }
+      el('setup-next-action').textContent = label;
+      el('connection-next').textContent = guidance;
+      const states = ['Developer registration', data.credentials_configured ? 'Configured' : 'Needed', data.profile_verified_this_run ? 'Verified this run' : data.access_token_available ? 'Saved · check session' : 'Sign-in needed', data.selected.length ? data.selected.length + ' saved stocks' : 'Selection needed', data.calendar_today ? 'Today reviewed' : 'Review needed', connected ? 'Connected' : requested ? 'Requested' : 'Disconnected'];
+      states.forEach((text, index) => { el('setup-step-state-' + (index + 1)).textContent = text; });
     }
     function buttons() {
       for (const id of actionIds) el(id).disabled = !token || busy;
@@ -27,6 +100,10 @@
       for (const id of secretFields.concat(['symbol-list', 'session-date', 'session-open', 'session-close', 'session-source'])) el(id).value = '';
       el('session-reviewed').checked = false; el('private').hidden = true; el('lock').disabled = true;
       for (const id of ['credentials-state', 'session-state', 'catalog-state', 'calendar-state', 'feed-state', 'redirect']) el(id).textContent = '';
+      for (const id of ['connection-status', 'connection-description', 'overview-session', 'overview-symbols', 'overview-calendar', 'connection-next']) el(id).textContent = '';
+      stepIds.forEach((id, index) => { el(id).open = false; el('setup-step-state-' + (index + 1)).textContent = ''; });
+      el('setup-progress').textContent = 'Choose a step to review its settings.';
+      el('setup-next-action').textContent = 'Review connection setup'; recommendedStep = 1;
       el('selected').replaceChildren(); el('sessions').replaceChildren();
       el('selected-title').textContent = 'Saved feed subscriptions';
       if (el('confirm').open) el('confirm').close();
@@ -36,7 +113,8 @@
     }
     function row(parent, text) { const p = doc.createElement('p'); p.textContent = text; el(parent).append(p); }
     function render(data) {
-      if (!latest) {
+      const firstStatus = !latest;
+      if (firstStatus) {
         el('session-open').value = '09:15';
         el('session-close').value = '15:30';
       }
@@ -70,11 +148,13 @@
         if (diagnostic.unusable_quotes > 0) feedText += ' Empty-sided/zero-liquidity quotes ignored: ' + diagnostic.unusable_quotes + '. This can occur after market hours or in an illiquid book. No price or liquidity is invented; these observations cannot fill orders.';
       }
       el('feed-state').textContent = feedText;
+      overview(data);
       el('selected').replaceChildren(); for (const item of data.selected) row('selected', item.symbol + ' · token ' + item.token + ' · tick ' + item.tick);
       el('sessions').replaceChildren(); for (const session of data.sessions) row('sessions', session.date + ' · ' + session.open + '–' + session.close + ' IST · ' + session.source);
       if (!el('symbol-list').value) el('symbol-list').value = data.selected.map(s => s.symbol).join(', ');
       if (!el('session-date').value) el('session-date').value = data.today;
       if (!data.manual) message('This account is automation/model-bound. Setup changes are unavailable; use its dedicated workflow.', true);
+      if (firstStatus) openStep(recommendedStep);
       if (win.AgenticNavigation?.updated) win.AgenticNavigation.updated();
     }
     async function call(path = '', body) {
@@ -101,15 +181,35 @@
         if (version === generation) {
           let text = error.name === 'AbortError' ? 'Outcome unknown after timeout. Refresh status before retrying. A consumed login token needs a fresh login.' : String(error.message);
           if (path === '/profile') {
-            if (latest) { latest = { ...latest, profile_verified_this_run: false }; sessionStatus(latest); }
+            if (latest) { latest = { ...latest, profile_verified_this_run: false }; sessionStatus(latest); overview(latest); }
             text = (error.name === 'AbortError' ? 'Saved broker session check timed out.' : text) + ' The session could not be verified. Check your connection and retry. If the session has expired, disconnect any requested feed in step 6, then open Zerodha login and exchange a fresh request token.';
           }
           message(text, true); if (sessionAction) sessionMessage(text, true);
         }
       } finally { win.clearTimeout(timeout); if (version === generation) { busy = false; controller = null; el('profile').textContent = 'Check saved broker session'; buttons(); } }
     }
-    function confirm(text, action) { if (!token || busy) return; pending = action; el('confirm-text').textContent = text; el('confirm').showModal(); }
+    function confirm(text, action) {
+      if (!token || busy) return;
+      pending = action; el('confirm-text').textContent = text;
+      // Position before showModal focuses a control, avoiding a jump to the
+      // iframe's off-screen native center. Keep the same real confirmation.
+      positionConfirmation();
+      if (win.parent && win.parent !== win) {
+        win.parent.addEventListener('resize', positionConfirmation);
+        win.parent.addEventListener('scroll', positionConfirmation);
+        win.parent.visualViewport?.addEventListener('resize', positionConfirmation);
+        win.parent.visualViewport?.addEventListener('scroll', positionConfirmation);
+      }
+      el('confirm').showModal();
+      el('cancel-confirm').focus({preventScroll:true});
+    }
     el('access').addEventListener('submit', event => { event.preventDefault(); if (busy) return; token = el('token').value.trim() || token; el('token').value = ''; generation++; call(); });
+    el('setup-next-action').addEventListener('click', () => openStep(recommendedStep, true));
+    stepIds.forEach((id, index) => {
+      el(id).addEventListener('toggle', () => { if (token && el(id).open) stepProgress(index + 1); });
+      if (index > 0) el('setup-back-' + (index + 1)).addEventListener('click', () => openStep(index, true));
+      if (index < stepIds.length - 1) el('setup-next-' + (index + 1)).addEventListener('click', () => openStep(index + 2, true));
+    });
     el('lock').addEventListener('click', lock);
     el('refresh-status').addEventListener('click', () => call());
     el('credentials').addEventListener('submit', event => { event.preventDefault(); if (!token || busy) return;
@@ -146,9 +246,11 @@
       confirm('Save feed selection: ' + symbols.join(', ') + '? It must include all held symbols. This does not approve ETF costs or submit any order.', () => call('/symbols', { symbols })); });
     el('calendar').addEventListener('submit', event => { event.preventDefault(); const body = { date: el('session-date').value, open: el('session-open').value, close: el('session-close').value, source: el('session-source').value.trim(), reviewed: el('session-reviewed').checked };
       confirm('Add ' + body.date + ', ' + body.open + '–' + body.close + ' IST? Source: ' + body.source + '. Confirm against NSE notices. Existing session history cannot be overwritten.', async () => { const result = await call('/session', body); if (result) el('session-reviewed').checked = false; }); });
-    el('cancel-confirm').addEventListener('click', () => { pending = null; el('confirm').close(); });
-    el('confirm').addEventListener('cancel', () => { pending = null; });
-    el('confirm-action').addEventListener('click', () => { const action = pending; pending = null; el('confirm').close(); if (action && token && !busy) action(); });
+    el('cancel-confirm').addEventListener('click', () => { pending = null; closeConfirmation(); });
+    el('confirm').addEventListener('cancel', () => { pending = null; stopConfirmationPositioning(); });
+    el('confirm').addEventListener('close', stopConfirmationPositioning);
+    win.addEventListener('pagehide', stopConfirmationPositioning);
+    el('confirm-action').addEventListener('click', () => { const action = pending; pending = null; closeConfirmation(); if (action && token && !busy) action(); });
     lock(); return { lock, refresh: () => call(), canNavigate: () => !busy && !el('confirm').open && (!popup || popup.closed) };
   }
   if (typeof module !== 'undefined' && module.exports) module.exports = { createSetup };

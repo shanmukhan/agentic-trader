@@ -15,6 +15,7 @@ class Element {
   fire(n){if(!this.disabled)for(const f of this.events[n]||[])f({preventDefault(){}});}
   showModal(){this.open=true;}
   close(){this.open=false;}
+  focus(){this.focused=true;}
 }
 const flush=()=>new Promise(r=>setImmediate(r));
 const status=(extra={})=>({manual:true,credentials_configured:true,access_token_available:true,profile_verified_this_run:false,stream_requested:false,feed_connected:false,catalog_count:3,selected:[{symbol:'NSE:DEMO',token:1,tick:'0.05'}],sessions:[],today:'2026-10-21',calendar_today:false,...extra});
@@ -38,6 +39,80 @@ test('setup loads no private data while locked, uses only bearer and renders saf
   assert.equal(s.nodes.token.value,'');assert.match(s.nodes.sessions.textContent,/<script>bad/);
   assert.match(s.nodes.redirect.textContent,/http:\/\/127.0.0.1:8004\//);
   assert.match(s.nodes['calendar-state'].textContent,/blocked/);
+});
+test('broker overview leads with actual connection state and guided troubleshooting, without mutation',async()=>{
+  const s=setup();await s.unlock();
+  assert.equal(s.nodes['connection-status'].textContent,'Data disconnected');
+  assert.equal(s.nodes['overview-session'].textContent,'Saved · not checked this run');
+  assert.equal(s.nodes['overview-symbols'].textContent,'1 of 10 stocks');
+  assert.equal(s.nodes['overview-calendar'].textContent,'Today needs review');
+  assert.match(s.nodes['connection-next'].textContent,/saved token can expire/);
+  assert.equal(s.nodes['setup-step-3'].open,true);
+  assert.match(s.nodes['setup-progress'].textContent,/Step 3 of 6/);
+  s.nodes['setup-next-action'].fire('click');
+  assert.equal(s.nodes['setup-step-title-3'].focused,true);
+  assert.equal(s.calls.length,1);assert.equal(s.calls[0].options.method,'GET');
+  assert.equal(s.nodes.confirm.open,false);
+});
+test('first unlocked status chooses the next relevant step while refresh preserves manual navigation and edits',async()=>{
+  const cases=[
+    [{credentials_configured:false,access_token_available:false},'setup-step-1'],
+    [{access_token_available:false},'setup-step-3'],
+    [{profile_verified_this_run:true,catalog_count:0,selected:[]},'setup-step-4'],
+    [{profile_verified_this_run:true},'setup-step-5'],
+    [{profile_verified_this_run:true,calendar_today:true},'feed-connection'],
+    [{stream_requested:true,feed_diagnostics:{state:'failed',failures:10}},'feed-connection']
+  ];
+  for(const [extra,id] of cases){
+    const s=setup(async()=>ok(status(extra)));await s.unlock();
+    assert.equal(s.nodes[id].open,true,id);
+    assert.equal(['setup-step-1','setup-step-2','setup-step-3','setup-step-4','setup-step-5','feed-connection'].filter(key=>s.nodes[key].open).length,1);
+    s.nodes['setup-next-1'].fire('click');
+    assert.equal(s.nodes['setup-step-2'].open,true);
+    s.nodes['api-key'].value='unsaved-key';s.nodes['symbol-list'].value='UNSAVED';
+    s.nodes['refresh-status'].fire('click');await flush();
+    assert.equal(s.nodes['setup-step-2'].open,true);
+    assert.equal(s.nodes['api-key'].value,'unsaved-key');assert.equal(s.nodes['symbol-list'].value,'UNSAVED');
+    assert.equal(s.calls.length,2);assert.ok(s.calls.every(call=>call.options.method==='GET'));
+  }
+});
+test('wizard Back and Continue focus steps but never save, check a broker session, or attest to a date',async()=>{
+  const s=setup();await s.unlock();
+  s.nodes['setup-next-1'].fire('click');assert.equal(s.nodes['setup-step-2'].open,true);
+  for(let number=2;number<=5;number++)s.nodes['setup-next-'+number].fire('click');
+  assert.equal(s.nodes['feed-connection'].open,true);assert.equal(s.nodes['setup-step-title-6'].focused,true);
+  for(let number=6;number>=2;number--)s.nodes['setup-back-'+number].fire('click');
+  assert.equal(s.nodes['setup-step-1'].open,true);assert.equal(s.nodes['setup-step-title-1'].focused,true);
+  assert.equal(s.nodes['session-reviewed'].checked,false);assert.equal(s.nodes.confirm.open,false);assert.equal(s.calls.length,1);
+  s.nodes['setup-step-4'].open=true;s.nodes['setup-step-4'].fire('toggle');assert.match(s.nodes['setup-progress'].textContent,/Step 4 of 6/);
+  s.nodes.lock.fire('click');
+  for(const id of ['connection-status','overview-session','overview-symbols','overview-calendar','connection-next'])assert.equal(s.nodes[id].textContent,'');
+  assert.equal(s.nodes['setup-step-1'].open,false);assert.equal(s.nodes['setup-step-4'].open,false);
+  s.nodes['setup-next-action'].fire('click');assert.equal(s.nodes['setup-step-1'].open,false);
+});
+test('connected overview keeps execution readiness separate and failed feed guidance uses safe status',async()=>{
+  const connected=setup(async()=>ok(status({stream_requested:true,feed_connected:true,calendar_today:true})));await connected.unlock();
+  assert.equal(connected.nodes['connection-status'].textContent,'Data connected');
+  assert.match(connected.nodes['connection-description'].textContent,/freshness, liquidity and today’s price-basis reviews/);
+  assert.match(connected.nodes['connection-next'].textContent,/connected socket alone does not make a quote usable/);
+  assert.equal(connected.nodes['feed-connection'].open,true);
+  const failed=setup(async()=>ok(status({stream_requested:true,feed_diagnostics:{state:'failed',failures:10,last_failure:'secret-server-error'}})));await failed.unlock();
+  assert.equal(failed.nodes['connection-status'].textContent,'Connection needs attention');
+  assert.match(failed.nodes['connection-next'].textContent,/retries are exhausted/);
+  assert.doesNotMatch(failed.nodes['connection-next'].textContent,/secret-server-error/);
+  assert.equal(failed.calls.length,1);assert.equal(failed.nodes.confirm.open,false);
+});
+test('connection guide uses keyboard-accessible native disclosure and preserves direct feed anchors',()=>{
+  const html=readFileSync('src/trading_agent/api/static/setup.html','utf8');
+  assert.equal((html.match(/class="panel setup-step"/g)||[]).length,6);
+  assert.equal((html.match(/name="broker-setup"/g)||[]).length,6);
+  assert.equal((html.match(/<summary id="setup-step-title-/g)||[]).length,6);
+  assert.match(html,/<details id="feed-connection"[^>]+tabindex="-1"/);
+  assert.match(html,/id="setup-next-action" type="button" aria-describedby="connection-next"/);
+  assert.match(html,/id="setup-progress"[^>]+role="status"[^>]+aria-live="polite"/);
+  assert.ok(html.indexOf('id="connection-title"')<html.indexOf('id="setup-step-1"'));
+  assert.ok(html.indexOf('id="setup-step-1"')<html.indexOf('Help: which credential'));
+  assert.match(html,/Moving between steps does not save settings or approve a trading date/);
 });
 test('session hours default on unlock without saving or attesting and preserve edits across refresh',async()=>{
   const s=setup();await s.unlock();

@@ -1,16 +1,16 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="color-scheme" content="dark"><title>Paper contributions and SIP plans</title>
+<meta name="color-scheme" content="light"><title>Paper contributions and SIP plans</title>
 <link rel="stylesheet" href="/dashboard.css"><script src="/money.js" defer></script><script src="/workspace-bridge.js" defer></script><script src="/portfolio.js" defer></script></head>
 <body class="portfolio-page"><a class="skip" href="#main">Skip to contributions</a>
-<header class="masthead"><div><p class="eyebrow">AGENTIC TRADER · PAPER ONLY</p><h1>Invest virtual cash with a clear review</h1>
-<p class="muted">Purchases, holding additions and reviewed SIP dates · <a href="/">Return to safeguards and exits</a></p></div>
+<header class="masthead"><div><p class="eyebrow">AGENTIC TRADER · PAPER ONLY</p><h1>Purchases &amp; SIP</h1>
+<p class="muted">Purchases, holding additions and reviewed SIP dates · <a href="/console">Risk Center &amp; exits</a></p></div>
 <span id="state" class="badge">Locked</span></header>
 <section class="panel access"><h2>Local operator access</h2><p class="muted">Use TRADING_OPERATOR_TOKEN from your private local .env, not a Zerodha request/access token. It stays in this tab's memory. <a href="/setup">Broker and feed setup →</a></p>
 <form id="access" autocomplete="off"><label for="token" class="sr-only">Operator token</label><input id="token" type="password" autocomplete="off" placeholder="Operator token" required>
 <button id="unlock" type="submit">Unlock / refresh</button><button id="lock" type="button" disabled>Lock</button></form></section>
 <p id="message" role="status" aria-live="polite">Locked. No private account data loaded.</p>
-<main id="main"><section class="metrics" aria-label="Contribution capacity">
+<main id="main"><nav class="subnav" aria-label="Paper trading views"><a href="/activity">Orders &amp; history</a><a href="#holdings-heading">Holdings</a><a href="/portfolio" aria-current="page">Purchases &amp; SIP</a><a href="/desk">Proposals &amp; modes</a></nav><section class="metrics" aria-label="Contribution capacity">
 <article class="panel metric"><h2>Available virtual cash</h2><p id="cash" class="amount">—</p><p class="muted">After reservations and delivery fee buffer</p></article>
 <article class="panel metric"><h2>Reserved for purchases</h2><p id="reserved" class="amount">—</p><p class="muted">Plans reserve cash only after an occurrence is confirmed</p></article>
 <article class="panel metric"><h2>Quote and risk state</h2><p id="risk">Locked</p><p id="updated" class="muted">No account data loaded</p></article></section>

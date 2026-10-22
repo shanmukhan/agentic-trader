@@ -1,17 +1,31 @@
 # How to use Agentic Trader
 
-Updated 22 October 2026 for version 0.13.1. This guide and corresponding detailed
+Updated 22 October 2026 for version 0.14.0. This guide and corresponding detailed
 guides are updated with every feature or changed workflow, as required by [AGENTS.md](../AGENTS.md).
 
-**If the feed connects but Approval/Automatic stay disabled:** open Trading desk →
+The light workspace now uses a sidebar with six main areas: **Dashboard**, **Market &
+Analysis**, **Strategies**, **Paper Trading**, **Risk Center** and **Broker & Settings**.
+Dashboard opens first with portfolio values, market/readiness state and your next
+action. **Purchases & SIP** remains under Paper Trading; **Help & onboarding** is at
+the sidebar bottom. Incomplete setup also shows contextual onboarding guidance.
+See the [workspace navigation guide](workspace.md) for exact routes and unlock behavior.
+
+**Market & Analysis** charts actual saved daily/minute candles and indicators; it
+does not download from the broker when opened. Missing/stale data stays visible,
+and a chart is not an execution quote or a trade approval. See
+[Market & Analysis](market-analysis.md) for sources, inputs and limitations.
+
+**If the feed connects but Approval/Automatic stay disabled:** open Dashboard →
 **Your next step**. A socket supplies quotes; it does not install a strategy, validate
 ML or open a market session. The cards now explain every prerequisite, current IST
 time, next reviewed opening, entry hours and each selected stock's quote age/basis.
 
-In **Broker & data**, step 4 separates the complete catalog lookup from the account's
+In **Broker & Settings**, step 4 separates the complete catalog lookup from the account's
 saved live-feed watchlist (at most ten symbols under the app's current limit). The
 displayed names are editable saved subscriptions; broader Nifty 100/500 research is
-available on Trading desk. Editing the input does not change the saved list until
+available in **Strategies**. The connection overview recommends a numbered setup
+step. Open any step or use Back/Continue; navigation never saves or connects.
+Editing the input does not change the saved list until
 you validate, save and confirm. Step 5 now defaults to **09:15 AM–03:30 PM IST**.
 The times remain editable and survive status refresh; review the date/notices, supply
 a reference and explicitly confirm before saving. Defaults do not approve a session.
@@ -25,17 +39,17 @@ an explicit policy choice. The summary lists which daily reviews are eligible an
 which need separate attention. The shortcut opens a preview; approval is still pending
 until **Confirm and prepare**. It disappears after the blocker clears. For older/missing
 data, use the displayed preparation link to download current-day sources first.
-Quote details in Trading desk and Advanced controls now explain
+Quote details in Dashboard and Risk Center explain
 this separately from an old quote, a rejected observation or a disconnected feed.
 Resolve the supported shortlist, review actual current-day corporate actions/price
-basis in Advanced controls and await a new valid quote. Do not approve a review merely
+basis in Risk Center and await a new valid quote. Do not approve a review merely
 to clear the warning. See [quote and shortlist recovery](trading-desk.md#open-session-with-no-usable-quotes).
 **Review the ranked shortlist** now opens and focuses the review section; it never
 applies the list. Reload the whole workspace for the navigation fix. The new Python
 diagnostics require restarting an older server in its owning terminal, then running
 `./scripts/start_ui.sh`, unlocking and explicitly reconnecting as appropriate.
 
-**Approval proposals cancelled, or Automatic looks idle:** inspect Buy / sell activity.
+**Approval proposals cancelled, or Automatic looks idle:** inspect Paper Trading.
 A cancelled proposal without an order bought no shares. A safety pause cancels pending
 approval authority and returns the desk to Manual; recovering quotes do not rearm it.
 The corrected Kite path accepts receipt-ordered whole-second book updates without
@@ -46,14 +60,14 @@ To load this Python fix, stop the owning server with Ctrl+C, run
 a mode. Restart retains cancelled history. Existing daily signals are not replayed by
 mode changes; Automatic still needs a new eligible signal and independent risk approval.
 
-For the missing strategy, use Trading desk → **Prepare a paper strategy**:
+For the missing strategy, use **Strategies** → **Prepare a paper strategy**:
 
-1. Check your saved broker session and import the NSE catalog in **Broker & data**.
+1. Check your saved broker session and import the NSE catalog in **Broker & Settings**.
    Step 3 shows **Checking…**, then a result directly below the buttons. A successful
    profile check does not prove streaming access or fresh quotes. On failure, check
    connectivity and retry; if expired, disconnect a requested feed in step 6 and
    complete a fresh login/token exchange. See [session-check recovery](ui-setup.md#saved-session-check-feedback).
-2. In the desk, choose Nifty 100 or Nifty 500 and confirm **Download strategy data**.
+2. In Strategies, choose Nifty 100 or Nifty 500 and confirm **Download strategy data**.
    Watch progress; review sources and exclusions. It can run after hours. Your feed,
    mode and virtual cash are unchanged by the download.
 3. Choose **Rules only** explicitly for the experimental paper policy, or **Rules + ML**
@@ -66,8 +80,8 @@ For the missing strategy, use Trading desk → **Prepare a paper strategy**:
    Used calendar history, held-position basis and quarantines need separate review; they
    cannot be cleared automatically. Calendar editing remains under **Advanced: edit dates
    and install separately**. Setup stays Manual and does not change virtual capital.
-5. When readiness permits, choose **Start approval mode** or **Start automatic paper mode**
-   and confirm. Use **Buy / sell activity** for reasons, orders, later fills and fees.
+5. Return to Dashboard. When readiness permits, choose **Start approval mode** or **Start automatic paper mode**
+   and confirm. Use **Paper Trading** for reasons, orders, later fills and fees.
    After hours the setup can finish, but modes still wait for an open entry session and
    fresh usable quotes. No future automatic activation is scheduled.
 
@@ -91,8 +105,8 @@ and persistence behavior. Existing custom `TRADING_ANALYSIS_PROFILE` configurati
 remain supported and take precedence on restart; clear that override explicitly when
 switching to the UI-managed profile.
 
-Version 0.12.0 opens **Trading desk** by default and adds a separate **Buy / sell
-activity** menu section. Manual, approval/semi-autonomous and automatic paper modes
+The decision workflow introduced in 0.12.0 now appears across Dashboard, Strategies
+and Paper Trading. Manual, approval/semi-autonomous and automatic paper modes
 are explicit, confirmed choices. Proposals explain their source and require fresh
 bounded previews; activity distinguishes acceptance from actual quote-driven fills.
 Both intraday and long-term strategy profiles are implemented, with independent risk
@@ -256,10 +270,11 @@ browser. Keep its terminal running; Ctrl+C stops a server started there. See
 daily login, credentials, catalog/symbol selection, sourced calendar and feed controls.
 `TRADING_OPERATOR_TOKEN` from your private `.env` unlocks the local app;
 **Zerodha request/access tokens do not**. The [workspace menu](workspace.md) retains
-one unlock while moving among Start here, Trading console, Broker & feed setup and
-Purchases & SIP. Reload/new workspace tabs still require unlocking; merely switching
-browser tabs does not intentionally lock access. Its Start here page explains the
-next connection steps, actual configured hours and manual/automated trading frequency.
+one unlock while moving among the six sidebar areas and Purchases & SIP. Reload/new
+workspace tabs still require unlocking; merely switching browser tabs does not
+intentionally lock access. **Help & onboarding** explains the connection steps,
+actual configured hours and manual/automated trading frequency. The Dashboard’s
+contextual onboarding links to unfinished strategy, calendar or feed setup.
 
 The lower-level command with an explicitly loaded environment remains:
 
@@ -268,8 +283,11 @@ trading-agent serve
 ```
 
 Open <http://127.0.0.1:8000>, enter the operator token, and select **Unlock / refresh**.
-The responsive web dashboard shows account cards, readiness reasons, positions,
-paper orders and controls. Desktop uses columns; mobile widths stack the panels.
+The responsive light workspace shows portfolio values and next actions first.
+Use **Strategies** for preparation and shortlist review, **Paper Trading** for
+orders/fills, **Risk Center** for exposure, basis review and emergency/entry controls,
+and **Broker & Settings** for credentials and feed administration. Desktop uses a
+sidebar and columns; narrow widths adapt the navigation and stack panels.
 There is no native Android/iOS app. It polls one consistent response every three
 seconds while visible and marks old data stale after six seconds. Displayed update
 times use IST; detailed raw timestamps remain UTC. **Lock** clears account values and
@@ -650,7 +668,7 @@ failure/recovery and performance. Preserve partial failed outputs; absence of a
 finished manifest prevents loading. Correct reviewed inputs and rerun into a new
 directory. Daily model validation/training remains offline. Version 0.12.0 can
 consume a matching validated real daily model in the separate reviewed
-[Trading desk profile](trading-desk.md); it does not bypass readiness/risk checks.
+[reviewed strategy profile](trading-desk.md); it does not bypass readiness/risk checks.
 LT3c1 now supplies reviewed contributions/SIP. LT3c2 rebalance proposals and LT3c3
 aggregate capital coordination remain next.
 

@@ -1,6 +1,26 @@
 # Start, unlock and configure the paper app in your browser
 
-Version **0.13.1** combines the strategy setup steps on Trading desk. Once the broker
+Version **0.14.0**, 22 October 2026, introduces a light workspace with six sidebar
+areas: **Dashboard**, **Market & Analysis**, **Strategies**, **Paper Trading**,
+**Risk Center** and **Broker & Settings**. Purchases & SIP remains a secondary
+Paper Trading workflow. Setup guidance appears contextually when incomplete, with
+**Help & onboarding** at the sidebar bottom. The [workspace guide](workspace.md)
+lists exact routes; [Market & Analysis](market-analysis.md) explains saved-candle
+charts and their limits. No broker download starts merely by viewing a chart.
+
+**Broker & Settings** now starts with a connection overview: actual connected,
+requested or disconnected state, broker-session verification, saved-subscription
+count, reviewed calendar and the next troubleshooting action. Its six settings
+steps are keyboard-accessible disclosures. The first unlocked status opens the
+relevant step; expand any step or use **Back** and **Continue**. Status refresh
+preserves the open step and unsaved input. Moving between steps never saves,
+checks credentials, connects data, approves a date or arms trading. A **Check saved
+broker session** recommendation opens step 3; the explicit check button there
+performs the broker request. `/setup#feed-connection` opens step 6 directly.
+Lock clears private status, edited fields and open steps; unlock obtains a fresh
+status and chooses a new starting step. Existing action confirmations remain in place.
+
+The combined strategy setup is in **Strategies**. Once the broker
 session/catalog and same-day download are available, choose a policy, select **Review
 and finish setup**, inspect the sources/dates/stocks, check one acknowledgement and
 confirm. The server handles feed disconnection, installation, shortlist, listed eligible
@@ -15,7 +35,7 @@ pinned review or execution/instruction usage prevents correction, rechecked afte
 validation. Setup's per-date form retains its stricter existing-definition behavior.
 Normal 15:30 exchange close is separate from a strategy's 15:15 flatten/cutoff.
 
-Version **0.13.0** adds an in-desk [strategy preparation workflow](strategy-preparation.md).
+The [strategy preparation workflow](strategy-preparation.md) remains separate from broker setup.
 The feed can connect while modes remain disabled: it supplies transport, not a
 strategy or usable after-hours depth. **Your next step** now lists separate strategy,
 connection, quote, session, entry-window, shortlist/model and basis checks with actions.
@@ -31,10 +51,12 @@ holiday/special notices and tick the review box only after that review. The prep
 wizard can propose a larger calendar from downloaded sources, but still requires your
 review and never changes already used account hours.
 
-Version 0.12.0 separates day-to-day decisions from setup: use **Trading desk** for
-modes/proposals and **Buy / sell activity** for reasons, actual orders and fills.
-**Broker & data** retains the existing setup steps and **Advanced controls** retains
-basis reviews/kill/flatten. See [Trading desk setup](trading-desk.md) for the additional
+Use **Dashboard** for modes/proposals and **Paper Trading** for reasons, actual
+orders and fills. **Strategies** contains preparation, profile coverage and ranked
+shortlist review; its separate `/strategies` page uses the existing controllers.
+Legacy `/desk#strategy-setup` and shortlist anchors route there.
+**Broker & Settings** retains broker administration and **Risk Center** retains
+basis reviews/kill/flatten. See [Dashboard and strategy setup](trading-desk.md) for the additional
 reviewed analysis profile; broker connection alone does not install stock rankings or ML.
 
 Version 0.10.0 added authenticated setup for **manual** paper accounts; 0.11.0 adds
@@ -44,7 +66,7 @@ responsive browser UI, not a native mobile app. No real order or fund transfer e
 
 ## Saved-session check feedback
 
-In **Broker & data → step 3**, select **Check saved broker session**. No request-token
+In **Broker & Settings → step 3**, select **Check saved broker session**. No request-token
 input is needed: this checks the server's saved access token. The button changes to
 **Checking saved broker session…** and a polite live status directly below the buttons
 shows progress, followed by success or an error. Setup actions remain disabled while
@@ -62,7 +84,7 @@ retry; it does not consume a one-time login token. An exchange timeout remains u
 refresh status before proceeding and start a new login if another exchange is needed.
 
 To load this UI-only change, switch to another workspace section and back to
-**Broker & data**, or reload the workspace and unlock again. Existing servers read
+**Broker & Settings**, or reload the workspace and unlock again. Existing servers read
 the setup assets on request; no service restart is needed. Verify with
 `node --test tests/ui/setup.test.cjs tests/ui/workspace.test.cjs` and
 `.venv/bin/pytest tests/unit/test_setup.py tests/functional/test_setup_api.py -q`.
@@ -73,10 +95,10 @@ These use simulated broker responses; they do not certify your current broker se
 Daily long-term price-basis reviews apply to one IST date. Without today's review,
 incoming prices are rejected before quote storage, even with a valid broker session,
 connected feed and open market. A missing accepted quote therefore does not prove
-that the socket is silent. Trading desk/Advanced controls now show this review blocker
+that the socket is silent. Dashboard/Risk Center show this review blocker
 explicitly; quote freshness and execution readiness remain separate checks.
 
-With a same-day download ready, use **Review today’s setup** directly in Trading desk's
+With a same-day download ready, use **Review today’s setup** directly in Dashboard's
 warning/quote details. Inspect and confirm the combined source/calendar/shortlist and
 eligible current-day reviews. It preserves the installed policy unless you explicitly
 chose another; there is no automatic first policy or ML fallback. The button only
@@ -84,8 +106,8 @@ previews; **Confirm and prepare** is the consequential approval. If the button i
 disabled, follow its current-day download/Manual/custom-profile guidance. Restarting
 does not approve the review, and another restart is unnecessary for this UI shortcut.
 
-Review/apply the supported ranked shortlist in Trading desk while disconnected in
-Manual, resolve the selected symbols' current-day basis in Advanced controls, reconnect
+Review/apply the supported ranked shortlist in Strategies while disconnected in
+Manual, resolve the selected symbols' current-day basis in Risk Center, reconnect
 explicitly as necessary and wait for new valid quotes. Do not approve unknown actions
 just to obtain prices. See [the full recovery steps](trading-desk.md#open-session-with-no-usable-quotes).
 The shortlist review link now preserves its fragment, focuses the review section and
@@ -93,7 +115,7 @@ does not apply anything automatically. Reload the workspace for the link fix; re
 an older Python server as described in the recovery guide for the new diagnostic API.
 
 If prices are already reviewed but proposals cancel almost immediately, inspect
-**Buy / sell activity** and the current mode. A safety pause returns the desk to Manual;
+**Paper Trading** and the current mode. A safety pause returns the desk to Manual;
 new good quotes do not rearm it. The whole-second Kite update fix prevents legitimate
 receipt-ordered books/repeats from being mistaken for backward data, while preserving
 clock/volume/depth checks and one fill budget per exchange timestamp. Restart once to
@@ -130,7 +152,7 @@ To load this fix on your existing 8004 account:
    Offline periods cannot fill exits; restart recovery cancels old pending order residue.
 2. From the repository root, run `./scripts/start_ui.sh` and keep that terminal open.
 3. Reload `/workspace` and unlock with `TRADING_OPERATOR_TOKEN` from your private `.env`.
-4. Open **Broker & feed setup**. Select **Check saved broker session** in step 3.
+4. Open **Broker & Settings**. Select **Check saved broker session** in step 3.
    If verification succeeds, keep that session. If it fails, complete a fresh login
    and exchange using the existing instructions below; a new login is not necessary
    merely because an after-hours book has no buy/sell side.
@@ -273,7 +295,7 @@ explicit, not automatic background login or credential probing.
    **Saved feed subscriptions (N of 10)** shows the committed selection separately
    from unsaved input edits. The count/list changes only after validation and explicit
    confirmation succeed. Tokens identify instruments to the broker; tick is the
-   permitted rupee price increment. For wider discovery, use Trading desk's Nifty
+   permitted rupee price increment. For wider discovery, use Strategies' Nifty
    100/500 preparation and review the proposed execution shortlist. Qualifying reviewed
    shares are ranked by historical gross return, not a proven future-profit estimate.
    `BEL` and `NSE:BEL` normalize to the same exact catalog instrument. Review the
@@ -300,8 +322,8 @@ explicit, not automatic background login or credential probing.
    This verifies the broker profile and starts the
    full-mode stream for the selected catalog. A requested/connected socket does
    not prove fresh usable quotes. Refresh setup status, then inspect readiness in
-   the trading console. The connect button never arms automation or submits orders.
-8. **Complete long-term price-basis reviews separately.** The console's existing
+   Dashboard or Risk Center. The connect button never arms automation or submits a new order intent.
+8. **Complete long-term price-basis reviews separately.** Risk Center's existing
    per-symbol current-session review is still required. A calendar entry does not
    attest that corporate actions are absent. Review actions since the last accepted
    quote, including offline periods, and preserve unresolved quarantines. Wait for
@@ -310,7 +332,7 @@ explicit, not automatic background login or credential probing.
 The `EQ` catalog category can include ETFs such as GOLDCASE. Current costs assume
 equity shares; ETF-specific fee/classification support remains pending. A feed
 subscription is not execution approval. Setup still permits monitoring catalog EQ
-rows; the separate Trading desk profile excludes symbols lacking reviewed equity-share
+rows; the strategy profile excludes symbols lacking reviewed equity-share
 classification. This does not add ETF fee/accounting support.
 Leave unsupported instruments out of paper order submission and basis approvals.
 

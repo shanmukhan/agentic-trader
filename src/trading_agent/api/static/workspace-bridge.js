@@ -2,7 +2,7 @@
   'use strict';
   const win = window, doc = document;
   const embedded = win.parent !== win;
-  const views = {'/':'desk','/desk':'desk','/activity':'activity','/console':'console','/setup':'setup','/portfolio':'portfolio'};
+  const views = {'/':'desk','/desk':'desk','/analysis':'analysis','/strategies':'strategies','/activity':'activity','/console':'console','/setup':'setup','/portfolio':'portfolio'};
   const cleanAnchor = value => typeof value === 'string' && /^[A-Za-z][A-Za-z0-9_-]{0,99}$/.test(value) ? value : '';
   if (!embedded) {
     if (!win.__kiteCallbackHandled && !new URLSearchParams(win.location.search).has('request_token'))

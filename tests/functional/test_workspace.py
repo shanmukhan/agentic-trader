@@ -18,7 +18,15 @@ def test_workspace_shell_assets_and_scoped_framing(engine):
             assert "frame-ancestors 'none'" in response.headers["Content-Security-Policy"]
             assert response.headers["Cache-Control"] == "no-store"
             assert TOKEN not in response.text
-        for path in ("/console", "/setup", "/portfolio", "/desk", "/activity"):
+        for path in (
+            "/console",
+            "/setup",
+            "/portfolio",
+            "/desk",
+            "/activity",
+            "/strategies",
+            "/analysis",
+        ):
             response = client.get(path)
             assert response.status_code == 200
             assert response.headers["X-Frame-Options"] == "SAMEORIGIN"
@@ -26,14 +34,18 @@ def test_workspace_shell_assets_and_scoped_framing(engine):
             assert "workspace-bridge.js" in response.text
         shell = client.get("/workspace").text
         for label in (
-            "Start here",
-            "Trading desk",
-            "Buy / sell activity",
-            "Advanced controls",
-            "Broker &amp; data",
+            "Help &amp; onboarding",
+            "Dashboard",
+            "Market &amp; Analysis",
+            "Strategies",
+            "Paper Trading",
+            "Risk Center",
+            "Broker &amp; Settings",
             "Purchases &amp; SIP",
         ):
             assert label in shell
+        assert 'class="workspace-sidebar"' in shell
+        assert 'content="light"' in shell
         assert "No automatic entry schedule" in shell
         assert engine.snapshot(NOW) == before
 
