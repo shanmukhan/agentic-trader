@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "status": "phase_2_design_not_runtime_routes",
+  "default": "dashboard",
+  "screens": [
+    {"id":"dashboard","title":"Dashboard","group":"Overview","legacy":["desk"],"purpose":"Portfolio, status and next action"},
+    {"id":"discovery","title":"Stock Discovery","group":"Research","legacy":[],"purpose":"Screen, understand and compare candidates"},
+    {"id":"analysis","title":"Stock Analysis","group":"Research","legacy":["analysis"],"purpose":"Historical prices, indicators and evidence"},
+    {"id":"strategies","title":"Strategies","group":"Plan & simulate","legacy":["strategies"],"purpose":"Versioned investment rules and setup"},
+    {"id":"backtesting","title":"Backtesting","group":"Plan & simulate","legacy":[],"purpose":"Isolated historical research and reports"},
+    {"id":"paper","title":"Paper Trading","group":"Plan & simulate","legacy":[],"purpose":"Proposals, operating mode and pending orders"},
+    {"id":"portfolio","title":"Portfolio","group":"My investments","legacy":["portfolio"],"purpose":"Holdings, allocation, income and manual purchases"},
+    {"id":"history","title":"Trade History","group":"My investments","legacy":["activity"],"purpose":"Recorded decisions, orders and fills"},
+    {"id":"risk","title":"Risk Management","group":"Controls","legacy":["console"],"purpose":"Exposure, limits, reviews and emergency actions"},
+    {"id":"broker","title":"Broker & Data","group":"Controls","legacy":["setup"],"purpose":"Broker session, subscriptions, calendar and data recovery"},
+    {"id":"settings","title":"Settings","group":"Controls","legacy":[],"purpose":"Preferences and reviewed configuration"},
+    {"id":"learn","title":"Learning Center","group":"Help","legacy":["overview"],"purpose":"Terminology, examples, limits and recovery"}
+  ],
+  "legacy_fragments": [
+    {"from":"desk/strategy-setup","to":"strategies/strategy-setup"},
+    {"from":"desk/apply-shortlist","to":"strategies/execution-shortlist"},
+    {"from":"desk/execution-shortlist","to":"strategies/execution-shortlist"},
+    {"from":"setup/feed-connection","to":"broker/feed-connection"},
+    {"from":"console/long-term","to":"risk/long-term"},
+    {"from":"portfolio/holdings-heading","to":"portfolio/holdings"}
+  ]
+}

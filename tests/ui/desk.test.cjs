@@ -55,7 +55,7 @@ test('Strategies has a separate view with focused setup links and no mode activa
  for(const section of s.sections)assert.equal(section.hidden,section.getAttribute('data-desk-section')!=='strategies');
  await s.unlock();assert.equal(s.nodes['next-step-link'].href,'#strategy-setup');
  assert.equal(s.nodes['readiness-checks'].children[0].children.at(-1).href,'#strategy-setup');assert.equal(s.calls.length,1);
- const dashboard=setup();for(const section of dashboard.sections)assert.equal(section.hidden,section.getAttribute('data-desk-section')!=='dashboard');
+ const dashboard=setup();for(const section of dashboard.sections)assert.equal(section.hidden,!section.getAttribute('data-desk-section').split(' ').includes('dashboard'));
  assert.equal(dashboard.nodes['page-title'].textContent,'Dashboard');
 });
 test('automatic paper mode requires a reviewable confirmation and one explicit submission',async()=>{
@@ -65,9 +65,9 @@ test('automatic paper mode requires a reviewable confirmation and one explicit s
  const posts=s.calls.filter(c=>c.url==='/api/desk/mode');assert.equal(posts.length,1);assert.deepEqual(JSON.parse(posts[0].opts.body),{mode:'automatic',revision:'a'.repeat(32),acknowledged:true});
 });
 test('mode confirmation stays in the visible embedded viewport and clears parent listeners on lock',async()=>{
- const listeners=new Map(),parent={innerHeight:844,addEventListener:(type,fn)=>listeners.set(type,fn),removeEventListener:type=>listeners.delete(type)};
- const s=setup(async()=>ok(status({blockers:[]})),false,{parent,frameElement:{getBoundingClientRect:()=>({top:-1800})}});await s.unlock();s.nodes['mode-automatic'].fire('click');
- assert.equal(s.nodes.confirm.style.top,'1876px');assert.equal(s.nodes.confirm.style.maxHeight,'692px');assert.equal(listeners.size,2);
+ const listeners=new Map(),parent={innerHeight:844,innerWidth:1280,addEventListener:(type,fn)=>listeners.set(type,fn),removeEventListener:type=>listeners.delete(type)};
+ const s=setup(async()=>ok(status({blockers:[]})),false,{parent,frameElement:{getBoundingClientRect:()=>({top:-1800,left:0,right:1280,bottom:4200,width:1280,height:6000})}});await s.unlock();s.nodes['mode-automatic'].fire('click');
+ assert.equal(s.nodes.confirm.style.top,'2222px');assert.equal(s.nodes.confirm.style.maxHeight,'812px');assert.equal(listeners.size,2);
  s.instance.lock();assert.equal(listeners.size,0);assert.equal(s.nodes.confirm.open,false);assert.equal(s.calls.filter(c=>c.url==='/api/desk/mode').length,0);
 });
 test('connected feed still explains missing strategy and quotes beside disabled mode buttons',async()=>{
@@ -144,4 +144,11 @@ test('cancelled activity distinguishes a proposal from an order and shows update
  assert.match(text,/proposal cancelled · no order created/);assert.match(text,/last updated.*10:00:05/);
  assert.match(text,/Pause triggers: No fresh usable quote/);assert.match(text,/Switching to Automatic does not retry/);
  assert.match(text,/Proposal mode: Approval/);
+});
+
+test('Paper Trading exposes modes and proposals and pagehide discards a late private read',async()=>{
+ let finish;const events={};const s=setup(()=>new Promise(r=>{finish=r;}),false,{location:{pathname:'/paper'},addEventListener:(name,handler)=>{events[name]=handler;}});
+ assert.equal(s.doc.title,'Paper Trading · Paper only');for(const section of s.sections)assert.equal(section.hidden,!section.getAttribute('data-desk-section').split(' ').includes('paper'));
+ await s.unlock();const signal=s.calls[0].opts.signal;events.pagehide();assert.equal(signal.aborted,true);finish(ok(status({blockers:[]})));await flush();
+ assert.equal(s.nodes.main.hidden,true);assert.equal(s.nodes.token.value,'');assert.equal(s.nodes['mode-automatic'].disabled,true);assert.equal(s.calls.length,1);
 });

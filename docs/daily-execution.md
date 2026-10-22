@@ -1,5 +1,13 @@
 # Daily delivery execution and model research: LT3b usage
 
+Version **0.17.0** wraps the existing rules-only replay in a registered browser-job
+lifecycle; see [registration, OS capability, limits and recovery](browser-backtesting.md).
+Its semantics and default 20-session cap remain legacy offline v1, with connected
+parity unestablished. Registration is not an account installation. Browser jobs are
+currently disabled on the implementation Mac because isolation/hard-limit acceptance
+failed; direct CLI commands below are unchanged. New daily-performance functions do
+not reinterpret event-time `equity.csv` as accepted daily return history.
+
 Version 0.12.0 adds a separate connected paper decision workflow in
 [Trading desk](trading-desk.md). It reuses reviewed prior-daily screening and the
 strict daily model loader, then sends approved/automatic proposals through the same

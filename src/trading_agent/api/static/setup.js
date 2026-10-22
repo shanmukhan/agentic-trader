@@ -1,6 +1,8 @@
 (function () {
   'use strict';
+  const createDialogs = typeof module !== 'undefined' && module.exports ? require('./dialogs.js').createDialogs : window.AgenticDialogs;
   function createSetup(doc, win, request) {
+    const dialogs = createDialogs(doc, win);
     const el = id => doc.getElementById(id);
     let token = '', generation = 0, busy = false, controller = null, state = '', popup = null, pending = null, latest = null;
     let recommendedStep = 1;
@@ -8,33 +10,6 @@
     const actionIds = ['save-credentials', 'login', 'profile', 'exchange-button', 'catalog', 'save-symbols', 'save-session', 'connect', 'disconnect', 'refresh-status'];
     const stepIds = ['setup-step-1', 'setup-step-2', 'setup-step-3', 'setup-step-4', 'setup-step-5', 'feed-connection'];
     const stepTitles = ['Register your Kite app', 'Save app credentials', 'Sign in to Zerodha', 'Choose stock subscriptions', 'Review an exchange session', 'Connect market data'];
-    function positionConfirmation() {
-      if (!win.parent || win.parent === win || !win.frameElement) return;
-      const dialog = el('confirm'), frame = win.frameElement.getBoundingClientRect();
-      const viewport = win.parent.visualViewport;
-      const viewportTop = viewport ? viewport.offsetTop : 0;
-      const viewportBottom = viewportTop + (viewport ? viewport.height : win.parent.innerHeight);
-      const top = Math.max(viewportTop, frame.top) + 16;
-      const bottom = Math.min(viewportBottom, frame.bottom) - 16;
-      const space = Math.max(0, bottom - top);
-      // A modal's native viewport is the entire expanded iframe, not the portion
-      // visible in the workspace. Translate the parent's visible center into it.
-      dialog.style.position = 'fixed';
-      dialog.style.top = (top + space / 2 - frame.top) + 'px';
-      dialog.style.bottom = 'auto';
-      dialog.style.margin = '0 auto';
-      dialog.style.transform = 'translateY(-50%)';
-      dialog.style.maxHeight = space + 'px';
-      dialog.style.overflow = 'auto';
-    }
-    function stopConfirmationPositioning() {
-      if (!win.parent || win.parent === win) return;
-      win.parent.removeEventListener('resize', positionConfirmation);
-      win.parent.removeEventListener('scroll', positionConfirmation);
-      win.parent.visualViewport?.removeEventListener('resize', positionConfirmation);
-      win.parent.visualViewport?.removeEventListener('scroll', positionConfirmation);
-    }
-    function closeConfirmation() { stopConfirmationPositioning(); el('confirm').close(); }
     function message(text, error = false) { el('message').textContent = text; el('message').className = error ? 'error' : ''; }
     function sessionMessage(text, error = false) { el('session-feedback').textContent = text; el('session-feedback').className = error ? 'error' : ''; }
     function sessionStatus(data) {
@@ -106,7 +81,7 @@
       el('setup-next-action').textContent = 'Review connection setup'; recommendedStep = 1;
       el('selected').replaceChildren(); el('sessions').replaceChildren();
       el('selected-title').textContent = 'Saved feed subscriptions';
-      if (el('confirm').open) el('confirm').close();
+      dialogs.cancel(el('confirm'));
       sessionMessage(''); el('profile').textContent = 'Check saved broker session';
       el('state').textContent = 'Locked'; buttons(); message('Locked. Broker credentials and setup status are hidden.');
       el('token').required = true;
@@ -189,19 +164,10 @@
       } finally { win.clearTimeout(timeout); if (version === generation) { busy = false; controller = null; el('profile').textContent = 'Check saved broker session'; buttons(); } }
     }
     function confirm(text, action) {
-      if (!token || busy) return;
+      if (!token || busy || el('confirm').open) return;
       pending = action; el('confirm-text').textContent = text;
-      // Position before showModal focuses a control, avoiding a jump to the
-      // iframe's off-screen native center. Keep the same real confirmation.
-      positionConfirmation();
-      if (win.parent && win.parent !== win) {
-        win.parent.addEventListener('resize', positionConfirmation);
-        win.parent.addEventListener('scroll', positionConfirmation);
-        win.parent.visualViewport?.addEventListener('resize', positionConfirmation);
-        win.parent.visualViewport?.addEventListener('scroll', positionConfirmation);
-      }
-      el('confirm').showModal();
-      el('cancel-confirm').focus({preventScroll:true});
+      if (!dialogs.open(el('confirm'), { cancel: () => { pending = null; }, focus: el('cancel-confirm') }))
+        message('The confirmation could not be displayed. Reopen Broker & Data and review the action again. Nothing was submitted.', true);
     }
     el('access').addEventListener('submit', event => { event.preventDefault(); if (busy) return; token = el('token').value.trim() || token; el('token').value = ''; generation++; call(); });
     el('setup-next-action').addEventListener('click', () => openStep(recommendedStep, true));
@@ -246,11 +212,9 @@
       confirm('Save feed selection: ' + symbols.join(', ') + '? It must include all held symbols. This does not approve ETF costs or submit any order.', () => call('/symbols', { symbols })); });
     el('calendar').addEventListener('submit', event => { event.preventDefault(); const body = { date: el('session-date').value, open: el('session-open').value, close: el('session-close').value, source: el('session-source').value.trim(), reviewed: el('session-reviewed').checked };
       confirm('Add ' + body.date + ', ' + body.open + '–' + body.close + ' IST? Source: ' + body.source + '. Confirm against NSE notices. Existing session history cannot be overwritten.', async () => { const result = await call('/session', body); if (result) el('session-reviewed').checked = false; }); });
-    el('cancel-confirm').addEventListener('click', () => { pending = null; closeConfirmation(); });
-    el('confirm').addEventListener('cancel', () => { pending = null; stopConfirmationPositioning(); });
-    el('confirm').addEventListener('close', stopConfirmationPositioning);
-    win.addEventListener('pagehide', stopConfirmationPositioning);
-    el('confirm-action').addEventListener('click', () => { const action = pending; pending = null; closeConfirmation(); if (action && token && !busy) action(); });
+    el('cancel-confirm').addEventListener('click', () => dialogs.cancel(el('confirm')));
+    el('confirm-action').addEventListener('click', () => { const action = pending; pending = null; dialogs.close(el('confirm')); if (action && token && !busy) action(); });
+    win.addEventListener?.('pagehide', lock);
     lock(); return { lock, refresh: () => call(), canNavigate: () => !busy && !el('confirm').open && (!popup || popup.closed) };
   }
   if (typeof module !== 'undefined' && module.exports) module.exports = { createSetup };

@@ -2,11 +2,21 @@
   'use strict';
   const win = window, doc = document;
   const embedded = win.parent !== win;
-  const views = {'/':'desk','/desk':'desk','/analysis':'analysis','/strategies':'strategies','/activity':'activity','/console':'console','/setup':'setup','/portfolio':'portfolio'};
+  const views = {'/':'dashboard','/desk':'dashboard','/dashboard':'dashboard','/discovery':'discovery','/analysis':'analysis','/strategies':'strategies','/investment-policy':'strategies','/backtesting':'backtesting','/paper':'paper','/holdings':'portfolio','/portfolio':'portfolio','/activity':'history','/console':'risk','/setup':'broker','/settings':'settings','/learn':'learn'};
   const cleanAnchor = value => typeof value === 'string' && /^[A-Za-z][A-Za-z0-9_-]{0,99}$/.test(value) ? value : '';
+  function destination(path, hash) {
+    let view=views[path],anchor=cleanAnchor((hash||'').slice(1));
+    if(view==='dashboard'&&['strategy-setup','execution-shortlist','apply-shortlist'].includes(anchor)){view='strategies';if(anchor==='apply-shortlist')anchor='execution-shortlist';}
+    if(path==='/portfolio'&&!anchor)anchor='purchases';
+    if(path==='/investment-policy')anchor='investment-policy';
+
+    return {view,anchor};
+  }
   if (!embedded) {
-    if (!win.__kiteCallbackHandled && !new URLSearchParams(win.location.search).has('request_token'))
-      win.location.replace('/workspace#'+(views[win.location.pathname] || 'overview')+(cleanAnchor((win.location.hash||'').slice(1))?'/'+cleanAnchor(win.location.hash.slice(1)):''));
+    if (!win.__kiteCallbackHandled && !new URLSearchParams(win.location.search).has('request_token')) {
+      const target=destination(win.location.pathname,win.location.hash);
+      win.location.replace('/workspace#'+(target.view||'learn')+(target.anchor?'/'+target.anchor:''));
+    }
     return;
   }
   doc.body.classList.add('workspace-child');
@@ -46,10 +56,10 @@
         if (!anchor || event.defaultPrevented || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
         if (event.button !== undefined && event.button !== 0) return;
         const url = new URL(anchor.href, win.location.origin);
-        if (url.origin === win.location.origin && views[url.pathname]) { event.preventDefault(); send('workspace-navigate', {view:views[url.pathname],anchor:cleanAnchor(url.hash.slice(1))}); }
+        if (url.origin === win.location.origin && Object.hasOwn(views,url.pathname)) { event.preventDefault(); send('workspace-navigate', destination(url.pathname,url.hash)); }
       });
       if (win.ResizeObserver) new win.ResizeObserver(() => send('workspace-height', {height:Math.ceil(doc.body.getBoundingClientRect().height)+32})).observe(doc.body);
-      send('workspace-ready', {view:views[win.location.pathname]});
+      send('workspace-ready', {view:views[win.location.pathname],path:win.location.pathname});
       revealAnchor();
     },
     canNavigate() { return !instance || !instance.canNavigate || instance.canNavigate(); },

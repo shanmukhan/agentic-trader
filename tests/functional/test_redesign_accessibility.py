@@ -20,7 +20,7 @@ class PageLabels(HTMLParser):
         if identifier := values.get("id"):
             assert identifier not in self.ids, f"Duplicate ID: {identifier}"
             self.ids.add(identifier)
-        for attribute in ("for", "aria-labelledby", "aria-describedby"):
+        for attribute in ("for", "aria-controls", "aria-labelledby", "aria-describedby"):
             self.references.extend((values.get(attribute) or "").split())
         if tag in {"section", "details", "main", "nav", "aside", "form", "dialog"}:
             self.sections.append(tag)
@@ -38,11 +38,19 @@ def test_redesigned_shells_keep_accessible_labels_and_balanced_workflows(engine)
             "/workspace",
             "/desk",
             "/strategies",
+            "/investment-policy",
             "/analysis",
             "/activity",
             "/portfolio",
             "/console",
             "/setup",
+            "/dashboard",
+            "/discovery",
+            "/holdings",
+            "/backtesting",
+            "/paper",
+            "/settings",
+            "/learn",
         ):
             response = client.get(route)
             assert response.status_code == 200
@@ -52,3 +60,15 @@ def test_redesigned_shells_keep_accessible_labels_and_balanced_workflows(engine)
             assert set(page.references) <= page.ids, route
             assert 'content="light"' in response.text, route
             assert 'type="password"' in response.text, route
+            if route in {
+                "/desk",
+                "/strategies",
+                "/paper",
+                "/activity",
+                "/portfolio",
+                "/console",
+                "/setup",
+            }:
+                assert response.text.index("/dialogs.js") < response.text.index(
+                    "/workspace-bridge.js"
+                )

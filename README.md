@@ -1,16 +1,38 @@
 # Agentic Trader — paper only
 
-Version **0.13.1** adds an in-app **Prepare a paper strategy** workflow: download
-genuine Nifty 100/500 constituent sources and completed Kite daily history, inspect
-coverage/exclusions, choose a rules-only or matching validated-ML policy and confirm
-one setup summary. The server coordinates installation, ranked shortlist, eligible
-reviews for today and feed reconnection; CSV and individual controls stay under Advanced. The desk explains each disabled
-mode with the next action, market/entry times and per-symbol quote freshness.
-Installation leaves Manual selected; Approval and Automatic remain explicit paper-only
-choices with independent risk checks. Buy / sell activity explains orders and fills.
-Current constituent snapshots are for prospective screening, not historical ML evidence;
-no model or profitable-stock claim is manufactured. Read the
-[step-by-step preparation guide](docs/strategy-preparation.md).
+Version **0.18.0** adds separate **investment policy drafts** under Strategies:
+months/years horizons, monthly/quarterly reviews, explicit screening/allocation/exit
+choices, exact preview and immutable private saves. Every choice starts unresolved.
+The offline `investment-policy` command previews review dates using an explicit calendar
+declaration. Drafts do not install or execute a strategy. See [the policy draft guide](docs/investment-policy-drafts.md).
+
+The 0.17 slice adds registered backtest-job interfaces, verified reports and exact
+cash/held-share allocation. Browser job launch remains disabled on the implementation
+Mac because OS isolation/hard limits could not be verified; Linux/Pi has no browser-job
+sandbox backend. Account/replay daily returns remain unavailable without accepted daily
+valuation history. See [browser backtesting](docs/browser-backtesting.md) and
+[portfolio analytics](docs/portfolio-analytics.md). Full Phase 5 remains incomplete.
+
+Phase 4 price research remains available. **Stock Analysis**
+now reads a separate immutable research series for Daily, Weekly and Monthly candles,
+with 15 fixed-precision indicators, explicit warmup/gap states, share-action-adjusted
+OHLC/volume, price drawdown and an optional traceable local benchmark comparison.
+The chart range selector changes only displayed candles; indicator seeds retain the
+full eligible history. **Stock Discovery** explains the existing screen's actual
+observations, thresholds, missing evidence and deterministic ties without changing ranks.
+
+Weekly/monthly completion requires a hash-bound calendar-completeness review;
+no missing dates, prices or fundamentals are invented. The current preparation wizard
+still downloads at most 60 completed sessions: SMA200 and longer-period indicators
+need a separately reviewed longer bundle and otherwise show warmup. Benchmarks need
+an explicitly supplied compatible artifact; fundamentals remain unavailable pending a
+licensed source. Investment-policy execution, target allocation/rebalancing and accepted
+portfolio return history remain future work. Existing strategy/ML/risk identities and account authority
+are unchanged. See [the research guide](docs/investment-research.md) for commands, metadata,
+coverage, failure/recovery and limitations.
+
+The grouped workspace and guarded paper controls are described in
+[usage](docs/how-to-use.md) and [the V2 plan](docs/IMPLEMENTATION_PLAN.md).
 
 Read-only Zerodha Kite data, deterministic risk checks, durable simulated execution,
 and a local authenticated dashboard for intraday and long-term paper accounts.

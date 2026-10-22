@@ -1,0 +1,138 @@
+{
+  "schema_version": "phase2-design-scenarios-1",
+  "status": "proposed_not_executed",
+  "purpose": "Minimum acceptance vectors for a future connected/replay differential harness; not an executable dataset or observed investment results.",
+  "target_semantics": "investment-decisions-v2.1",
+  "fixture_kind": "synthetic",
+  "execution": "paper_only",
+  "capital_inr": "25000.00",
+  "common_requirements": [
+    "Every shorthand precondition must be expanded to immutable hashed source, calendar, policy, cost and model fixtures before execution.",
+    "Both adapters receive the same quote/control/authority event tape and aware timestamps.",
+    "No runtime operator database, broker credentials or real broker network may be used.",
+    "Every financial assertion uses independent persisted ledger reconstruction, not only the engine snapshot.",
+    "Parameters and numerical expected quantities must be frozen in the implementation fixture; this inventory does not prescribe investment limits."
+  ],
+  "cases": [
+    {
+      "id": "P01",
+      "name": "First complete quote fails gap and later quote recovers",
+      "preconditions": ["active_approval_epoch", "reviewed_open_session", "prior_screen_candidate", "current_basis_valid", "no_holding_or_pending_order"],
+      "events": ["first_fresh_liquid_quote_exceeds_declared_gap", "later_fresh_liquid_quote_passes_gap"],
+      "expected": {"decision": "NO_SIGNAL", "reason": "ENTRY_GAP", "slot_consumed": true, "proposal_count": 0, "order_count": 0, "fill_count": 0, "cash_inr": "25000.00"},
+      "parity": "same_first_opportunity_and_terminal_slot"
+    },
+    {
+      "id": "P02",
+      "name": "Repeated and ordered same-second quotes cannot repeat a signal or liquidity",
+      "preconditions": ["slot_already_consumed", "existing_partial_order_with_known_depth_budget"],
+      "events": ["identical_market_observation_later_receipt", "changed_kite_observation_same_exchange_second_later_receipt", "strictly_newer_exchange_timestamp"],
+      "expected": {"new_proposals": 0, "repeat_renews_freshness": false, "same_second_renews_liquidity": false, "same_second_can_update_protection": true, "fill_requires_later_eligible_timestamp": true},
+      "parity": "preserve_recorded_source_and_receipt_clocks_no_conflicting_replay_tie_admission"
+    },
+    {
+      "id": "P03",
+      "name": "Missing required history is not a negative signal",
+      "preconditions": ["active_approval_epoch", "fresh_quote", "required_previous_session_missing"],
+      "events": ["evaluate", "required_data_arrives_before_cutoff_with_valid_availability", "new_fresh_quote"],
+      "expected": {"first_decision": "WAIT", "reason": "REQUIRED_DATA_UNAVAILABLE", "first_slot_consumed": false, "first_order_count": 0, "later_first_opportunity_allowed": true},
+      "parity": "no_backfill_or_earlier_decision_revision"
+    },
+    {
+      "id": "P04",
+      "name": "Complete screen rejects a new candidate",
+      "preconditions": ["active_approval_epoch", "complete_prior_screen_filtered", "fresh_valid_quote"],
+      "events": ["evaluate", "more_same_cycle_quotes"],
+      "expected": {"decision": "NO_SIGNAL", "reason": "SCREEN_FILTERED", "slot_consumed": true, "order_count": 0, "fill_count": 0},
+      "parity": "same_failed_filter_evidence"
+    },
+    {
+      "id": "P05",
+      "name": "Held missing screen differs from definitive filtered screen",
+      "preconditions": ["existing_supported_holding", "no_independent_stop_or_kill_trigger", "declared_screen_failure_exit_enabled"],
+      "events": ["needs_data_screen_at_cycle", "separate_fixture_complete_filtered_screen_at_cycle"],
+      "expected": {"missing_decision": "WAIT", "missing_discretionary_sell": false, "filtered_decision": "SELL_PROPOSAL", "sell_is_fill": false},
+      "parity": "no_generic_noncandidate_exit"
+    },
+    {
+      "id": "P06",
+      "name": "Late source revision does not rewrite an already consumed signal",
+      "preconditions": ["complete_opportunity_consumed", "original_snapshot_immutable"],
+      "events": ["new_revision_available_later", "same_cycle_re_evaluation"],
+      "expected": {"original_decision_changed": false, "new_bundle_required": true, "same_cycle_new_signal": false, "next_cycle_may_use_new_revision": true},
+      "parity": "future_revision_perturbation_leaves_prior_result_identical"
+    },
+    {
+      "id": "P07",
+      "name": "Reviewed current-day action converts prior raw entry reference",
+      "preconditions": ["prior_raw_close_inr_100", "new_shares_per_old_share_2", "cash_per_old_share_inr_2", "action_known_reviewed_and_applied_before_quote"],
+      "events": ["admit_action_basis", "fresh_quote", "evaluate"],
+      "expected": {"reference_inr": "49.00", "formula": "(100-2)/2", "future_close_used": false, "double_counted_dividend": false},
+      "parity": "same_reference_feature_and_action_evidence"
+    },
+    {
+      "id": "P08",
+      "name": "Late or unsupported action quarantines instead of guessing",
+      "preconditions": ["current_action_required", "action_terms_unknown_or_unsupported", "held_or_selected_symbol"],
+      "events": ["quote_before_review", "evaluate"],
+      "expected": {"decision": "WAIT", "reason": "BASIS_REVIEW_REQUIRED", "slot_consumed": false, "automatic_purchase": false, "guessed_quantity_adjustment": false, "invented_liquidation": false},
+      "parity": "same_quarantine_and_uncertain_valuation"
+    },
+    {
+      "id": "P09",
+      "name": "Held symbol cannot disappear when outside shortlist or unsupported",
+      "preconditions": ["holding_exists", "symbol_not_ranked_or_support_review_fails"],
+      "events": ["preview_selection_change", "evaluate"],
+      "expected": {"holding_retained": true, "held_feed_subscription_retained": true, "entry_authority_paused_if_unsupported": true, "sale_requires_declared_exit_and_valid_execution_basis": true},
+      "parity": "same_holding_and_action_risk_state"
+    },
+    {
+      "id": "P10",
+      "name": "Holding age uses complete reviewed sessions across years",
+      "preconditions": ["holding_first_fill_in_prior_year", "calendar_has_holidays_and_early_close", "later_pooled_addition"],
+      "events": ["evaluate_with_complete_calendar", "separate_fixture_opening_session_missing"],
+      "expected": {"age_formula": "index(current_session)-index(first_fill_session)", "opening_age": 0, "pooled_addition_resets_age": false, "missing_calendar_reason": "HOLD_AGE_UNKNOWN", "missing_calendar_guessed_exit": false},
+      "parity": "same_age_or_same_blocker_no_missing_index_exception"
+    },
+    {
+      "id": "P11",
+      "name": "Simultaneous ranked candidates compete for exact fee-inclusive cash",
+      "preconditions": ["pilot_cash_25000", "two_eligible_candidates", "fixed_cost_version", "declared_rank_and_symbol_tie_rule", "combined_requested_reservations_exceed_cash"],
+      "events": ["same_clock_candidate_batch", "adverse_input_iteration_order", "later_partial_fill_quotes"],
+      "expected": {"ordering_independent_of_input_iteration": true, "fractional_shares": false, "leverage": false, "reservation_within_cash": true, "rounding_tick_and_fees_exact": true, "independent_sql_reconstruction": true},
+      "parity": "same_quantities_reservations_orders_fills_and_cash"
+    },
+    {
+      "id": "P12",
+      "name": "Required ML cannot fall back to unmatched legacy or missing features",
+      "preconditions": ["v2_policy_requires_ml", "legacy_or_stale_or_mismatched_artifact"],
+      "events": ["evaluate"],
+      "expected": {"decision": "WAIT", "reason": "MODEL_CONTEXT_INVALID", "slot_consumed": false, "rules_fallback": false, "missing_features_as_zero": false, "order_count": 0},
+      "parity": "same_model_availability_and_identity_gate"
+    },
+    {
+      "id": "P13",
+      "name": "Approval expiry risk pause and financial bound changes revoke authority",
+      "preconditions": ["proposal_awaiting_approval", "preview_with_fixed_maximum_quantity_cash_price_risk"],
+      "events": ["advance_beyond_expiry_or_disconnect_or_change_revision", "approve_original_preview"],
+      "expected": {"new_order_count": 0, "terminal_slot_reopened": false, "reviewed_bounds_increased": false, "cash_inr": "25000.00"},
+      "parity": "same_explicit_control_events_and_approval_delay"
+    },
+    {
+      "id": "P14",
+      "name": "Lost response and restart reconcile once without rearming or replay",
+      "preconditions": ["durable_submitted_intent_or_terminal_cancelled_slot"],
+      "events": ["lose_http_response", "retry_same_id", "process_restart", "switch_mode_or_reconnect"],
+      "expected": {"duplicate_order": false, "unsubmitted_authority_expired": true, "mode_after_restart": "manual", "terminal_slot_reopened": false, "existing_order_and_fills_reconciled": true},
+      "parity": "same_crash_boundary_recovery_and_durable_identities"
+    },
+    {
+      "id": "P15",
+      "name": "Data exhaustion does not invent an exit or a complete return",
+      "preconditions": ["holding_or_pending_order", "no_later_usable_quote_or_depth"],
+      "events": ["end_of_execution_evidence"],
+      "expected": {"synthetic_final_close_fill": false, "holding_or_pending_order_retained": true, "report_incomplete": true, "valuation_fresh_claim": false, "ledger_reconstructible": true},
+      "parity": "same_unfinished_financial_state_and_report_gate"
+    }
+  ]
+}

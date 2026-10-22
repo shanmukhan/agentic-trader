@@ -11,7 +11,13 @@ def test_workspace_shell_assets_and_scoped_framing(engine):
     with TestClient(
         create_app(engine, clock=lambda: NOW, background=False), base_url="http://127.0.0.1"
     ) as client:
-        for path in ("/workspace", "/workspace.js", "/workspace-bridge.js"):
+        for path in (
+            "/workspace",
+            "/workspace.js",
+            "/workspace-bridge.js",
+            "/dialogs.js",
+            "/investment.js",
+        ):
             response = client.get(path)
             assert response.status_code == 200
             assert response.headers["X-Frame-Options"] == "DENY"
@@ -26,6 +32,13 @@ def test_workspace_shell_assets_and_scoped_framing(engine):
             "/activity",
             "/strategies",
             "/analysis",
+            "/dashboard",
+            "/discovery",
+            "/holdings",
+            "/backtesting",
+            "/paper",
+            "/settings",
+            "/learn",
         ):
             response = client.get(path)
             assert response.status_code == 200
@@ -34,14 +47,19 @@ def test_workspace_shell_assets_and_scoped_framing(engine):
             assert "workspace-bridge.js" in response.text
         shell = client.get("/workspace").text
         for label in (
-            "Help &amp; onboarding",
+            "Setup checklist",
             "Dashboard",
-            "Market &amp; Analysis",
+            "Stock Discovery",
+            "Stock Analysis",
+            "Backtesting",
+            "Portfolio",
+            "Trade History",
+            "Learning Center",
+            "Settings",
             "Strategies",
             "Paper Trading",
-            "Risk Center",
-            "Broker &amp; Settings",
-            "Purchases &amp; SIP",
+            "Risk Management",
+            "Broker &amp; Data",
         ):
             assert label in shell
         assert 'class="workspace-sidebar"' in shell

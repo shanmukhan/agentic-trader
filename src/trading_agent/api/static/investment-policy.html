@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light"><title>Investment policy drafts · Paper only</title>
+  <link rel="stylesheet" href="/dashboard.css">
+  <script src="/money.js" defer></script><script src="/dialogs.js" defer></script><script src="/workspace-bridge.js" defer></script><script src="/investment-policy.js" defer></script>
+</head>
+<body class="policy-page">
+  <a class="skip" href="#main">Skip to policy drafts</a>
+  <header class="masthead"><div><p class="eyebrow">AGENTIC TRADER <span class="pill">PAPER POLICY PLANNING</span></p><h1>Investment policy drafts</h1><p class="muted">Choose a holding horizon, review schedule and explicit limits for future research.</p></div><span id="state" class="badge">Locked</span></header>
+  <section class="access panel"><form id="access" autocomplete="off"><label for="token">Local operator token</label><input id="token" type="password" autocomplete="off" required><button id="unlock">Unlock / refresh</button><button id="lock" type="button" class="quiet" disabled>Lock</button></form></section>
+  <p id="message" role="status" aria-live="polite">Unlock to inspect saved policy drafts.</p>
+  <main id="main" hidden>
+    <div class="section-heading"><a href="/strategies">← Current strategy and data preparation</a><button id="refresh" type="button" class="quiet">Refresh saved drafts</button></div>
+    <section class="notice" aria-labelledby="scope-title"><h2 id="scope-title">Plan a separate policy</h2><p>Drafts support months or years and monthly or quarterly reviews. Every investment choice starts blank. Your installed strategy, paper mode, holdings and broker connection stay as configured.</p><p>A specified draft records your choices. Execution, installation and backtesting for this policy family are unavailable. The legacy daily strategy keeps its existing holding-session limit.</p><details><summary>Draft scope and limitations</summary><ul id="limitations"></ul></details></section>
+    <section class="panel" aria-labelledby="editor-title"><div class="section-heading"><h2 id="editor-title">1. Choose the policy parameters</h2><button id="discard" type="button" class="quiet">Discard unsaved changes / new draft</button></div>
+      <p>You can save an incomplete draft. Empty fields remain unresolved. These values are research inputs you choose, not recommended limits. Percentages use at most four decimal places; turnover uses at most two.</p>
+      <p id="editing-state" role="status"></p>
+      <label for="policy-label">Draft name (optional)</label><input id="policy-label" type="text" maxlength="120" autocomplete="off" placeholder="A name for your research plan">
+      <div id="policy-fields"></div>
+      <p class="muted">Invested cap plus cash reserve must be at most 100%. Stock caps must fit the sector cap, and both must fit the invested cap. They are ceilings, not instructions to invest the maximum. Sector data is not supplied by this form.</p>
+      <button id="review" type="button" disabled>Review draft</button><p id="save-state" role="status" aria-live="polite"></p><button id="retry" type="button" class="quiet" hidden disabled>Review retry of the same draft</button>
+    </section>
+    <section class="panel" aria-labelledby="saved-title"><h2 id="saved-title">2. Saved draft snapshots</h2><p>Saving creates an immutable snapshot. Editing a copy creates another snapshot when its content changes. Reading or refreshing drafts grants no account authority.</p><p id="saved-state" role="status"></p><div id="saved-drafts" class="invest-card-list"></div></section>
+    <details class="panel"><summary>Calendar preview and technical identity</summary><p>Calendar-month horizons keep the original day where possible and clamp to the last calendar day when needed. Exchange review dates require an explicitly reviewed complete calendar; weekdays and partial session lists cannot establish a review date. Missing cycles are skipped rather than replayed.</p><p>Use <code>.venv/bin/trading-agent investment-policy --help</code> to inspect a draft file or preview review dates from a local calendar declaration. This produces a research report without changing an account.</p><p>Semantic identity excludes the draft name. Saving binds the complete reviewed snapshot, including its name. No active policy or experiment identity is inferred from a draft alone.</p></details>
+  </main>
+  <dialog id="confirm" aria-labelledby="confirm-title" aria-describedby="confirm-text"><h2 id="confirm-title">Review policy draft snapshot</h2><p id="confirm-text">Saving records these exact choices in separate private research storage. It does not install a strategy, activate a mode or submit orders. Unresolved choices remain empty.</p><p id="confirm-state" role="status"></p><div class="table-wrap" role="region" aria-label="Exact draft choices under review" tabindex="0"><table><caption>Choices and unresolved parameters</caption><thead><tr><th scope="col">Parameter</th><th scope="col">Exact value</th></tr></thead><tbody id="confirm-rows"></tbody></table></div><details><summary>Reproducibility</summary><dl id="confirm-identity" class="invest-definitions"></dl></details><label for="ack"><input id="ack" type="checkbox">I reviewed this draft snapshot and its limitations.</label><div class="dialog-actions"><button id="cancel" type="button" class="quiet">Cancel</button><button id="save" type="button" disabled>Save draft snapshot</button></div></dialog>
+</body>
+</html>

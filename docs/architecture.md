@@ -1,5 +1,122 @@
 # Architecture and invariants
 
+## V2 Phase 5 investment-policy planning boundary (0.18.0)
+
+`investment_research/policy.py` adds an independent schema-1 draft family
+`nse-investment-policy-v2` / `investment-decisions-v2.1`. The typed nullable contract and
+shared field metadata validate all entered values without financial defaults. Exact
+decimal strings normalize under a private context; coupled allocation limits reject
+inconsistent proposals. Semantic identity binds canonical parameters and explicit
+version/domain while excluding names/storage/time. A complete specification still has
+no activation or backtest adapter. Legacy strategy/risk hashes and daily-execution
+semantics are not repurposed for this new family.
+
+`policy_store.py` owns separate `.investment-policies` private storage. Construction,
+GET and preview do not create files. An acknowledged save binds the full normalized
+reviewed snapshot including its label, takes a private filesystem lock and publishes
+without replacing an existing identity. Repeated content returns the existing snapshot;
+editing a copy creates a distinct snapshot. Reads revalidate canonical content/hash,
+ownership, permissions and bounded regular files; unsafe evidence fails closed. No
+operator engine, broker, account schema, strategy install or mode authority enters this
+store. `api/investment_policies.py` exposes authenticated bounded list/get/preview/save
+only, with sanitized failures independent of financial fault recovery.
+
+`policy_schedule.py` is a pure calendar-month/year date calculation. It accepts an
+explicit operator declaration of continuous complete reviewed calendar coverage and an
+aware `as_of`, requires the entire monthly/quarterly period to select its first/last
+session, and never infers weekdays or future-known sessions. Original-day anniversary
+clamping and exclusive horizon end are explicit. Missing evidence stays unavailable;
+out-of-horizon candidates are skipped without catch-up. The bounded result grants no
+execution/activation authority. The `investment-policy` CLI inspects files and prints
+this optional preview without opening an account or writing a report.
+
+`/investment-policy` is a guarded Strategies subview, retaining existing preparation
+and anchors. Its blank metadata-driven form previews then confirms an immutable save,
+guards unsaved navigation and reconciles unknown outcomes before explicit same-content
+retry. It clears private memory on lock/pagehide and never polls or auto-saves. This
+planning slice does not solve the 0.17 native-worker gate or implement new investment
+execution, connected/replay parity, rebalance/OOS or live-account policy installation.
+See [inputs, persistence, dates and recovery](investment-policy-drafts.md).
+
+## V2 Phase 5 isolated research and exact allocation boundary (0.17.0)
+
+`research_jobs/registry.py` copies immutable reviewed daily/execution inputs into private
+storage and binds source/config/public evidence, Python implementation hash and complete
+observed fee assumptions to an opaque resource hash. Admission and worker startup require
+the current implementation/fees to match; report reads retain the original identity. The CLI
+registers paths; HTTP only selects identifiers/hashes. `jobs.py` owns a distinct locked
+research root and daemon queue, atomic durable states, idempotency and cancellation/
+publication serialization. It does not hold the engine quote/risk lock while replaying.
+No operator account engine is passed to a worker. App shutdown interrupts research
+work; restart never resumes it automatically.
+
+`isolation.py`/`worker.py` supply an environment allowlist, a Darwin deny-by-default
+network/write sandbox and hard budgets checked in a separate process before admission.
+The implementation Mac fails this capability; Linux/Pi browser jobs have no backend.
+Fail-closed availability is part of the runtime contract, not acceptance evidence for
+an actual worker. `reports.py` verifies manifest/files/request hashes and reopens the
+scratch SQLite ledger read-only for integrity/accounting checks before publishing
+bounded JSON; raw databases/HTML/arbitrary paths are not served. Sanitized research
+errors do not invoke account recovery or revoke financial authority.
+
+`investment_research/portfolio_metrics.py` consumes a read-only ledger/quote cut for
+actual-cash/accepted-bid held-share allocation. Claims are excluded consistently,
+commitments stay separate and missing/stale/incomplete marks disable weights. The pure
+`performance.py` requires explicit daily baseline/cuts/calendar/no-flow declarations,
+with sample/assumption gates and 34-digit private Decimal arithmetic. Current account
+history and legacy event curves do not satisfy that contract; returns remain unavailable.
+Neither module submits an order, edits policy nor accesses broker transport.
+
+The dedicated `/backtesting` controller reuses shared dialogs/token handoff/privacy;
+its polling reads research state only, and its confirmed mutations start/cancel isolated
+jobs. Portfolio remains a saved read. New months-to-years strategies, connected/replay
+parity, OOS/walk-forward/benchmark/rebalance and external acceptance remain open.
+See [browser jobs](browser-backtesting.md) and [financial definitions](portfolio-analytics.md).
+
+## V2 Phase 4 price-research boundary (0.16.0)
+
+`investment_research/` is an additive pure research layer: fixed-context Decimal
+indicators, availability/membership/gap eligibility, coherent share adjustment,
+review-bound period aggregation, traceable local benchmark comparison and explanation
+of existing published rank predicates. No account or execution dependency is imported
+by this layer. Its optional calendar/benchmark overlays bind exact hashes independently
+of legacy profile/strategy identities. Context/source changes create another research
+snapshot and never approve account basis or install policy.
+
+`api/analysis.py` mounts `/api/research/series` while preserving the legacy raw/minute
+endpoint. It captures the current research and quote context under the engine lock,
+then performs immutable file validation/calculation outside the lock. Errors are
+sanitized and cannot trigger generic financial failure recovery. The CLI invokes the
+same calculation without opening a service account and writes isolated reports.
+The frontend retains local assets, exact tables and read-only requests; range selection
+does not recalculate. Source licensing, richer acquisition, strategy parity/activation,
+new strategy/parity, accepted portfolio return history and full Phase 5 acceptance remain
+separate gates; the 0.17 section above records the implemented jobs/allocation slice. See
+[investment-research.md](investment-research.md) for implemented contracts.
+
+
+## V2 Phase 3 installed frontend (0.15.0)
+
+The composition root now mounts `api/workspace_views.py` and six read-only frontend
+pages, plus `/paper` for the existing mode/proposal controller. The grouped shell
+preserves legacy aliases and guarded frame handoff including actual child path.
+`static/investment.js` renders exact strings with a saved/stale state and no mutations;
+`static/dialogs.js` owns shared native geometry/focus/cancel cleanup across existing
+controllers. Reads take an independent read-only SQLite cut under the existing engine
+lock; failures do not invoke mutation recovery. Existing risk, intraday, strategy and
+broker execution paths are unchanged. See [the component guide](frontend-modernization.md)
+for interfaces, financial scope, tests and pending rendered acceptance.
+
+## V2 Phase 2 design reference
+
+The approved architecture/UX design is recorded in [phase-2/architecture.md](phase-2/architecture.md)
+and [the design index](phase-2/README.md). It retains the current stack and guarded
+frames while specifying coherent reads, isolated jobs, authority boundaries and safe
+migration. The new workspace read model above implements a limited subset. The 0.17 slice implements narrower registered jobs and pure metrics; new strategy,
+accepted account return history and migration contracts remain future work. Older
+release descriptions below are historical baseline behavior.
+
+
 ## Light workspace and read-only analysis (0.14.0)
 
 The same-origin workspace shell owns a responsive sidebar and the local operator token

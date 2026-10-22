@@ -1,5 +1,16 @@
 # Reviewed paper purchases, holding additions and SIP plans
 
+In 0.15.0, **Portfolio** opens a read-only holdings/valuation summary. Select **Purchases & SIP** (`#portfolio/purchases`, underlying `/portfolio`) for the existing forms below. Its **Review holdings and request an exit** link preserves the existing aggregate review. Purchase/SIP confirmations use the shared viewport/focus/cancel helper; exact accounting, idempotency and server-side risk checks are unchanged.
+
+## Phase 2 proposed measurement definitions
+
+[phase-2/financial-metrics.md](phase-2/financial-metrics.md) defines future coherent
+portfolio values, returns, allocation and incomplete-claim presentation. The examples
+are synthetic design checks; they are not account or tax/custody evidence. Existing
+purchase/SIP budgets still spend current virtual cash, retain review/confirmation and
+do not deposit funds or authorize unattended orders. No runtime workflow changes here.
+
+
 Version 0.9.0 delivers **LT3c1**, the contribution foundation of LT3c. It adds
 cash-budget purchases/additions, original acquisition history, explicit-session SIP
 plans and a responsive authenticated review UI. Python 3.13.16 and the existing

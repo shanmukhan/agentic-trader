@@ -1,5 +1,203 @@
 # Change log
 
+## 2026-10-23 — V2 Phase 5 investment-policy drafts and date previews (0.18.0)
+
+Added a separate nullable schema-1 investment-policy draft family with months/years
+horizons, monthly/quarterly reviews and explicit screening/allocation/exit choices.
+No investment value is preselected. Strict exact decimal strings normalize to four
+places (turnover two), invalid types/precision/choices fail, and allocation caps must
+agree. Semantic identity excludes names/time/storage; only fully specified drafts gain
+a proposed policy-version hash, with activation/backtesting still unsupported.
+
+Strategies now links to `#strategies/investment-policy`: four labelled parameter groups,
+incomplete drafts, exact preview/acknowledgement, immutable saved snapshots and **Edit
+a copy**. Separate owner-private `.investment-policies` storage revalidates identities,
+bounds and permissions; an identical reviewed save returns its existing snapshot.
+Unsaved edits guard navigation, and uncertain saves require refresh/reconciliation
+before an explicitly confirmed same-content retry. No automatic save/retry is performed.
+Existing strategy preparation, legacy anchors and account controls remain available.
+Unsaved/request/review state also triggers the browser's standard unload warning;
+explicit lock clears local choices. Malformed preview responses cannot leave an
+invisible pending dialog or block recovery.
+
+Added pure calendar-month/year review-date previews and stdout-only `investment-policy`
+CLI inspection. Dates use explicit original-day clamping, exclusive anniversary end,
+full calendar-month/quarter coverage and an aware knowledge clock. Calendar completeness
+is an unverified operator assertion. Missing/future-known evidence stays unavailable;
+out-of-horizon reviews are skipped, empty covered periods never invent weekdays, and
+the 400-cycle budget returns unavailability rather than hidden truncation.
+
+See [commands, schemas, persistence and recovery](investment-policy-drafts.md) and
+[validation record](test-plan.md). This remains a partial Phase 5 delivery: draft policy
+execution/backtest adapters, connected parity, target/rebalance, OOS/walk-forward and
+real-market/platform/device acceptance are unfinished. The 0.17 browser-job runtime gate
+remains unavailable on the implementation Mac. No active policy, paper mode, account
+cash/holding, broker credential or order is changed by creating these research drafts.
+Validation: **1,213 Python / 186 UI tests**, **92.13% statement coverage**,
+Ruff/format/mypy passed. A disposable Firefox workflow saved and reopened a draft;
+independent file/SQL checks preserved its virtual cash, fees, orders and holdings.
+Corrected accidental dependency-version edits; all 66 dependency lock records retain
+their original pins, with only the project release version changed.
+
+## 2026-10-22 — V2 Phase 5 registered jobs and portfolio analytics slice (0.17.0)
+
+Added `research_jobs/`: CLI-only immutable input registration, one-worker/one-queue
+admission, resource/hash-bound idempotency, durable job/cancel/restart states and verified
+bounded report publication. `/api/backtests/*` authenticates existing local operator
+access; browser mutations require explicit acknowledgement, with no path/upload/model
+execution input. Workers get a separate scratch ledger, an allowlisted environment,
+Darwin OS sandbox and verified hard budgets. The UI reviews policy/source/holding cap,
+retains failed/cancelled/interrupted states, reconciles uncertain submissions using the
+same request key and compares only identical registered resources/methods.
+Resource identity also binds the Python implementation hash and complete observed fee
+schedule. Changed code/costs require registration/review again before admission; reports
+must retain the reviewed runtime identity as well as passing independent financial checks.
+
+Runtime launch fails closed. On this Mac the hard 2 GiB address-space limit could not
+be set and the Codex sandbox denied the native sandbox probe. Actual isolated-worker
+acceptance is open; Linux/Pi browser jobs have no implemented backend. Read/registration
+and simulated lifecycle tests are not substitutes for that gate. Actual budgets are
+60 s wall/30 s CPU, 2 GiB address space, 32 MiB combined input/individual output,
+128 MiB combined output, 64 KiB log, 100,000 rows, ten symbols/252 replay sessions,
+100 retained jobs and 32 registered resources. No automatic cleanup/resume is supplied.
+
+Added pure `portfolio_metrics` and daily-cut `performance` contracts with private
+34-digit Decimal arithmetic. Portfolio exposes exact actual-cash/current-accepted-bid
+whole-share allocation; receivables/fractional claims are excluded consistently and
+reservations/buffers/pending orders remain separately labelled commitments. Missing,
+stale, unreviewed or incomplete held evidence disables weights without cost fallback.
+The read does not mutate account state. Daily metrics require explicit baseline,
+reviewed daily cuts/calendar, known-zero flows and sufficient samples/assumptions.
+Existing accounts and event-time replay curves do not supply that history, so their
+CAGR/Sharpe/Sortino/monthly-return suite remains unavailable rather than inferred.
+
+This is **partial Phase 5**, not acceptance of the full investment product. Registered
+browser runs reuse legacy offline rules (default 20-session holding cap); connected
+parity, new months-to-years policies, OOS/walk-forward browser orchestration, portfolio
+benchmark returns, target allocation/rebalancing and real-platform acceptance remain
+open. The user requested both months/multi-year horizons and monthly/quarterly reviews;
+future configuration must support those options, but no concrete active policy was
+selected. No operator account, mode, broker credential or real order was changed.
+
+See [browser commands, limits and recovery](browser-backtesting.md) and
+[allocation/performance definitions](portfolio-analytics.md). Final integrated automated
+validation is recorded in [test-plan.md](test-plan.md): **958 Python / 172 UI tests**,
+**91.87% statement coverage**, Ruff/mypy passed. A disposable synthetic Firefox smoke
+check passed input/unavailable-launch/allocation rendering; broader rendered/mobile,
+sustained broker/device, source licensing and profitability acceptance remain separate.
+
+## 2026-10-22 — V2 Phase 4 causal price research (0.16.0)
+
+The user authorized the next planned phase. Added `investment_research/` with
+34-significant-digit Decimal indicators, gap/membership/availability segmentation,
+coherent known-share-action OHLC/inverse-volume adjustment, a separate gross TRI,
+explicit reviewed weekly/monthly aggregation and a bounded local benchmark adapter.
+Fifteen indicators expose definitions, warmup, value/null, basis and availability.
+Future data and incomplete periods never become invented bars or zero-filled metrics.
+Benchmark comparison requires compatible declared gross INR sources and matched daily
+coverage; source/license declarations and calendar reviews remain unverified assertions.
+
+Added authenticated pure `GET /api/research/series` and isolated `investment-analyze`
+reports. Legacy `/api/analysis` raw daily/minute meanings, strategy/ML/risk identities
+and paper authorization are preserved. The UI supports daily/weekly/monthly research,
+exact indicator/evidence tables, gap-safe SMA overlays and a display-only 50/100/all
+range control. Discovery explains actual legacy filters/thresholds/ties without
+reranking. No user account, watchlist, credential, review, holding or server was changed.
+
+Validation: **828 Python tests passed**, **157 UI tests passed**, **92.38%** statement
+coverage (9,066/9,814); Ruff, changed-Python format, mypy on 104 source files, limited
+secret patterns and whitespace checks passed. New suites include 26 indicator,
+34 series, 59 benchmark, 23 ranking and 16 functional API/CLI tests. Arithmetic uses
+independent Fraction/Decimal references. HTTP reads past expiry/day rollover preserve
+whole SQLite dumps, exact partial-fill cash/basis/fees/reservations and mode/revision;
+failures sanitize 503 without financial fault recovery. CLI tests deny socket access,
+prove no account/lock/WAL creation and independently hash private completed outputs.
+Legacy raw split charts and full-history warmup before 300-bar display clipping are
+covered. UI checks include exact strings, warmup, calendar/benchmark gaps, inert
+research actions, range-only redraw and lock/late-response privacy.
+
+See [usage, schemas and recovery](investment-research.md). Licensed fundamentals,
+new investment policies, multi-year acquisition, browser backtest jobs, portfolio
+return/benchmark/allocation analytics and operational acceptance remain future work.
+Existing preparation still supplies 60 sessions from its supported current-year
+source: longer research needs an explicitly reviewed longer bundle. Full rendered
+browser/mobile/device and sustained real-feed acceptance remain open; tests are
+synthetic/local evidence and establish no profitability or provider entitlement.
+The coverage run still emits SQLite ResourceWarnings in test workflows; cleanup
+remains a reliability finding rather than proof of a production leak.
+
+
+## 2026-10-22 — V2 Phase 3 shared frontend and saved-state workspace (0.15.0)
+
+The user requested the next implementation phase after Phase 2. Implemented shared
+native confirmation geometry/focus/cancel lifecycle across Setup, Risk, Purchases,
+strategy and mode/trade reviews; twelve grouped destinations with a compact mobile
+menu and preserved legacy aliases; read-only Dashboard, Stock Discovery/comparison,
+Portfolio and Settings; CLI-only Backtesting guidance and searchable Learning Center.
+Paper Trading now owns readiness/modes/proposals; Trade History retains orders/fills.
+Purchases/SIP/aggregate exits remain accessible through guarded Portfolio subviews.
+
+`GET /api/workspace/views` uses a separately closed SQLite read-only connection under
+the engine lock and returns bounded saved facts/decimal strings. It does not tick,
+expire, refresh, poll, download or reconcile. Tests independently reconstruct persisted
+fill/cash/basis/fee/reservation values and prove whole-database/mode/revision equality
+for reads past accounting-day/proposal-expiry boundaries. Missing fundamentals, jobs,
+return/benchmark and allocation engines remain unavailable; no new investment strategy
+or broker recovery behavior was installed. Risk and intraday semantics are preserved.
+
+Validation: 670 Python tests, 148 Node UI tests, 92.20% statement coverage
+(8,405/9,116), Ruff and mypy (99 source files) passed. Simulated geometry covers
+360/768/1440px, deep scroll, visual viewport zoom/keyboard offsets, scale/borders,
+long content, focus, Escape/cancel/late close and cleanup. HTTP/DOM checks cover all
+routes, labels, framing/privacy, exact rendering, comparisons and late-response locks.
+A disposable read-only preview opened the locked shell in Firefox; interactive
+verification was interrupted by user browser activity. Rendered keyboard/touch/mobile/
+200% zoom/second-engine and sustained broker/device acceptance are **not complete**.
+SQLite ResourceWarnings remain test-workflow cleanup findings, not new prod-leak proof.
+
+See [implemented component scope and recovery](frontend-modernization.md). Frontend
+code is delivered incrementally; the Phase 3 rendered acceptance gate stays open.
+Phases 4–6 research/job/reliability expansion remain future work. No user account,
+credential, watchlist, holding or server process was changed by implementation testing.
+
+
+## 2026-10-22 — V2 Phase 2 architecture and UX contracts
+
+- Completed the approved design phase in [phase-2/README.md](phase-2/README.md):
+  architecture/authority/migration, twelve grouped screens/aliases, screen/component
+  and light-theme specifications, exact financial/provenance/null definitions,
+  data/indicator/policy parity, API/idempotency/job/error/recovery contracts.
+- Added a clearly nonconnected offline prototype, navigation manifest, synthetic
+  arithmetic fixtures, 15 proposed strategy acceptance vectors and reproducible
+  design validators. No application code, risk default, account, route, credential,
+  policy or runtime version changed; Phases 3–6 remain implementation work.
+- Actual checks passed: 6 prototype DOM tests, design/route/link/HTML/offline checks,
+  11 palette contrast pairs and 129 independent arithmetic/contract comparisons
+  across 7 invented ledger cases/2 return paths; Ruff/format/whitespace passed.
+  Strategy scenarios are specified, not executed financial workflows. The runtime
+  suite was not rerun for documentation-only work. Rendered browser, broker/device,
+  source licensing and empirical strategy acceptance remain separate future gates.
+- Updated main/component usage references, the V2 proposal and historical delivery
+  record. Next implementation slice is shared confirmation reliability and navigation.
+
+
+## 2026-10-22 — V2 Phase 1 audit and approval plan
+
+- Added architecture and UX audits, requirements gap matrix, phased implementation
+  proposal and deferred intraday roadmap from `improvements.txt`. Audited baseline
+  commit `2d5c208`/0.14.0; no application code or operator account changes in this phase.
+- Verified existing CLI research/backtesting, paper execution and exact accounting
+  instead of labelling those modules absent. Identified product gaps, early-year
+  calendar failure, strategy-parity differences, legacy intraday repeat false-pause,
+  broker recovery/provenance/audit gaps and rendered modal/browser acceptance needs.
+- Fresh tests: 660 Python passed with 92.13% statement coverage, 117 Node UI tests,
+  Ruff and mypy (98 source files) passed. Limited project secret scan clean. Test
+  SQLite ResourceWarnings recorded; no full production security/device acceptance claim.
+  A disposable setup-controller geometry check passed, without a feed/connect mutation.
+- Documentation links point to the V2 proposal; implementation requires the user's
+  explicit post-audit approval. No framework migration, real order or risk relaxation.
+
+
 ## 2026-10-22 — 0.14.0 light workspace and saved-data analysis
 
 - Replace the dark tab strip with a responsive light sidebar: Dashboard, Market &

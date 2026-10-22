@@ -282,3 +282,18 @@ test('connecting repeats selected symbols and warns about resumed pending fills 
   s.nodes['confirm-action'].fire('click');s.nodes['confirm-action'].fire('click');await flush();
   assert.equal(s.calls.filter(c=>c.url.endsWith('/connect')).length,1);
 });
+test('Escape and pagehide revoke connect confirmation so delayed or duplicate clicks submit nothing',async()=>{
+  for(const close of ['escape','pagehide']){
+    const s=setup();await s.unlock();s.nodes.connect.fire('click');assert.equal(s.nodes.confirm.open,true);
+    if(close==='escape')s.nodes.confirm.fire('cancel');else s.events.pagehide();
+    assert.equal(s.nodes.confirm.open,false);s.nodes['confirm-action'].fire('click');s.nodes['confirm-action'].fire('click');await flush();
+    assert.equal(s.calls.length,1);assert.equal(s.calls[0].options.method,'GET');
+  }
+});
+test('pagehide while checking a saved session clears credentials and ignores the late result',async()=>{
+  let finish;const s=setup(async url=>url.endsWith('/profile')?new Promise(resolve=>{finish=resolve;}):ok(status()));
+  await s.unlock();s.nodes.profile.fire('click');assert.match(s.nodes['session-feedback'].textContent,/Checking/);
+  s.events.pagehide();finish(ok(status({profile_verified_this_run:true})));await flush();
+  assert.equal(s.nodes.private.hidden,true);assert.equal(s.nodes['session-feedback'].textContent,'');assert.equal(s.nodes['session-state'].textContent,'');
+  assert.equal(s.calls.length,2);assert.equal(s.calls[1].options.signal.aborted,true);
+});

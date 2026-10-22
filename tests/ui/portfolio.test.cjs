@@ -49,6 +49,11 @@ test('a confirmation cannot use an aged display; cancelling submits nothing',asy
  const s=setup(async url=>ok(url.endsWith('/preview')?proposal:data()));await s.unlock();await s.preview();s.nodes['submit-purchase'].fire('click');
  s.nodes['cancel-confirm'].fire('click');assert.equal(s.calls.length,2);s.nodes['submit-purchase'].fire('click');s.advance(6001);s.nodes['confirm-action'].fire('click');await flush();assert.equal(s.calls.length,2);assert.match(s.nodes.message.textContent,/Refresh/);
 });
+test('Escape discards a purchase confirmation and cannot submit its earlier server preview',async()=>{
+ const s=setup(async url=>ok(url.endsWith('/preview')?proposal:data()));await s.unlock();await s.preview();s.nodes['submit-purchase'].fire('click');
+ assert.equal(s.nodes.confirm.open,true);s.nodes.confirm.fire('cancel');assert.equal(s.nodes.confirm.open,false);
+ s.nodes['confirm-action'].fire('click');await flush();assert.equal(s.calls.filter(c=>c.options.method==='POST').length,1);assert.equal(s.calls.at(-1).url.endsWith('/preview'),true);
+});
 test('saving a SIP plan and cancelling it require review with explicit dates',async()=>{
  const d=data();d.plans=[{plan:{plan_id:'monthly',symbol:'NSE:DEMO',budget:'1000',reference:'reviewed'},occurrences:[{status:'DUE',session:'2026-10-20',request:{intent_id:'sip-fixed',plan_id:'monthly',occurrence:'2026-10-20',symbol:'NSE:DEMO',budget:'1000',reference:'reviewed'}}],cancelled:false}];
  const s=setup(async url=>ok(url.endsWith('/preview')?proposal:d));await s.unlock();

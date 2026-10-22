@@ -460,7 +460,7 @@ dialog p {
 .desk-page select { min-height:44px; background:var(--bg); color:var(--text); border:1px solid var(--border); padding:8px 12px; border-radius:6px; margin:12px; }
 .desk-page .access form { display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
 .desk-page #shortlist-preview { margin:16px 0; }
-@media(max-width:760px) { .mode-options { grid-template-columns:minmax(0,1fr); } .trade-card button { width:100%; margin-right:0; } }
+@media(max-width:767px) { .mode-options { grid-template-columns:minmax(0,1fr); } .trade-card button { width:100%; margin-right:0; } }
 .workspace-session { display:flex; gap:12px; align-items:center; }
 .workspace-child .masthead .eyebrow { display:none; }
 @media(max-width:640px) {
@@ -614,7 +614,7 @@ body.workspace-page { max-width:none; margin:0; padding:0; }
 .analysis-table-wrap th,.analysis-table-wrap td { padding:12px; text-align:right; border-bottom:1px solid var(--border); white-space:nowrap; }.analysis-table-wrap th:first-child,.analysis-table-wrap td:first-child { text-align:left; }.analysis-table-wrap th { color:var(--muted); font-weight:550; background:#f8fafb; }
 @media(min-width:1500px) { .workspace-body { padding:34px 40px 20px; } }
 @media(max-width:1100px) { .workspace-sidebar { width:210px; padding-left:12px; padding-right:12px; }.workspace-content { margin-left:210px; }.workspace-body { padding:24px 22px 12px; }.workspace-header { padding:16px 22px; }.workspace-nav a { font-size:.82rem; }.workspace-brand { font-size:.95rem; }.analysis-layout { grid-template-columns:1fr; } }
-@media(max-width:760px) {
+@media(max-width:767px) {
  body { padding:20px 16px; }
  .workspace-sidebar { position:static; width:auto; padding:16px 16px 0; border-right:0; border-bottom:1px solid var(--border); overflow:visible; }
  .workspace-brand { font-size:1rem; }.workspace-brand small { font-size:.52rem; }.nav-caption,.sidebar-bottom { display:none; }
@@ -650,4 +650,84 @@ input,select,textarea { border-color:#81909f; }
 .candle-up { fill:#198a7d; stroke:#198a7d; }
 .workspace-header,.workspace-session { flex-wrap:wrap; }
 .workspace-page > .skip:focus { position:fixed; top:8px; left:250px; z-index:100; padding:12px 16px; border-radius:6px; background:white; box-shadow:0 3px 12px #172b3a33; }
-@media(max-width:760px) { .workspace-page > .skip:focus { left:8px; } }
+@media(max-width:767px) { .workspace-page > .skip:focus { left:8px; } }
+/* Phase 3 grouped navigation and shared investment views. */
+.workspace-sidebar { padding-top:22px; }
+.workspace-brand { padding-bottom:8px; }
+.workspace-nav-group { margin-top:16px; }
+.workspace-nav-group .nav-caption { margin:0 13px 5px; font-size:.65rem; letter-spacing:.08em; }
+.workspace-nav { display:block; }
+.workspace-nav a { margin:2px 0; min-height:44px; padding:9px 13px; }
+#workspace-menu-toggle { display:none; }
+.sidebar-bottom { padding-top:22px; }
+.invest-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px; }
+.invest-grid .panel { margin-bottom:0; }
+.invest-toolbar { display:flex; flex-wrap:wrap; gap:12px; align-items:end; margin:18px 0; }
+.invest-toolbar label { display:flex; flex-direction:column; gap:6px; font-size:.85rem; color:var(--muted); min-width:0; }
+.invest-toolbar input,.invest-toolbar select { max-width:100%; }
+.invest-card-list,.invest-learning-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(280px,100%),1fr)); gap:16px; margin:18px 0; }
+.invest-card-list > article,.invest-learning-grid > article { border:1px solid var(--border); border-radius:9px; padding:18px; min-width:0; background:var(--panel); }
+.invest-card-list h3,.invest-learning-grid h3 { margin:0 0 10px; color:var(--text); font-size:1rem; }
+.invest-card-list p,.invest-learning-grid p { font-size:.88rem; line-height:1.65; overflow-wrap:anywhere; }
+.invest-definitions { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr)); gap:18px; margin:20px 0; }
+.invest-definitions dt { color:var(--muted); font-size:.83rem; }
+.invest-definitions > div { min-width:0; }
+.invest-definitions dd { margin:6px 0 0; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
+.invest-evidence { border-top:1px solid var(--border); padding-top:12px; margin-top:16px; }
+.investment-page .amount { overflow-wrap:anywhere; }
+.investment-page table button { margin:2px; }
+.investment-page code { overflow-wrap:anywhere; font-size:.85rem; }
+.investment-page pre { padding:14px; border-radius:7px; background:#f6f8fa; font-size:.85rem; }
+.investment-page .check { display:flex; gap:8px; align-items:center; }
+.investment-page .check input { width:20px; min-height:20px; height:20px; }
+dialog > h2 { position:sticky; top:0; background:var(--panel); z-index:2; padding:4px 0 12px; border-bottom:1px solid var(--border); }
+dialog > .dialog-actions { position:sticky; bottom:0; background:var(--panel); z-index:2; padding-top:12px; border-top:1px solid var(--border); }
+@media(max-width:900px) { .invest-grid { grid-template-columns:1fr; } }
+@media(max-width:767px) {
+ .workspace-sidebar { padding:16px; }
+ #workspace-menu-toggle { display:block; width:100%; margin-top:14px; text-align:left; min-height:44px; }
+ .workspace-nav { display:block; margin-top:14px; padding:0; overflow:visible; }
+ .workspace-nav a { display:flex; width:100%; min-height:44px; margin:2px 0; font-size:.9rem; }
+ .workspace-nav-group .nav-caption { display:block; }
+ .workspace-nav-group { margin:14px 0; }
+ .sidebar-bottom { display:none; }
+ .invest-toolbar > div,.invest-toolbar input,.invest-toolbar select { width:100%; }
+ dialog > .dialog-actions { flex-wrap:wrap; }
+}
+
+.investment-page .metrics { grid-template-columns:repeat(4,minmax(0,1fr)); }
+.investment-page .invest-evidence { min-width:220px; max-width:450px; white-space:normal; }
+.investment-page input[type="checkbox"] { width:24px; min-height:44px; cursor:pointer; }
+@media(max-width:1100px) { .investment-page .metrics { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(max-width:460px) { .investment-page .metrics { grid-template-columns:minmax(0,1fr); } }
+
+/* Research overlays keep chart coordinate rounding separate from exact tables. */
+.indicator-longest { stroke:#7c4cad; stroke-width:2; }
+.research-indicator-table td { white-space:normal; min-width:140px; }
+
+/* Isolated backtest evidence keeps large exact values and wide tables readable. */
+.backtesting-page .table-wrap { overflow:auto; max-width:100%; margin:18px 0; }
+.backtesting-page table { width:100%; border-collapse:collapse; font-size:.83rem; font-variant-numeric:tabular-nums; }
+.backtesting-page th,.backtesting-page td { padding:10px; text-align:left; vertical-align:top; border-bottom:1px solid var(--border); overflow-wrap:anywhere; min-width:110px; }
+.backtesting-page dd { overflow-wrap:anywhere; }
+.backtesting-page #ack-label { display:flex; gap:10px; align-items:center; }
+.backtesting-page #ack { width:24px; min-height:44px; flex:0 0 24px; }
+.backtesting-page button { margin:5px 5px 5px 0; }
+
+/* Policy planning stays separate from the installed strategy and its controls. */
+.policy-field-group { border:1px solid var(--border); border-radius:12px; padding:20px; margin:24px 0; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:20px; }
+.policy-field-group legend { font-weight:700; padding:0 8px; }
+.policy-field label { display:block; font-weight:600; margin-bottom:8px; }
+.policy-field input,.policy-field select { width:100%; max-width:none; min-width:0; }
+.policy-field p { font-size:.875rem; margin:8px 0 0; }
+.policy-page .invest-card-list pre { white-space:pre-wrap; overflow-wrap:anywhere; }
+.policy-page .table-wrap { overflow-x:auto; }
+.policy-page #ack { width:24px; min-height:44px; margin-right:8px; }
+.policy-page #confirm-identity dd { overflow-wrap:anywhere; }
+.policy-page #policy-label { display:block; width:100%; max-width:640px; margin-bottom:16px; }
+.policy-page .invest-card-list article { overflow-wrap:anywhere; }
+.policy-page table { width:100%; border-collapse:collapse; font-variant-numeric:tabular-nums; }
+.policy-page th,.policy-page td { padding:10px; text-align:left; vertical-align:top; border-bottom:1px solid var(--border); }
+.policy-page label[for="ack"] { display:flex; align-items:center; gap:8px; }
+.policy-page label[for="ack"] input { margin:0; flex:0 0 24px; }
+@media(max-width:767px) { .policy-field-group { grid-template-columns:minmax(0,1fr); padding:16px; gap:18px; } }

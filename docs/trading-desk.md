@@ -1,14 +1,18 @@
 # Dashboard, strategies, approval modes and paper activity
 
-Version **0.14.0**, 22 October 2026, separates the former trading-desk presentation
-into **Dashboard** for portfolio summary, market/readiness status, next actions,
-modes and proposals; **Strategies** for data/policy setup, screening and shortlist
-review; and **Paper Trading** for orders, fills and proposal outcomes. The light
-sidebar makes these workflows separate without changing their existing controllers,
-financial calculations, daily-signal identity, approvals or risk gates. The default
-landing page remains `/desk`, now labeled Dashboard; `/strategies` serves the strategy
-workspace. Existing `/desk#strategy-setup`, `/desk#execution-shortlist` and
-`/desk#apply-shortlist` links route to Strategies.
+Version **0.15.0** separates the saved summary at **Dashboard** (`#dashboard`)
+from **Paper Trading** (`#paper`, page `/paper`), which contains readiness, quote
+warnings, modes and proposals. **Strategies** retains preparation and shortlist
+review. **Trade History** (`#history`, page `/activity`) retains recorded orders,
+fills and proposals without an order. These destinations share the same in-memory
+workspace unlock. Legacy `/desk` opens Dashboard; its strategy/shortlist anchors
+still open Strategies. Use Paper Trading for mode activation and approval controls.
+
+Mode and trade confirmations use the shared visible-viewport dialog helper, including
+cancel/escape cleanup, focus restoration and parent navigation guards. A late response
+after pagehide/Lock cannot restore private desk data. The new Dashboard reads saved
+state without running proposal expiry or strategy refresh. See
+[frontend modernization](frontend-modernization.md) for freshness and missing features.
 
 Version **0.13.1** simplifies the normal setup to **Download strategy data → choose a
 policy → Review and finish setup → one acknowledgement and Confirm and prepare**.
@@ -82,8 +86,8 @@ An open reviewed session and a connected socket are separate from quote acceptan
 For long-term accounts, today's explicit corporate-action/price-basis review is required
 before incoming quotes can be stored, marked or used for fills. A review saved yesterday
 does not cover today. Consequently, **no accepted quote** can coexist with a working
-live feed. Read the per-symbol explanation in Dashboard's **Inspect quote details**
-or Risk Center, rather than interpreting every missing quote as a network failure.
+live feed. Read the per-symbol explanation in Paper Trading's **Inspect quote details**
+or Risk Management, rather than interpreting every missing quote as a network failure.
 
 When today's source/history data is ready, **Review today’s setup** appears beside the
 warning and in quote/basis readiness cards. It opens the existing combined source,
@@ -104,12 +108,12 @@ shortlist**. It opens/focuses **Review the execution shortlist**, showing the ex
 proposal and held-symbol retention. The old `/desk#apply-shortlist` link is preserved
 through `/workspace#strategies/apply-shortlist`; the current destination is
 `/workspace#strategies/execution-shortlist`. Merely opening either link changes no account data.
-To apply, select Manual, disconnect the requested feed in **Broker & Settings → step 6**,
+To apply, select Manual, disconnect the requested feed in **Broker & Data → step 6**,
 resolve pending orders, then inspect and confirm **Use reviewed ranked shortlist**.
 Held symbols remain required. The review section links directly to feed controls.
 
 Next, review each supported selected symbol's current-day action/price basis in
-**Risk Center**, with an actual source/reference and explicit confirmation.
+**Risk Management**, with an actual source/reference and explicit confirmation.
 Quarantine needs the offline action workflow and cannot be cleared by a normal review.
 Reconnect explicitly if disconnected, then wait for a new valid quote. Neither a review
 nor a stored historical candle invents a live quote, arms a mode or submits an order.
@@ -151,24 +155,13 @@ From the repository root:
 For the existing 8004 account, open <http://127.0.0.1:8004/workspace#desk>. Stop an
 older owning server gracefully first if the launcher reports a version mismatch;
 keep the new terminal running. Unlock once with your private `TRADING_OPERATOR_TOKEN`.
-The sidebar now contains six main areas:
-
-| Section | Purpose |
-|---|---|
-| Dashboard | Portfolio, market status, next action, actual operating mode, proposals and readiness |
-| Market & Analysis | Saved daily/minute candlestick history and technical indicators; no broker download on view |
-| Strategies | Guided preparation, declared stock coverage, screening evidence, exclusions and shortlist review |
-| Paper Trading | Actual orders/fills, reasons, authorization, fees and proposals without an order |
-| Risk Center | Detailed readiness, exposure, corporate-action basis reviews, kill/flatten and entry controls |
-| Broker & Settings | Guided broker login, catalog, subscriptions, reviewed calendar and feed administration |
-
-**Purchases & SIP** is a secondary Paper Trading item for explicit long-term purchases,
-contributions and reviewed-session recurring instructions. **Help & onboarding** is
-at the sidebar bottom; incomplete strategy, calendar or feed setup also shows a
-contextual onboarding banner. Broker & Settings starts with actual connection status
-and a recommended step, then six expandable steps with explicit Back/Continue
-navigation. Opening a step changes no saved configuration. Read the
-[broker guide](ui-setup.md) and [saved-chart limitations](market-analysis.md).
+The sidebar contains twelve grouped destinations; see the [complete route table](workspace.md#menu-and-unlock-behavior).
+Dashboard summarizes saved state; **Paper Trading** owns readiness, modes and proposals;
+**Trade History** owns orders/fills. **Portfolio → Purchases & SIP** preserves explicit
+purchase and recurring-instruction workflows. **Learning Center** includes setup guidance.
+Broker & Data retains the connection overview and six expandable reviewed setup steps.
+Opening a step changes no saved configuration. Read the [broker guide](ui-setup.md)
+and [saved-chart limitations](market-analysis.md).
 
 Desktop uses a sidebar; narrow screens adapt navigation while keeping Lock accessible.
 Changing sections retains the same local
@@ -284,7 +277,7 @@ Installing code alone does not start profit-oriented autonomous selection.
    candidate count, exclusions and the proposed execution shortlist. A connected
    production desk refuses synthetic inputs/models; test-only overrides are not
    exposed by the CLI/browser.
-7. To replace the old five-symbol feed, choose Manual, disconnect in Broker & Settings,
+7. To replace the old five-symbol feed, choose Manual, disconnect in Broker & Data,
    resolve pending orders, then return and confirm **Use reviewed ranked shortlist**.
    It preserves every held symbol and selects at most ten catalog-matched NSE tokens.
    The approval hash binds the reviewed plan; changed plans require a new review.

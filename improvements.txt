@@ -1,0 +1,464 @@
+# Agentic Trader V2 — Complete Application Review and Modernization
+
+## Your Role
+
+Act as a team of experts consisting of:
+
+- Senior Python software architect
+- Quantitative investment researcher
+- Zerodha Kite Connect API specialist
+- Senior fintech UI/UX designer
+- Financial risk management engineer
+- Application security engineer
+- QA and test automation engineer
+
+## Project Context
+
+I am developing a personal algorithmic stock trading application for the Indian stock market using Python and Zerodha Kite Connect.
+
+I am a beginner in stock trading but have software development experience.
+
+The existing application has substantial functionality, but its UI is difficult to understand, workflows are unnecessarily complicated, and I am not confident that all components are properly integrated.
+
+A reference UI image is available in the `images/` directory.
+
+**Your mission is to transform the existing project into a modern, intuitive, reliable, well-tested, long-term stock investment and automated paper-trading platform.**
+
+Preserve working functionality and existing safety controls.
+
+Do not assume that existing implementations are correct. Inspect, verify, and test them.
+
+## 1. Mandatory Repository Audit
+
+Before changing any code:
+
+1. Inspect the entire repository and identify the current technology stack.
+2. Map the existing frontend, backend, database, market-data integration, strategy engine, risk engine, order management, authentication, and configuration.
+3. Identify incomplete implementations, duplicated functionality, security vulnerabilities, dead code, and architectural weaknesses.
+4. Trace the complete workflow from market data acquisition to stock selection, strategy evaluation, risk approval, paper order creation, simulated execution, portfolio updates, and reporting.
+5. Review existing tests and identify missing coverage.
+6. Review the reference image in `images/`.
+7. Preserve existing features unless there is a documented reason to replace them.
+
+Create:
+
+- `docs/ARCHITECTURE_AUDIT.md`
+- `docs/UX_AUDIT.md`
+- `docs/GAP_ANALYSIS.md`
+- `docs/IMPLEMENTATION_PLAN.md`
+
+Classify findings by severity and business impact.
+
+## 2. Primary Product Goal
+
+Build a beginner-friendly application that helps me:
+
+1. Discover potentially attractive long-term NSE-listed stocks.
+2. Understand why each stock was selected.
+3. Analyze historical prices, fundamentals, trends, volatility, and risks.
+4. Compare investment candidates.
+5. Build and backtest long-term investment strategies.
+6. Simulate investment decisions using paper trading.
+7. Monitor virtual holdings, cash, performance, and risk.
+8. Eventually support controlled automatic trading through Zerodha Kite Connect.
+
+**Do not promise or imply that the system can reliably identify profitable stocks.**
+
+Every recommendation must include supporting evidence, uncertainty, and risks.
+
+## 3. Scope and Priorities
+
+### In scope — Long-term investing
+
+Prioritize holding periods of months to years.
+
+Implement or improve:
+
+- NSE stock discovery and screening
+- Historical daily and weekly price analysis
+- Long-term trend analysis
+- Fundamental analysis when reliable, licensed data is available
+- Stock ranking and watchlists
+- Portfolio allocation
+- Investment strategy configuration
+- Historical backtesting
+- Paper trading
+- Risk management
+- Portfolio monitoring
+- Performance analytics
+- Corporate-action handling
+- Zerodha market-data integration
+
+### Out of scope for now — Intraday trading
+
+Do not add new intraday features or modify existing intraday strategy behavior unless required to fix a critical security or correctness issue.
+
+Document all deferred intraday improvements in:
+
+`docs/INTRADAY_FUTURE_ROADMAP.md`
+
+Include technical requirements, dependencies, risks, and proposed implementation phases.
+
+Do not delete existing intraday code.
+
+## 4. UI/UX Redesign
+
+Use the reference image in `images/` as visual inspiration.
+
+Create a modern, professional, beginner-friendly fintech interface.
+
+### Design requirements
+
+- Light theme with white backgrounds
+- Restrained blue and teal accents
+- Excellent typography and spacing
+- Responsive layouts
+- Consistent navigation
+- Reusable UI components
+- Accessible contrast and keyboard navigation
+- Clear loading, error, and empty states
+- Minimal technical jargon
+- Tooltips explaining financial terminology
+- Clear visual distinction between paper and live trading
+- No fake financial data presented as actual results
+
+### Main navigation
+
+1. Dashboard
+2. Stock Discovery
+3. Stock Analysis
+4. Strategies
+5. Backtesting
+6. Paper Trading
+7. Portfolio
+8. Trade History
+9. Risk Management
+10. Broker & Data
+11. Settings
+12. Learning Center
+
+Group related navigation items logically to avoid overwhelming beginners.
+
+### Dashboard
+
+Display:
+
+- Virtual portfolio value
+- Available cash
+- Total invested capital
+- Realized and unrealized P&L
+- Portfolio return
+- Benchmark comparison
+- Portfolio allocation chart
+- Top-ranked stock candidates
+- Recent investment decisions
+- Broker connection status
+- Data freshness
+- Strategy status
+- Important warnings
+- Next recommended action
+
+Show relevant information prominently rather than displaying large amounts of operational documentation.
+
+### Stock Discovery
+
+Allow users to screen and rank stocks using:
+
+- Market capitalization
+- Liquidity and turnover
+- Revenue and earnings growth
+- Profitability metrics
+- Debt and leverage
+- Valuation ratios
+- Price momentum
+- Long-term moving averages
+- Volatility
+- Drawdown
+- Relative strength
+
+Distinguish unavailable fundamental data from zero-valued data.
+
+Provide transparent rankings and explanations.
+
+Avoid presenting arbitrary scores as probabilities of profit.
+
+### Stock Analysis
+
+For any supported NSE symbol, provide:
+
+- Interactive candlestick charts
+- Daily, weekly, and monthly timeframes
+- SMA 50 and SMA 200
+- EMA indicators
+- RSI
+- MACD
+- Volume
+- ATR
+- Support and resistance
+- Relative strength against a benchmark
+- Drawdown history
+- Available fundamental metrics
+- Bullish and bearish evidence
+- Investment risks
+- Historical data coverage and freshness
+
+Use Plotly or another appropriate interactive charting library compatible with the existing architecture.
+
+### Strategies
+
+Support configurable, explainable long-term investment strategies.
+
+Initial strategy candidates:
+
+- Trend following
+- Momentum ranking
+- Quality and value screening
+- Periodic portfolio rebalancing
+- SIP-style periodic investing
+
+Do not treat any strategy as profitable without backtesting and validation.
+
+### Backtesting
+
+Implement realistic historical simulation.
+
+Requirements:
+
+- No look-ahead bias
+- Point-in-time data where available
+- Survivorship-bias disclosure
+- Corporate-action adjustments
+- Brokerage and statutory transaction costs
+- Slippage assumptions
+- Liquidity constraints
+- Realistic order timing
+- Benchmark comparison
+- Out-of-sample testing
+- Walk-forward validation where appropriate
+
+Report:
+
+- CAGR
+- Total return
+- Maximum drawdown
+- Volatility
+- Sharpe ratio
+- Sortino ratio
+- Win rate
+- Turnover
+- Fees and costs
+- Equity curve
+- Monthly returns
+- Comparison with Nifty 50 or another appropriate benchmark
+
+Do not invent missing historical prices or fundamentals.
+
+## 5. Zerodha Kite Connect Integration
+
+Review the existing implementation against current official Kite Connect documentation.
+
+Implement or verify:
+
+- Secure API credentials
+- Login and access-token lifecycle
+- Instrument master synchronization
+- Symbol-to-token mapping
+- Historical candle retrieval
+- Market-data freshness validation
+- API error handling
+- Rate-limit handling
+- Reconnection and recovery
+- Secure credential storage
+- Audit logging
+
+Separate market-data access from order execution.
+
+Never expose API secrets to the frontend.
+
+Use the broker's official API rather than browser automation.
+
+## 6. Automated Trading Architecture
+
+Design the application for eventual fully automated trading, but keep actual execution disabled during this modernization.
+
+Use a modular pipeline:
+
+Market Data → Data Validation → Stock Screening → Strategy Signals → Portfolio Construction → Risk Validation → Order Proposal → Paper Execution → Portfolio Accounting → Monitoring
+
+The architecture must distinguish:
+
+- Research recommendations
+- Strategy-generated signals
+- Approved investment decisions
+- Submitted orders
+- Executed fills
+- Portfolio holdings
+
+A signal must never automatically bypass risk controls.
+
+Implement safeguards for:
+
+- Maximum position size
+- Maximum portfolio exposure
+- Available cash
+- Concentration limits
+- Duplicate orders
+- Stale market data
+- API failures
+- Unexpected application restarts
+- Exchange trading sessions
+- Market holidays
+- Corporate actions
+- Emergency kill switch
+
+Use durable order states, idempotency, and reconciliation.
+
+For now, all execution must remain paper-only.
+
+Do not create, enable, or submit real-money orders.
+
+## 7. Capital and Risk Management
+
+Default pilot capital: ₹25,000.
+
+Make all limits configurable.
+
+Support:
+
+- Position sizing
+- Maximum allocation per stock
+- Cash reserve
+- Sector concentration
+- Portfolio drawdown monitoring
+- Exposure monitoring
+- Transaction cost estimates
+- Rebalancing constraints
+- Risk warnings
+
+Do not hardcode aggressive risk limits.
+
+Clearly explain when a proposed investment is rejected and how to resolve the issue safely.
+
+## 8. Beginner-Friendly Experience
+
+The application should explain what it is doing and why.
+
+For every candidate stock, provide:
+
+- Why it passed screening
+- Why it ranked highly
+- Which indicators support the analysis
+- Which factors contradict the analysis
+- What risks exist
+- What data is missing
+- Why the system recommends waiting, reviewing, or rejecting a candidate
+
+Use plain English.
+
+Include a learning center covering trading terminology, indicators, risk, strategies, backtesting, and common beginner mistakes.
+
+## 9. Engineering Quality
+
+Use the existing technology stack unless a migration is clearly justified.
+
+Requirements:
+
+- Modular architecture
+- Typed Python code
+- Clear API contracts
+- Database migrations where needed
+- Structured logging
+- Input validation
+- Secure error handling
+- Configuration management
+- Unit tests
+- Integration tests
+- End-to-end workflow tests
+- Reproducible development environment
+- Documentation
+
+Do not introduce unnecessary frameworks or dependencies.
+
+Do not weaken existing security or trading safeguards to simplify the UI.
+
+## 10. Validation and Acceptance Criteria
+
+Verify that:
+
+1. The application starts reliably.
+2. Existing working features remain functional.
+3. Navigation is intuitive.
+4. Charts render correctly.
+5. Stock analysis uses genuine, traceable data.
+6. Screening and ranking calculations are reproducible.
+7. Backtests do not use future information.
+8. Paper trading does not place real broker orders.
+9. Portfolio accounting reconciles correctly.
+10. Risk controls reject invalid trades.
+11. Data failures produce clear warnings.
+12. Sensitive credentials are protected.
+13. Responsive layouts work correctly.
+14. All implemented features have appropriate tests.
+
+Run relevant automated tests and report actual results.
+
+If browser testing is available, inspect the rendered UI at desktop and mobile widths and compare it with the reference image.
+
+## 11. Implementation Process
+
+Work incrementally.
+
+**Phase 1 — Audit**
+
+Inspect the repository and create the audit and gap-analysis documents.
+
+**Phase 2 — Architecture and UX**
+
+Propose the target architecture, navigation, visual design system, and screen specifications.
+
+**Phase 3 — Frontend modernization**
+
+Implement reusable UI components and redesign screens incrementally.
+
+**Phase 4 — Stock research engine**
+
+Implement or improve stock discovery, analysis, ranking, and explanations.
+
+**Phase 5 — Backtesting and paper trading**
+
+Validate strategy performance, simulation accuracy, and portfolio accounting.
+
+**Phase 6 — Reliability and security**
+
+Strengthen operational monitoring, recovery, testing, and documentation.
+
+At the end of each phase:
+
+- Summarize completed changes.
+- List modified files.
+- Report tests executed and results.
+- Identify remaining risks and limitations.
+- Update project documentation.
+- Explain what should happen next.
+
+## 12. Important Restrictions
+
+- Do not place real trades.
+- Do not enable live execution.
+- Do not invent profitable results.
+- Do not silently replace missing data.
+- Do not remove safeguards to make the application easier to use.
+- Do not rewrite the entire codebase unnecessarily.
+- Do not introduce breaking changes without identifying them.
+- Do not claim testing was successful unless tests actually ran.
+- Do not make unapproved architectural migrations.
+
+## First Task
+
+Begin with Phase 1.
+
+Inspect the existing repository, analyze the reference images, identify gaps, and produce the four audit/planning documents.
+
+Then present your findings, proposed UI architecture, implementation priorities, and estimated complexity.
+
+**Stop after Phase 1 and wait for my approval before modifying application code.**

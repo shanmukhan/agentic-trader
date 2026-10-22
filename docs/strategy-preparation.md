@@ -1,5 +1,27 @@
 # Prepare a genuine-data paper strategy in the UI
 
+Version 0.16.0's [research engine](investment-research.md) is separate from this
+installation/authority workflow. Preparation still takes the latest **60** completed
+sessions from its supported current-year source; it does not acquire 200-session or
+multi-year history. SMA200/long weekly-monthly warmup remains unavailable until a
+separately reviewed longer daily bundle and full calendar coverage are supplied.
+Early-year/cross-year acquisition remains a reliability/data-source gate; the new
+engine can analyze explicit reviewed cross-year inputs but does not repair this
+acquisition source. No new investment strategy, model or calendar is installed by
+viewing research or running `investment-analyze`.
+
+In 0.15.0, **Strategies** retains this preparation workflow; **Paper Trading** now contains mode activation and full readiness. Guided reviews use the shared visible-viewport confirmation, initial Cancel focus and Escape cleanup. Navigation does not approve or start setup.
+
+## Phase 2 future strategy/data contract
+
+[phase-2/strategy-and-data-contracts.md](phase-2/strategy-and-data-contracts.md) separates
+existing 20-session behavior from a proposed versioned months-to-years policy and
+specifies causal data/indicator/connected-replay acceptance. No existing profile,
+preparation input, holding/exit rule, model identity or authority is changed by this
+design phase. Proposed investment parameters remain activation blockers until reviewed;
+current instructions below continue to apply.
+
+
 Version **0.14.0**, 22 October 2026. **Strategies** is now a separate sidebar area at
 `/strategies` (workspace route `/workspace#strategies`). It uses the existing
 preparation and decision controllers: the presentation change does not install a
@@ -23,21 +45,22 @@ It does not enable real-money orders or establish profitable expected returns.
    server already owns that port, stop it in its owning terminal with Ctrl+C and run
    the command again. Do not run two copies against the same account. Restart clears
    browser access and mode authority; unlock again with `TRADING_OPERATOR_TOKEN`.
-2. In **Broker & Settings**, check the saved broker session and import the NSE catalog.
+2. In **Broker & Data**, check the saved broker session and import the NSE catalog.
    Expired broker access requires normal login/2FA and request-token exchange. The
    local operator token is different from broker request/access tokens. Your broker
    data plan must actually permit historical candles; profile/socket success alone
    does not prove that entitlement.
-3. Choose **Manual** in Dashboard before preparation. In **Strategies**, open
+3. Choose **Manual** in Paper Trading before preparation. In **Strategies**, open
    **Prepare a paper strategy**. Preparation is available on the manual service with read-only broker setup;
    an existing bound legacy controller retains its original workflow.
 
-The light sidebar also provides Market & Analysis for [actual saved-candle charts](market-analysis.md),
-Paper Trading for execution/history, Purchases & SIP as its secondary workflow,
-Risk Center for basis and emergency/entry controls, and Broker & Settings for broker
-administration. Contextual onboarding links here when setup is incomplete; the
-full guide remains in **Help & onboarding** at the sidebar bottom. Navigation
-retains the local token in memory and never authorizes a setup or financial action.
+Use **Stock Analysis** for [actual saved-candle charts](market-analysis.md),
+**Stock Discovery** for saved screening comparison, **Paper Trading** for readiness,
+modes and proposals, **Trade History** for orders/fills and **Portfolio** for the
+Purchases & SIP link. **Risk Management** retains basis/emergency controls and
+**Broker & Data** retains broker administration. Contextual onboarding and the
+**Learning Center** checklist link to unfinished setup. Navigation retains access
+in memory and never authorizes a setup or financial action.
 
 ## Recommended: one combined setup review
 
@@ -84,7 +107,7 @@ summary hash and retains its private evidence in `<database stem>.analysis/guide
 Historical/source reviews and current execution reviews remain separate records, covered
 by the same explicit acknowledgement. Current reviews are eligible only for supported,
 source-covered, unheld symbols without quarantine or an uncovered earlier quote basis.
-Held positions, quarantines and gaps still require separate Risk Center review. Nothing is attested
+Held positions, quarantines and gaps still require separate Risk Management review. Nothing is attested
 for future dates, and the following session requires new current-day reviews.
 
 Setup stays **Manual**. Reconnection can resume independent protective exits on holdings;
@@ -193,7 +216,7 @@ After **Review required** appears:
    A current constituent snapshot cannot substitute for their historical input evidence.
 4. Enter your real review reference/notes, then check the calendar, historical
    action/basis/classification and selected-policy acknowledgements. None is prechecked.
-5. Disconnect market data in Broker & Settings and resolve pending paper orders first.
+5. Disconnect market data in Broker & Data and resolve pending paper orders first.
    Return to Strategies and confirm **Review strategy installation**. Review text includes
    the universe count, policy, source reference and consequences. The server binds the
    exact source hash, edited CSV, policy, reviews and current mode revision.
@@ -221,13 +244,13 @@ inspect readiness and activate your mode only when it permits.
    Manual, disconnected, with no pending orders. Every held symbol is retained, and execution remains limited to ten symbols.
    Unsupported held assets remain blockers; this does not make ETFs supported equity shares.
 3. If not included in a combined confirmed review, complete **today's** corporate-action/
-   price-basis review per supported selected stock in Risk Center. Historical basis review at installation
+   price-basis review per supported selected stock in Risk Management. Historical basis review at installation
    and a calendar review do not approve the current execution basis. Intervening actions,
    including after a weekend/outage, remain subject to the existing quarantine workflow.
-4. Reconnect explicitly in Broker & Settings and wait for new usable quotes. A connected
+4. Reconnect explicitly in Broker & Data and wait for new usable quotes. A connected
    socket with empty/zero-depth books can remain connected after hours, but cannot fill
    orders or enable modes. Quote cards show exchange time, age, freshness and basis review.
-5. Return to **Dashboard** and read **Your next step**, market/entry hours, next reviewed opening and remaining blockers.
+5. Return to **Paper Trading** and read **Your next step**, market/entry hours, next reviewed opening and remaining blockers.
    Once all pass, select **Start approval mode** or **Start automatic paper mode** and
    confirm. Mode selection is deliberately independent from download/installation.
 6. Approval queues eligible buys and discretionary sells for your review; Automatic submits

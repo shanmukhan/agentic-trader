@@ -2,7 +2,7 @@
 'use strict';
 const modeNames={manual:'Manual',approval:'Approval · Semi-autonomous',automatic:'Automatic · Paper only'};
 const reasons={NO_ANALYSIS_PROFILE:'Broader stock selection is not configured. This account still uses your selected watchlist. A reviewed real-data analysis profile is required before strategy-driven trades can start.',ANALYSIS_PROFILE_INVALID_OR_UNAVAILABLE:'The configured analysis profile could not pass validation. Check its real daily data, equity-share reviews and matching validated model; no fallback strategy was started.',FEED_DISCONNECTED:'Connect market data in Broker & data setup.',NO_FRESH_EXECUTION_QUOTES:'No fresh usable quote is available. Wait for an open market and complete the required price-basis reviews.',NO_EXECUTION_SHORTLIST:'Choose an execution shortlist in Broker & data setup.',UNKNOWN_OR_CLOSED_SESSION:'No reviewed exchange session is open now. Check the session calendar in Setup.',OUTSIDE_ENTRY_WINDOW:'The configured buying window is closed. Protective exits remain active when quotes are usable.',KILL_SWITCH:'The kill switch is active. Inspect safeguards before an explicit reset.',ACCOUNT_FAULTED:'The account reported a fault. Inspect the server and journal before continuing.',RESEARCH_CALENDAR_NOT_CURRENT:'The analysis bundle does not contain a matching reviewed session for today.',ML_MODEL_NOT_CURRENT:'The ML model is unavailable, expired or still within its validation embargo.',AUTOMATION_NOT_READY:'The intraday controller is disarmed or its data is no longer ready. Refresh and inspect safeguards.',UNSUPPORTED_HELD_ASSET_CLASS:'A held instrument lacks the required equity-share classification review. Resolve that accounting/classification gap before starting.',INTRADAY_HISTORY_UNAVAILABLE:'Completed five-minute history is unavailable; the worker will retry outside the risk lock.',ANALYSIS_FAILED_CHECK_PROFILE_AND_DATA:'Analysis failed. Trading decisions have paused. Inspect the profile and data before activating again.'};
-reasons.LONG_TERM_REVIEW_REQUIRED='Today’s long-term price-basis reviews are missing. Apply the supported shortlist, review each selected symbol in Advanced controls, then wait for new quotes.';
+reasons.LONG_TERM_REVIEW_REQUIRED='Today’s long-term price-basis reviews are missing. Review the supported shortlist and each selected symbol in Risk Management, then wait for new quotes.';
 reasons.EXECUTION_SHORTLIST_NOT_REVIEWED='The execution watchlist includes symbols outside the reviewed equity-share strategy universe. Apply the reviewed ranked shortlist; held symbols are preserved.';
 reasons.RESEARCH_DAILY_HISTORY_UNAVAILABLE='The latest declared completed session has no usable daily screening history. Prepare and review a fresh immutable data run; no old price is treated as current.';
 reasons.STRATEGY_INSTALLING='A reviewed strategy installation is in progress. Mode activation waits for validation and persistence to finish.';
@@ -11,21 +11,19 @@ reasons.MODE_CHANGED='Operating mode changed; previous proposal authority was re
 reasons.SESSION_DATE_CHANGED='The reviewed trading date changed.';
 function createDesk(doc,win,request,activity=false){
  const el=id=>doc.getElementById(id), node=(tag,text)=>{const n=doc.createElement(tag);if(text!==undefined)n.textContent=String(text);return n;};
- const deskView=win.location?.pathname==='/strategies'?'strategies':'dashboard';
+ const deskView=win.location?.pathname==='/strategies'?'strategies':win.location?.pathname==='/paper'?'paper':'dashboard';
  const strategyHref=href=>['#strategy-setup','#execution-shortlist','#apply-shortlist'].includes(href)?(deskView==='strategies'?'':'/strategies')+href:href;
  if(!activity){
   doc.body?.setAttribute?.('data-desk-view',deskView);
-  for(const section of doc.querySelectorAll?.('[data-desk-section]')||[])section.hidden=section.getAttribute('data-desk-section')!==deskView;
-  el('page-title').textContent=deskView==='strategies'?'Strategies':'Dashboard';
-  el('page-intro').textContent=deskView==='strategies'?'Prepare real data, review your policy and choose the stocks your paper account can trade.':'Your virtual portfolio, market readiness and next action.';
-  doc.title=(deskView==='strategies'?'Strategies':'Dashboard')+' · Paper only';
+  for(const section of doc.querySelectorAll?.('[data-desk-section]')||[])section.hidden=!section.getAttribute('data-desk-section').split(' ').includes(deskView);
+  el('page-title').textContent=deskView==='strategies'?'Strategies':deskView==='paper'?'Paper Trading':'Dashboard';
+  el('page-intro').textContent=deskView==='strategies'?'Prepare real data, review your policy and choose the stocks your paper account can trade.':deskView==='paper'?'Review proposals, choose a paper mode and monitor execution readiness.':'Your virtual portfolio, market readiness and next action.';
+  doc.title=(deskView==='strategies'?'Strategies':deskView==='paper'?'Paper Trading':'Dashboard')+' · Paper only';
  }
  let token='',generation=0,busy=false,controller=null,latest=null,pending=null,before=0,nextBefore=null,readinessActions=[];
  const preparation=!activity&&win.AgenticPreparation?win.AgenticPreparation(doc,win,call,refresh,confirm,()=>latest):null;
- function positionConfirmation(){const dialog=el('confirm');if(!dialog.open||!win.parent||win.parent===win||!win.frameElement)return;const height=win.parent.innerHeight,top=win.frameElement.getBoundingClientRect().top;dialog.style.maxHeight=Math.floor(height*.82)+'px';dialog.style.overflow='auto';dialog.style.top=Math.max(12,Math.round(height*.09)-top)+'px';dialog.style.bottom='auto';dialog.style.margin='0 auto';}
- function stopConfirmationPositioning(){if(win.parent&&win.parent!==win){win.parent.removeEventListener('resize',positionConfirmation);win.parent.removeEventListener('scroll',positionConfirmation);}}
- function closeConfirmation(){stopConfirmationPositioning();el('confirm').close();}
- if(win.addEventListener)win.addEventListener('pagehide',stopConfirmationPositioning);
+ const dialogs=(typeof module!=='undefined'&&module.exports?require('./dialogs.js').createDialogs:win.AgenticDialogs)(doc,win);
+ function closeConfirmation(){dialogs.close(el('confirm'));}
  const money=value=>typeof win.AgenticMoney==='function'?win.AgenticMoney(value):String(value??'—');
  const textReason=value=>reasons[value]||String(value||'No additional reason recorded').toLowerCase().replaceAll('_',' ');
  function msg(text,error=false){el('message').textContent=text;el('message').className=error?'error':'';}
@@ -107,7 +105,7 @@ function createDesk(doc,win,request,activity=false){
  }
  async function refresh(){if(activity){const data=await call('/api/activity?before='+before);if(!data)return;const d=await call('/api/desk');if(d)renderActivity(data,d);}else{const data=await call('/api/desk');if(data)renderDesk(data);}}
  async function act(path,body){const data=await call(path,body);if(data){msg('Action recorded. Inspect the resulting proposal/order state; acceptance is not a fill.');await refresh();}}
- function confirm(title,text,action){if(!token||busy)return;pending=action;el('confirm-title').textContent=title;el('confirm-text').textContent=text;el('confirm').showModal();if(win.parent&&win.parent!==win){win.parent.addEventListener('resize',positionConfirmation);win.parent.addEventListener('scroll',positionConfirmation);}positionConfirmation();}
+ function confirm(title,text,action){if(!token||busy)return;pending=action;el('confirm-title').textContent=title;el('confirm-text').textContent=text;if(!dialogs.open(el('confirm'),{cancel:()=>{pending=null;},focus:el('cancel-confirm')})){pending=null;msg('The confirmation could not be displayed. Return to this section and review again; no action was submitted.',true);}}
  async function review(id){const d=await call('/api/desk/decisions/'+id+'/preview',{});if(!d)return;if(!d.review.allowed){await refresh();msg('Proposal blocked: '+d.review.reasons.map(textReason).join('; ')+'. No order was placed.',true);return;}
   const modelText=d.review.model_version?' ML filter score '+d.review.model_score+'; threshold '+d.review.model_threshold+'. This is a trained-outcome score, not a profit guarantee.':' Rules-only signal; no ML filter.';
   confirm('Approve '+d.side+' '+d.symbol+'?',d.side==='BUY'?'Maximum '+d.review.maximum_quantity+' shares; price cap '+money(d.review.maximum_price)+'; maximum cash debit '+money(d.review.maximum_cash)+'; risk ceiling '+money(d.review.maximum_risk)+'. Stop '+money(d.candidate.stop)+' / target '+money(d.candidate.target)+'. Prices, data and risk will be checked again. Later quotes determine actual fills.'+modelText:'Queue sale of '+d.review.quantity+' held shares? Holdings, quote freshness and exit conditions are checked again. A queued exit is not a completed sale.',()=>act('/api/desk/decisions/'+id+'/approve',{preview_sha256:d.preview_sha256}));
@@ -117,9 +115,10 @@ function createDesk(doc,win,request,activity=false){
  else{for(const mode of ['manual','approval','automatic'])el('mode-'+mode).addEventListener('click',()=>{if(!latest)return;const revision=latest.revision;confirm('Switch to '+modeNames[mode]+'?',mode==='automatic'?'Eligible PAPER orders can be submitted without individual approval for this reviewed session. This cancels unfilled desk buys/outstanding proposals from the previous mode. Existing holdings remain protected.':'Switching modes cancels unfilled desk buys and pending proposals. Holdings and protective exits remain. '+(mode==='approval'?'Each new strategy buy/discretionary sell requires your approval.':'No strategy-driven entries will be submitted.'),()=>act('/api/desk/mode',{mode,revision,acknowledged:true}));});
   el('strategy-refresh').addEventListener('click',refresh);
   el('apply-shortlist').addEventListener('click',()=>{const plan=latest?.shortlist;if(!plan)return;confirm('Replace the execution shortlist?',plan.symbols.join(', ')+'. Held symbols are retained. The feed must be disconnected and pending orders resolved. Reconnect explicitly in Broker & data setup afterwards.',()=>act('/api/desk/shortlist',{preview_sha256:plan.preview_sha256}));});
-  el('cancel-confirm').addEventListener('click',()=>{pending=null;closeConfirmation();});el('confirm').addEventListener('cancel',()=>{pending=null;stopConfirmationPositioning();});el('confirm-action').addEventListener('click',()=>{const action=pending;pending=null;closeConfirmation();if(action&&token&&!busy)action();});
+  el('cancel-confirm').addEventListener('click',()=>{pending=null;closeConfirmation();});el('confirm').addEventListener('cancel',()=>{pending=null;});el('confirm-action').addEventListener('click',()=>{const action=pending;pending=null;closeConfirmation();if(action&&token&&!busy)action();});
   win.setInterval(()=>{if(token&&!doc.hidden&&!busy&&!el('confirm').open&&(!preparation||preparation.canNavigate()))refresh();},5000);
  }
+ win.addEventListener?.('pagehide',lock);
  lock();return {lock,refresh,canNavigate:()=>!busy&&(activity||(!el('confirm').open&&(!preparation||preparation.canNavigate())))};
 }
 if(typeof module!=='undefined'&&module.exports)module.exports={createDesk};

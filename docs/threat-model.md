@@ -1,5 +1,28 @@
 # Threat model and security decisions
 
+## Registered research boundary (0.17.0)
+
+Browser jobs accept only a registered opaque resource identity/hash, stable request key
+and explicit acknowledgement under existing operator authorization. Local CLI registration
+validates/copies bounded inputs; arbitrary browser paths, URLs, uploads, executable models
+and code are unsupported. A worker gets a separate scratch ledger, allowlisted environment,
+read access to its registered inputs/runtime and a deny-by-default Darwin network/write
+sandbox with hard resource budgets. The operator account/token/broker configuration is
+not a worker input. Private storage and an exclusive research-owner lock protect lifecycle
+state; cancellation and report publication serialize, and interrupted work never resumes.
+
+Capability fails closed when OS restrictions/budgets cannot be verified. Current Mac
+launch is unavailable; Linux/Pi browser isolation is unsupported. Native denied/allowed
+read/write/network, resource-kill and target-device acceptance remain explicit gates.
+Mocked launchers and synthetic datasets do not establish this security boundary.
+
+Reports are hash/request checked and their scratch SQLite accounting is independently
+reopened read-only before bounded JSON publication and again on reads. Raw databases,
+executable HTML, arbitrary artifacts, raw credentials and operator paths are not served.
+Sanitized research errors never invoke account mutation recovery. Retained capacity is
+bounded; no automatic deletion/archival migration is supplied. See
+[browser-backtesting.md](browser-backtesting.md) for actual limits and failure recovery.
+
 ## Genuine-data preparation (0.13.0)
 
 Mode activation is blocked throughout installation. An optional strict acknowledgement

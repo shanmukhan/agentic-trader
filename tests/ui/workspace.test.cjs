@@ -16,6 +16,7 @@ class Element {
  fire(n){if(!this.disabled)for(const f of this.events[n]||[])f({preventDefault(){}});}
  dispatchEvent(event){for(const f of this.events[event.type]||[])f(event);}
  setAttribute(n,v){this.attributes[n]=v;}
+ getAttribute(n){return this.attributes[n];}
  removeAttribute(n){delete this.attributes[n];}
 }
 const flush=()=>new Promise(r=>setImmediate(r));
@@ -30,7 +31,7 @@ function setup(fetcher=async()=>ok(info())){
  const doc={getElementById:id=>{assert.ok(nodes[id],id);return nodes[id];}};
  const instance=createWorkspace(doc,win,async(url,options)=>{calls.push({url,options});return fetcher(url,options);});
  async function unlock(){nodes['workspace-token'].value='valid-test-operator-token-1234567890';nodes['workspace-unlock'].fire('submit');await flush();}
- function ready(view='console',extra={}){events.message({origin:win.location.origin,source:child,data:{type:'workspace-ready',view},...extra});}
+ function ready(view='risk',extra={}){events.message({origin:win.location.origin,source:child,data:{type:'workspace-ready',view,path:nodes['workspace-frame'].src.split('#')[0]},...extra});}
  function navigate(view){win.location.hash='#'+view;events.hashchange();}
  return {nodes,events,win,child,posts,calls,instance,unlock,ready,navigate};
 }
@@ -38,18 +39,18 @@ test('workspace loads no private API before unlocking and explains manual tradin
  const s=setup();assert.equal(s.calls.length,0);assert.ok(s.nodes['workspace-frame'].hidden);
  await s.unlock();assert.equal(s.calls.length,1);assert.equal(s.calls[0].url,'/api/workspace');
  assert.equal(s.calls[0].options.credentials,'omit');assert.equal(s.nodes['workspace-token'].value,'');
- assert.match(s.nodes['workspace-mode'].textContent,/Manual/);assert.match(s.nodes['workspace-feed'].textContent,/Feed not started/);
+ assert.match(s.nodes['workspace-mode'].textContent,/manual/);assert.match(s.nodes['workspace-feed'].textContent,/Feed not started/);
  assert.match(s.nodes['workspace-hours'].textContent,/09:30–14:30/);
 });
 test('one unlock survives menu changes and sends credentials only to the current matching-origin frame',async()=>{
  const s=setup();await s.unlock();s.posts.length=0;
- s.ready('console',{origin:'https://evil.test'});s.ready('console',{source:{}});s.ready('setup');assert.equal(s.posts.length,0);
+ s.ready('risk',{origin:'https://evil.test'});s.ready('risk',{source:{}});s.ready('broker');assert.equal(s.posts.length,0);
  s.ready();assert.equal(s.posts.length,1);assert.equal(s.posts[0][1],s.win.location.origin);
  assert.equal(s.posts[0][0].type,'workspace-unlock');
- s.navigate('setup');s.ready('setup');assert.equal(s.nodes['workspace-frame'].src,'/setup');
+ s.navigate('setup');s.ready('broker');assert.equal(s.nodes['workspace-frame'].src,'/setup');
  assert.equal(s.posts.filter(p=>p[0].type==='workspace-unlock').length,2);
  assert.equal(s.calls.length,1);assert.ok(s.nodes['workspace-access'].hidden);
- s.navigate('__proto__');assert.equal(s.nodes['nav-desk'].attributes['aria-current'],'page');
+ s.navigate('__proto__');assert.equal(s.nodes['nav-dashboard'].attributes['aria-current'],'page');
 });
 test('lock destroys the active private view and late readiness cannot recover the token',async()=>{
  const s=setup();await s.unlock();s.nodes['workspace-lock'].fire('click');s.posts.length=0;s.ready();
@@ -58,7 +59,7 @@ test('lock destroys the active private view and late readiness cannot recover th
 });
 test('pending confirmation/request prevents navigation and authorization failure locks the whole workspace',async()=>{
  const s=setup();await s.unlock();s.child.AgenticNavigation.canNavigate=()=>false;s.navigate('portfolio');
- assert.equal(s.win.location.hash,'#console');assert.match(s.nodes['workspace-message'].textContent,/Finish or cancel/);
+ assert.equal(s.win.location.hash,'#risk');assert.match(s.nodes['workspace-message'].textContent,/Finish or cancel/);
  s.events.message({origin:s.win.location.origin,source:s.child,data:{type:'workspace-locked'}});
  assert.ok(!s.nodes['workspace-access'].hidden);assert.ok(s.nodes['workspace-frame'].hidden);
 });
@@ -68,7 +69,7 @@ test('pagehide clears memory and late authorization response cannot unlock again
 });
 test('section bridge redirects standalone pages but preserves legacy CLI and handled Kite callbacks',()=>{
  const source=readFileSync('src/trading_agent/api/static/workspace-bridge.js','utf8');
- for(const [search,handled,expected] of [['',false,'/workspace#setup'],['?request_token=manual',false,null],['',true,null]]){
+ for(const [search,handled,expected] of [['',false,'/workspace#broker'],['?request_token=manual',false,null],['',true,null]]){
   let redirected=null;const win={location:{search,pathname:'/setup',replace:v=>{redirected=v;}},__kiteCallbackHandled:handled};win.parent=win;
   vm.runInNewContext(source,{window:win,document:{},URLSearchParams});assert.equal(redirected,expected);
  }
@@ -106,9 +107,9 @@ test('real setup controller accepts workspace handoff without a second unlock an
  assert.equal(s.nodes['workspace-access'].hidden,true);
  view.lock();assert.equal(s.nodes['workspace-access'].hidden,false);assert.equal(s.nodes['workspace-frame'].src,'about:blank');
 });
-test('returning to Start here refreshes feed state without losing the workspace unlock',async()=>{
+test('returning to Dashboard refreshes feed state without losing the workspace unlock',async()=>{
  let connected=false;const s=setup(async()=>ok({...info(),feed_requested:connected,feed_connected:connected}));
- await s.unlock();s.navigate('setup');connected=true;s.navigate('overview');await flush();
+ await s.unlock();s.navigate('setup');connected=true;s.navigate('dashboard');await flush();
  assert.equal(s.calls.length,2);assert.match(s.nodes['workspace-feed'].textContent,/connection established/);
  assert.equal(s.nodes['workspace-access'].hidden,true);
 });
@@ -116,12 +117,12 @@ test('direct desk fragment survives redirect into a bookmarkable workspace route
  let redirected;
  const win={location:{search:'',pathname:'/desk',hash:'#apply-shortlist',replace:v=>{redirected=v;}}};win.parent=win;
  vm.runInNewContext(readFileSync('src/trading_agent/api/static/workspace-bridge.js','utf8'),{window:win,document:{},URLSearchParams});
- assert.equal(redirected,'/workspace#desk/apply-shortlist');
+ assert.equal(redirected,'/workspace#strategies/execution-shortlist');
 });
 test('workspace retains destination fragments, guards section changes and scrolls below sticky navigation',async()=>{
  const s=setup();await s.unlock();s.navigate('desk/apply-shortlist');
- assert.equal(s.nodes['workspace-frame'].src,'/strategies#apply-shortlist');
- assert.equal(s.win.location.hash,'#strategies/apply-shortlist');
+ assert.equal(s.nodes['workspace-frame'].src,'/strategies#execution-shortlist');
+ assert.equal(s.win.location.hash,'#strategies/execution-shortlist');
  s.ready('strategies');assert.equal(s.posts.at(-1)[0].type,'workspace-unlock');
  s.navigate('desk/execution-shortlist');assert.equal(s.posts.at(-1)[0].type,'workspace-anchor');
  assert.equal(s.posts.at(-1)[0].anchor,'execution-shortlist');
@@ -154,7 +155,7 @@ test('embedded links preserve fragments and reveal legacy shortlist after unlock
  let prevented=false;
  const anchor={href:win.location.origin+'/desk#execution-shortlist'};
  clicks.click({target:{closest:()=>anchor},preventDefault(){prevented=true;}});
- assert.equal(prevented,true);assert.equal(posts.at(-1)[0].view,'desk');assert.equal(posts.at(-1)[0].anchor,'execution-shortlist');
+ assert.equal(prevented,true);assert.equal(posts.at(-1)[0].view,'strategies');assert.equal(posts.at(-1)[0].anchor,'execution-shortlist');
  const count=posts.length;clicks.click({target:{closest:()=>anchor},ctrlKey:true});assert.equal(posts.length,count);
  events.message({origin:'https://evil.test',source:win.parent,data:{type:'workspace-anchor',anchor:'execution-shortlist'}});assert.equal(focused,1);
  events.message({origin:win.location.origin,source:win.parent,data:{type:'workspace-anchor',anchor:'execution-shortlist'}});assert.equal(focused,2);
@@ -162,15 +163,14 @@ test('embedded links preserve fragments and reveal legacy shortlist after unlock
 
 test('new sidebar sections preserve the same private handoff and ordinary navigation is read-only',async()=>{
  const s=setup(); await s.unlock();
- for(const view of ['analysis','strategies','activity','portfolio','console','setup']) {
+ for(const [view,path] of Object.entries({discovery:'/discovery',analysis:'/analysis',strategies:'/strategies',backtesting:'/backtesting',paper:'/paper',portfolio:'/holdings',history:'/activity',risk:'/console',broker:'/setup',settings:'/settings',learn:'/learn'})) {
   s.navigate(view); s.ready(view);
-  assert.equal(s.nodes['workspace-frame'].src,'/'+view);
+  assert.equal(s.nodes['workspace-frame'].src,path);
   assert.equal(s.nodes['nav-'+view].attributes['aria-current'],'page');
   assert.equal(s.posts.at(-1)[0].type,'workspace-unlock');
  }
  assert.equal(s.calls.length,1);
- assert.equal(s.nodes['workspace-title'].textContent,'Broker & Settings');
- assert.match(s.nodes['nav-portfolio'].className,/nav-secondary/);
+ assert.equal(s.nodes['workspace-title'].textContent,'Learning Center');
  s.nodes['workspace-lock'].fire('click');
  assert.equal(s.nodes['workspace-onboarding'].hidden,true);
 });
@@ -182,4 +182,38 @@ test('contextual onboarding reflects missing setup and clears on lock without ac
  assert.equal(t.nodes['workspace-onboarding'].hidden,false);
  assert.equal(t.nodes['onboarding-action'].href,'#strategies');
  t.nodes['workspace-lock'].fire('click');assert.equal(t.nodes['workspace-onboarding'].hidden,true);
+});
+
+test('same-screen anchors and purchase subviews remain guarded; handshake checks the actual child path',async()=>{
+ const s=setup();await s.unlock();s.navigate('portfolio');s.posts.length=0;
+ s.events.message({origin:s.win.location.origin,source:s.child,data:{type:'workspace-ready',view:'portfolio'}});assert.equal(s.posts.length,0);
+ s.events.message({origin:s.win.location.origin,source:s.child,data:{type:'workspace-ready',view:'portfolio',path:'/portfolio'}});assert.equal(s.posts.length,0);
+ s.events.message({origin:s.win.location.origin,source:s.child,data:{type:'workspace-ready',view:'portfolio',path:'/holdings'}});assert.equal(s.posts.length,1);
+ let focused=0;s.nodes['workspace-main'].focus=()=>{focused++;};s.navigate('workspace-main');assert.equal(s.win.location.hash,'#portfolio');assert.equal(focused,1);assert.equal(s.nodes['workspace-frame'].src,'/holdings');
+ s.child.AgenticNavigation.canNavigate=()=>false;s.navigate('portfolio/purchases');assert.equal(s.win.location.hash,'#portfolio');
+ s.child.AgenticNavigation.canNavigate=()=>true;s.navigate('portfolio/purchases');assert.equal(s.nodes['workspace-frame'].src,'/portfolio#buy-heading');
+ s.navigate('portfolio/holdings-heading');assert.equal(s.posts.at(-1)[0].type,'workspace-anchor');assert.equal(s.posts.at(-1)[0].anchor,'holdings-heading');
+ s.child.AgenticNavigation.canNavigate=()=>false;s.navigate('portfolio/plans-heading');assert.equal(s.win.location.hash,'#portfolio/holdings-heading');
+});
+test('narrow menu exposes every destination, closes on navigation, and stays inert during a child confirmation',async()=>{
+ const s=setup();s.win.matchMedia=()=>({matches:true});s.events.resize();assert.equal(s.nodes['workspace-nav'].hidden,true);
+ s.nodes['workspace-menu-toggle'].fire('click');assert.equal(s.nodes['workspace-nav'].hidden,false);assert.equal(s.nodes['workspace-menu-toggle'].getAttribute('aria-expanded'),'true');
+ await s.unlock();assert.equal(s.nodes['workspace-nav'].hidden,true);
+ const event={origin:s.win.location.origin,source:s.child,data:{type:'workspace-dialog',open:true}};
+ s.events.message({...event,origin:'https://evil.test'});assert.equal(s.nodes['workspace-nav'].inert,false);
+ s.events.message(event);assert.equal(s.nodes['workspace-nav'].inert,true);assert.equal(s.nodes['workspace-sidebar'].inert,true);assert.equal(s.nodes['workspace-footer'].inert,true);assert.equal(s.nodes['workspace-menu-toggle'].disabled,true);
+ s.navigate('risk/long-term');assert.equal(s.win.location.hash,'#risk');
+ s.events.message({...event,data:{type:'workspace-dialog',open:false}});assert.equal(s.nodes['workspace-nav'].inert,false);
+ s.nodes['workspace-menu-toggle'].fire('click');s.navigate('learn');assert.equal(s.nodes['workspace-nav'].hidden,true);assert.equal(s.nodes['workspace-frame'].src,'/learn');
+ s.win.matchMedia=()=>({matches:false});s.events.resize();assert.equal(s.nodes['workspace-nav'].hidden,false);
+});
+test('legacy aliases and all purchase links retain their destination without applying an action',()=>{
+ const source=readFileSync('src/trading_agent/api/static/workspace-bridge.js','utf8');
+ for(const [pathname,hash,expected] of [['/desk','','dashboard'],['/setup','#feed-connection','broker/feed-connection'],['/console','#long-term','risk/long-term'],['/activity','','history'],['/portfolio','','portfolio/purchases'],['/portfolio','#holdings-heading','portfolio/holdings-heading'],['/holdings','#holdings','portfolio/holdings']]){
+  let redirect;const win={location:{pathname,hash,search:'',replace:value=>{redirect=value;}}};win.parent=win;vm.runInNewContext(source,{window:win,document:{},URLSearchParams});assert.equal(redirect,'/workspace#'+expected);
+ }
+});
+
+test('investment-policy is a guarded Strategies subview with matching path handoff and preserved legacy setup anchors',async()=>{
+ const s=setup();await s.unlock();s.navigate('strategies/investment-policy');assert.equal(s.nodes['workspace-frame'].src,'/investment-policy#investment-policy');assert.equal(s.nodes['nav-strategies'].attributes['aria-current'],'page');s.ready('strategies');assert.equal(s.posts.at(-1)[0].type,'workspace-unlock');s.child.AgenticNavigation.canNavigate=()=>false;s.navigate('strategies/strategy-setup');assert.equal(s.win.location.hash,'#strategies/investment-policy');assert.equal(s.nodes['workspace-frame'].src,'/investment-policy#investment-policy');s.child.AgenticNavigation.canNavigate=()=>true;s.navigate('strategies/strategy-setup');assert.equal(s.nodes['workspace-frame'].src,'/strategies#strategy-setup');
 });

@@ -1,14 +1,16 @@
 # Start, unlock and configure the paper app in your browser
 
-Version **0.14.0**, 22 October 2026, introduces a light workspace with six sidebar
-areas: **Dashboard**, **Market & Analysis**, **Strategies**, **Paper Trading**,
-**Risk Center** and **Broker & Settings**. Purchases & SIP remains a secondary
-Paper Trading workflow. Setup guidance appears contextually when incomplete, with
-**Help & onboarding** at the sidebar bottom. The [workspace guide](workspace.md)
-lists exact routes; [Market & Analysis](market-analysis.md) explains saved-candle
-charts and their limits. No broker download starts merely by viewing a chart.
+In 0.15.0, this section is **Broker & Data** (`#broker`). Step 6 confirmations use the shared native dialog positioned before autofocus in the currently visible parent viewport. Scroll/resize/visual viewport changes keep it bounded; Escape/Cancel clears the pending action and restores focus, with no POST. If it cannot be revealed, return to the section and review again. Current position tests are simulated geometry; live broker acceptance is separate. See [shared dialog behavior](frontend-modernization.md).
 
-**Broker & Settings** now starts with a connection overview: actual connected,
+The light workspace now has twelve grouped destinations. **Dashboard** shows saved
+portfolio and market/account state; **Paper Trading** contains readiness, modes and
+proposals; **Trade History** contains actual orders and fills. **Portfolio** links to
+Purchases & SIP. **Learning Center** includes the setup checklist, while incomplete
+setup also shows contextual guidance. See [all routes](workspace.md) and
+[Stock Analysis](market-analysis.md) for saved charts and their limits. Viewing a
+chart does not start a broker download.
+
+**Broker & Data** now starts with a connection overview: actual connected,
 requested or disconnected state, broker-session verification, saved-subscription
 count, reviewed calendar and the next troubleshooting action. Its six settings
 steps are keyboard-accessible disclosures. The first unlocked status opens the
@@ -51,11 +53,11 @@ holiday/special notices and tick the review box only after that review. The prep
 wizard can propose a larger calendar from downloaded sources, but still requires your
 review and never changes already used account hours.
 
-Use **Dashboard** for modes/proposals and **Paper Trading** for reasons, actual
+Use **Paper Trading** for readiness/modes/proposals and **Trade History** for reasons, actual
 orders and fills. **Strategies** contains preparation, profile coverage and ranked
 shortlist review; its separate `/strategies` page uses the existing controllers.
 Legacy `/desk#strategy-setup` and shortlist anchors route there.
-**Broker & Settings** retains broker administration and **Risk Center** retains
+**Broker & Data** retains broker administration and **Risk Management** retains
 basis reviews/kill/flatten. See [Dashboard and strategy setup](trading-desk.md) for the additional
 reviewed analysis profile; broker connection alone does not install stock rankings or ML.
 
@@ -66,7 +68,7 @@ responsive browser UI, not a native mobile app. No real order or fund transfer e
 
 ## Saved-session check feedback
 
-In **Broker & Settings → step 3**, select **Check saved broker session**. No request-token
+In **Broker & Data → step 3**, select **Check saved broker session**. No request-token
 input is needed: this checks the server's saved access token. The button changes to
 **Checking saved broker session…** and a polite live status directly below the buttons
 shows progress, followed by success or an error. Setup actions remain disabled while
@@ -84,7 +86,7 @@ retry; it does not consume a one-time login token. An exchange timeout remains u
 refresh status before proceeding and start a new login if another exchange is needed.
 
 To load this UI-only change, switch to another workspace section and back to
-**Broker & Settings**, or reload the workspace and unlock again. Existing servers read
+**Broker & Data**, or reload the workspace and unlock again. Existing servers read
 the setup assets on request; no service restart is needed. Verify with
 `node --test tests/ui/setup.test.cjs tests/ui/workspace.test.cjs` and
 `.venv/bin/pytest tests/unit/test_setup.py tests/functional/test_setup_api.py -q`.
@@ -95,10 +97,10 @@ These use simulated broker responses; they do not certify your current broker se
 Daily long-term price-basis reviews apply to one IST date. Without today's review,
 incoming prices are rejected before quote storage, even with a valid broker session,
 connected feed and open market. A missing accepted quote therefore does not prove
-that the socket is silent. Dashboard/Risk Center show this review blocker
+that the socket is silent. Paper Trading/Risk Management show this review blocker
 explicitly; quote freshness and execution readiness remain separate checks.
 
-With a same-day download ready, use **Review today’s setup** directly in Dashboard's
+With a same-day download ready, use **Review today’s setup** directly in Paper Trading's
 warning/quote details. Inspect and confirm the combined source/calendar/shortlist and
 eligible current-day reviews. It preserves the installed policy unless you explicitly
 chose another; there is no automatic first policy or ML fallback. The button only
@@ -107,7 +109,7 @@ disabled, follow its current-day download/Manual/custom-profile guidance. Restar
 does not approve the review, and another restart is unnecessary for this UI shortcut.
 
 Review/apply the supported ranked shortlist in Strategies while disconnected in
-Manual, resolve the selected symbols' current-day basis in Risk Center, reconnect
+Manual, resolve the selected symbols' current-day basis in Risk Management, reconnect
 explicitly as necessary and wait for new valid quotes. Do not approve unknown actions
 just to obtain prices. See [the full recovery steps](trading-desk.md#open-session-with-no-usable-quotes).
 The shortlist review link now preserves its fragment, focuses the review section and
@@ -152,7 +154,7 @@ To load this fix on your existing 8004 account:
    Offline periods cannot fill exits; restart recovery cancels old pending order residue.
 2. From the repository root, run `./scripts/start_ui.sh` and keep that terminal open.
 3. Reload `/workspace` and unlock with `TRADING_OPERATOR_TOKEN` from your private `.env`.
-4. Open **Broker & Settings**. Select **Check saved broker session** in step 3.
+4. Open **Broker & Data**. Select **Check saved broker session** in step 3.
    If verification succeeds, keep that session. If it fails, complete a fresh login
    and exchange using the existing instructions below; a new login is not necessary
    merely because an after-hours book has no buy/sell side.
@@ -322,8 +324,8 @@ explicit, not automatic background login or credential probing.
    This verifies the broker profile and starts the
    full-mode stream for the selected catalog. A requested/connected socket does
    not prove fresh usable quotes. Refresh setup status, then inspect readiness in
-   Dashboard or Risk Center. The connect button never arms automation or submits a new order intent.
-8. **Complete long-term price-basis reviews separately.** Risk Center's existing
+   Paper Trading or Risk Management. The connect button never arms automation or submits a new order intent.
+8. **Complete long-term price-basis reviews separately.** Risk Management's existing
    per-symbol current-session review is still required. A calendar entry does not
    attest that corporate actions are absent. Review actions since the last accepted
    quote, including offline periods, and preserve unresolved quarantines. Wait for
@@ -386,3 +388,18 @@ This release does not turn every administrative task into a browser action.
 The selected symbols are a manual feed universe. Automatic profit-oriented discovery
 for both horizons is specified in [stock-selection-plan.md](stock-selection-plan.md)
 and is not implemented by the symbol-selection form.
+
+## Confirmation dialog position and audit status
+
+The baseline setup controller positions confirmation dialogs within the visible
+workspace area before focus, and follows scrolling/resizing (including a mobile
+visual viewport). This addresses the off-screen native iframe centering shown in
+the operator's screenshot; actual Firefox rendering still requires verification.
+Leave Broker & Data and return to load current static assets, or reload and
+unlock again. A Python restart is not required solely for this static-script change.
+Neither action confirms a connection. Cancel if the full explanation is not visible;
+reopening must still show the selected stocks and the pending-fill/protection warning.
+Only your explicit Confirm requests the feed. Connection remains distinct from fresh
+quotes and risk approval. See [UX_AUDIT.md](UX_AUDIT.md) for the broader modal/focus
+acceptance gap and [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) for the V2 approval
+boundary. Phase 1 itself changes documentation only, not application behavior.

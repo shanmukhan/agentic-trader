@@ -34,6 +34,8 @@ def create_app(
     open_browser: bool = False,
     desk_profile: Path | None = None,
     desk: Any = None,
+    backtests: Any = None,
+    investment_policies: Any = None,
 ) -> FastAPI:
     from trading_agent.desk.api import mount_desk
     from trading_agent.desk.preparation import Preparation, saved_profile
@@ -59,6 +61,14 @@ def create_app(
         setup.connection_observer = feed_state
     analysis = AnalysisWorker(desk, setup, clock)
     preparation = Preparation(desk, setup, clock)
+    from trading_agent.research_jobs import BacktestJobs
+
+    backtests = backtests or BacktestJobs(engine.settings.database.with_suffix(".research-jobs"))
+    from trading_agent.investment_research.policy_store import InvestmentPolicyStore
+
+    investment_policies = investment_policies or InvestmentPolicyStore(
+        engine.settings.database.with_suffix(".investment-policies")
+    )
     stopped = threading.Event()
 
     def watchdog() -> None:
@@ -96,6 +106,7 @@ def create_app(
             yield
         finally:
             stopped.set()
+            backtests.close()
             preparation.close()
             analysis.close()
             desk.pause(clock(), "SERVER_SHUTDOWN")
@@ -116,6 +127,8 @@ def create_app(
         lifespan=lifespan,
     )
     app.state.preparation = preparation
+    app.state.backtests = backtests
+    app.state.investment_policies = investment_policies
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=["127.0.0.1", "localhost", "[::1]"])
 
     @app.middleware("http")
@@ -130,7 +143,15 @@ def create_app(
             "/desk",
             "/activity",
             "/strategies",
+            "/investment-policy",
             "/analysis",
+            "/dashboard",
+            "/discovery",
+            "/paper",
+            "/holdings",
+            "/backtesting",
+            "/settings",
+            "/learn",
         }
         response.headers["X-Frame-Options"] = "SAMEORIGIN" if framed else "DENY"
         response.headers["Referrer-Policy"] = "no-referrer"
@@ -166,6 +187,60 @@ def create_app(
     from trading_agent.api.analysis import mount_analysis
 
     mount_analysis(app, desk, authorized, ASSETS, clock)
+    from trading_agent.api.workspace_views import mount_workspace_views
+
+    mount_workspace_views(app, desk, authorized, ASSETS, clock, setup)
+
+    from trading_agent.api.backtests import mount_backtests
+
+    mount_backtests(app, backtests, authorized)
+    from trading_agent.api.investment_policies import mount_investment_policies
+
+    mount_investment_policies(app, investment_policies, authorized)
+
+    @app.get("/investment-policy", response_class=HTMLResponse)
+    def investment_policy_page() -> str:
+        return ASSETS.joinpath("investment-policy.html").read_text(encoding="utf-8")
+
+    @app.get("/investment-policy.js")
+    def investment_policy_script() -> HTMLResponse:
+        return HTMLResponse(
+            ASSETS.joinpath("investment-policy.js").read_text(), media_type="application/javascript"
+        )
+
+    @app.get("/backtesting", response_class=HTMLResponse)
+    def backtesting_page() -> str:
+        return ASSETS.joinpath("backtesting.html").read_text(encoding="utf-8")
+
+    @app.get("/backtesting.js")
+    def backtesting_script() -> HTMLResponse:
+        return HTMLResponse(
+            ASSETS.joinpath("backtesting.js").read_text(), media_type="application/javascript"
+        )
+
+    @app.get("/dashboard", response_class=HTMLResponse)
+    @app.get("/discovery", response_class=HTMLResponse)
+    @app.get("/holdings", response_class=HTMLResponse)
+    @app.get("/settings", response_class=HTMLResponse)
+    @app.get("/learn", response_class=HTMLResponse)
+    def investment_page() -> str:
+        return ASSETS.joinpath("investment.html").read_text(encoding="utf-8")
+
+    @app.get("/investment.js")
+    def investment_script() -> HTMLResponse:
+        return HTMLResponse(
+            ASSETS.joinpath("investment.js").read_text(), media_type="application/javascript"
+        )
+
+    @app.get("/dialogs.js")
+    def dialogs_script() -> HTMLResponse:
+        return HTMLResponse(
+            ASSETS.joinpath("dialogs.js").read_text(), media_type="application/javascript"
+        )
+
+    @app.get("/paper", response_class=HTMLResponse)
+    def paper_page() -> str:
+        return ASSETS.joinpath("desk.html").read_text(encoding="utf-8")
 
     @app.get("/strategies", response_class=HTMLResponse)
     def strategies_page() -> str:

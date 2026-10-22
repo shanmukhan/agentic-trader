@@ -6,7 +6,7 @@ import json
 import os
 import platform
 import sys
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -116,6 +116,47 @@ def parser() -> argparse.ArgumentParser:
     daily.add_argument("--as-of", required=True, type=datetime.fromisoformat)
     daily.add_argument("--policy", type=Path, default=Path("config/daily-research.toml"))
     daily.add_argument("--output", required=True, type=Path)
+    investment = commands.add_parser(
+        "investment-analyze", help="isolated causal price indicators; no account or orders"
+    )
+    investment.add_argument("dataset", type=Path)
+    investment.add_argument("--symbol", required=True)
+    investment.add_argument("--as-of", required=True, type=datetime.fromisoformat)
+    investment.add_argument("--timeframe", choices=("1d", "1w", "1mo"), default="1d")
+    investment.add_argument("--context", type=Path, help="reviewed hash-bound calendar context")
+    investment.add_argument("--benchmark", type=Path, help="reviewed local benchmark JSON")
+    investment.add_argument("--output", required=True, type=Path)
+    registration = commands.add_parser(
+        "register-backtest",
+        help="register copied immutable replay inputs; no account or job starts",
+    )
+    registration.add_argument("daily", type=Path)
+    registration.add_argument("execution", type=Path)
+    registration.add_argument("--strategy", type=Path, required=True)
+    registration.add_argument(
+        "--policy",
+        type=Path,
+        required=True,
+        help="reviewed isolated long-term economic policy TOML",
+    )
+    registration.add_argument("--label", required=True)
+    registration.add_argument(
+        "--registry", type=Path, help="default: configured account path with .research-jobs suffix"
+    )
+    policy_draft = commands.add_parser(
+        "investment-policy",
+        help="inspect a draft or preview reviewed-calendar dates; no account changes",
+    )
+    policy_draft.add_argument("draft", type=Path, help="draft JSON with label/parameters")
+    policy_draft.add_argument(
+        "--calendar", type=Path, help="explicit complete calendar declaration JSON"
+    )
+    policy_draft.add_argument(
+        "--start", type=date.fromisoformat, help="inclusive horizon start YYYY-MM-DD"
+    )
+    policy_draft.add_argument(
+        "--as-of", type=datetime.fromisoformat, help="aware calendar-availability cutoff"
+    )
     for name in ("daily-backtest", "daily-labels"):
         command = commands.add_parser(name, help="isolated quote-executed daily delivery research")
         command.add_argument("daily", type=Path)
@@ -276,6 +317,34 @@ def execute(args: argparse.Namespace) -> Any:
         return write_analysis(
             DailyDataset(args.dataset), DailyPolicy.load(args.policy), args.as_of, args.output
         )
+    if args.command == "investment-analyze":
+        from trading_agent.daily_research.dataset import DailyDataset
+        from trading_agent.investment_research.series import write_series_report
+
+        return write_series_report(
+            DailyDataset(args.dataset),
+            args.symbol,
+            args.as_of,
+            args.output,
+            timeframe=args.timeframe,
+            context_path=args.context,
+            benchmark_path=args.benchmark,
+        )
+    if args.command == "register-backtest":
+        from trading_agent.research_jobs import register_bundle
+
+        return register_bundle(
+            args.registry or settings.database.with_suffix(".research-jobs"),
+            args.daily,
+            args.execution,
+            args.strategy,
+            args.policy,
+            args.label,
+        )
+    if args.command == "investment-policy":
+        from trading_agent.investment_research.policy_cli import inspect_policy_file
+
+        return inspect_policy_file(args.draft, args.calendar, args.start, args.as_of)
     if args.command == "corporate-actions-demo":
         from trading_agent.corporate_actions.demo import corporate_actions_demo
 

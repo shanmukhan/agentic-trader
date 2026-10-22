@@ -1,26 +1,68 @@
 # How to use Agentic Trader
 
-Updated 22 October 2026 for version 0.14.0. This guide and corresponding detailed
-guides are updated with every feature or changed workflow, as required by [AGENTS.md](../AGENTS.md).
+Version **0.18.0** adds **Strategies → Investment policy drafts**. Choose a months-based
+or multi-year holding horizon and monthly or quarterly reviews, with explicit screening,
+allocation and exit limits. All fields start blank; incomplete drafts can be reviewed
+and saved as separate immutable snapshots. **Specified** records your choices; it does
+not activate a policy or enable its execution/backtest. Save/discard unsaved edits before
+menu navigation. An uncertain save requires refreshing saved snapshots before an explicit
+same-content retry. No automatic save/retry or account-policy change occurs.
+See [inputs, exact values, confirmations and recovery](investment-policy-drafts.md).
 
-The light workspace now uses a sidebar with six main areas: **Dashboard**, **Market &
-Analysis**, **Strategies**, **Paper Trading**, **Risk Center** and **Broker & Settings**.
-Dashboard opens first with portfolio values, market/readiness state and your next
-action. **Purchases & SIP** remains under Paper Trading; **Help & onboarding** is at
-the sidebar bottom. Incomplete setup also shows contextual onboarding guidance.
-See the [workspace navigation guide](workspace.md) for exact routes and unlock behavior.
+The new offline command `investment-policy DRAFT_JSON` prints a canonical inspection
+without saving or opening an account. Add `--calendar CALENDAR_JSON --start YYYY-MM-DD
+--as-of AWARE_ISO_TIMESTAMP` together for a bounded monthly/quarterly review-date preview.
+Calendar coverage must explicitly cover each whole period; its completeness is your
+unverified declaration. Missing coverage/choices remain unavailable. Preview dates never
+schedule execution or establish a minimum holding period or profitable strategy.
+See [the exact CLI/calendar schema](investment-policy-drafts.md#inspect-a-local-draft-or-preview-review-dates).
 
-**Market & Analysis** charts actual saved daily/minute candles and indicators; it
+The earlier **0.17.0** Phase 5 slice remains available: **Backtesting** has registered
+inputs, confirmed isolated-job admission, saved lifecycle/cancellation and verified
+bounded report views. Launch requires verified OS isolation and hard limits; it is
+**unavailable on the implementation Mac**, and the browser-job backend currently
+supports only Darwin sandboxing. Registration and saved reads remain available.
+See [browser backtesting](browser-backtesting.md) for commands, limits and recovery.
+
+**Portfolio** adds exact cash/held-share allocation at current accepted bids, with
+claims and pending commitments shown separately. Missing/stale held prices disable
+weights. A pure daily-performance calculator is implemented, but accounts and legacy
+replays lack accepted daily valuation/flow history: CAGR, Sharpe, Sortino and monthly
+portfolio returns stay unavailable there. See [portfolio analytics](portfolio-analytics.md).
+
+The existing offline replay retains its actual strategy/holding-session cap (default
+20); connected parity, out-of-sample/walk-forward browser orchestration, executable
+months-to-years strategies, target allocation and rebalancing remain unfinished Phase 5
+work. Drafts now record both horizon/cadence options, while each draft requires a specific
+choice. No draft selects an active account policy or changes its holding duration.
+
+Phase 4 price research remains available: Daily/Weekly/Monthly charts, 15 causal
+fixed-precision indicators, explicit warmup/gap states, known share-action-adjusted
+OHLC/volume, price drawdown and optional traceable local benchmarks. Range controls
+change display only; Discovery explains existing predicates without reranking.
+Weekly/monthly completeness requires a hash-bound review. Preparation still supplies
+at most 60 completed sessions from its supported current-year source, so long warmup
+needs separately reviewed history. Licensed fundamentals remain unavailable.
+See [investment research](investment-research.md).
+
+The twelve-destination light workspace retains existing paper authorization, risk,
+setup, purchases/SIP and shared confirmations. No upgrade activates an account or
+changes credentials/watchlists/holdings. Automated synthetic/local evidence is distinct
+from rendered browser/mobile, real OS, broker, source-license and device acceptance;
+those external gates remain open. See [the frontend component guide](frontend-modernization.md)
+and [validation record](test-plan.md).
+
+**Stock Analysis** charts actual saved daily/minute candles and indicators; it
 does not download from the broker when opened. Missing/stale data stays visible,
 and a chart is not an execution quote or a trade approval. See
-[Market & Analysis](market-analysis.md) for sources, inputs and limitations.
+[Stock Analysis](market-analysis.md) for sources, inputs and limitations.
 
-**If the feed connects but Approval/Automatic stay disabled:** open Dashboard →
+**If the feed connects but Approval/Automatic stay disabled:** open Paper Trading →
 **Your next step**. A socket supplies quotes; it does not install a strategy, validate
 ML or open a market session. The cards now explain every prerequisite, current IST
 time, next reviewed opening, entry hours and each selected stock's quote age/basis.
 
-In **Broker & Settings**, step 4 separates the complete catalog lookup from the account's
+In **Broker & Data**, step 4 separates the complete catalog lookup from the account's
 saved live-feed watchlist (at most ten symbols under the app's current limit). The
 displayed names are editable saved subscriptions; broader Nifty 100/500 research is
 available in **Strategies**. The connection overview recommends a numbered setup
@@ -39,10 +81,10 @@ an explicit policy choice. The summary lists which daily reviews are eligible an
 which need separate attention. The shortcut opens a preview; approval is still pending
 until **Confirm and prepare**. It disappears after the blocker clears. For older/missing
 data, use the displayed preparation link to download current-day sources first.
-Quote details in Dashboard and Risk Center explain
+Quote details in Paper Trading and Risk Management explain
 this separately from an old quote, a rejected observation or a disconnected feed.
 Resolve the supported shortlist, review actual current-day corporate actions/price
-basis in Risk Center and await a new valid quote. Do not approve a review merely
+basis in Risk Management and await a new valid quote. Do not approve a review merely
 to clear the warning. See [quote and shortlist recovery](trading-desk.md#open-session-with-no-usable-quotes).
 **Review the ranked shortlist** now opens and focuses the review section; it never
 applies the list. Reload the whole workspace for the navigation fix. The new Python
@@ -62,7 +104,7 @@ mode changes; Automatic still needs a new eligible signal and independent risk a
 
 For the missing strategy, use **Strategies** → **Prepare a paper strategy**:
 
-1. Check your saved broker session and import the NSE catalog in **Broker & Settings**.
+1. Check your saved broker session and import the NSE catalog in **Broker & Data**.
    Step 3 shows **Checking…**, then a result directly below the buttons. A successful
    profile check does not prove streaming access or fresh quotes. On failure, check
    connectivity and retry; if expired, disconnect a requested feed in step 6 and
@@ -80,7 +122,7 @@ For the missing strategy, use **Strategies** → **Prepare a paper strategy**:
    Used calendar history, held-position basis and quarantines need separate review; they
    cannot be cleared automatically. Calendar editing remains under **Advanced: edit dates
    and install separately**. Setup stays Manual and does not change virtual capital.
-5. Return to Dashboard. When readiness permits, choose **Start approval mode** or **Start automatic paper mode**
+5. Return to Paper Trading. When readiness permits, choose **Start approval mode** or **Start automatic paper mode**
    and confirm. Use **Paper Trading** for reasons, orders, later fills and fees.
    After hours the setup can finish, but modes still wait for an open entry session and
    fresh usable quotes. No future automatic activation is scheduled.
@@ -270,9 +312,9 @@ browser. Keep its terminal running; Ctrl+C stops a server started there. See
 daily login, credentials, catalog/symbol selection, sourced calendar and feed controls.
 `TRADING_OPERATOR_TOKEN` from your private `.env` unlocks the local app;
 **Zerodha request/access tokens do not**. The [workspace menu](workspace.md) retains
-one unlock while moving among the six sidebar areas and Purchases & SIP. Reload/new
+one unlock while moving among the twelve sidebar destinations and Purchases & SIP. Reload/new
 workspace tabs still require unlocking; merely switching browser tabs does not
-intentionally lock access. **Help & onboarding** explains the connection steps,
+intentionally lock access. **Learning Center** explains the connection steps,
 actual configured hours and manual/automated trading frequency. The Dashboard’s
 contextual onboarding links to unfinished strategy, calendar or feed setup.
 
@@ -285,8 +327,8 @@ trading-agent serve
 Open <http://127.0.0.1:8000>, enter the operator token, and select **Unlock / refresh**.
 The responsive light workspace shows portfolio values and next actions first.
 Use **Strategies** for preparation and shortlist review, **Paper Trading** for
-orders/fills, **Risk Center** for exposure, basis review and emergency/entry controls,
-and **Broker & Settings** for credentials and feed administration. Desktop uses a
+orders/fills, **Risk Management** for exposure, basis review and emergency/entry controls,
+and **Broker & Data** for credentials and feed administration. Desktop uses a
 sidebar and columns; narrow widths adapt the navigation and stack panels.
 There is no native Android/iOS app. It polls one consistent response every three
 seconds while visible and marks old data stale after six seconds. Displayed update

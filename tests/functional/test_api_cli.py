@@ -59,7 +59,7 @@ def test_cross_origin_host_validation_and_no_live_route(engine):
         assert client.post("/api/live/orders", headers=AUTH).status_code == 404
         assert client.get("/openapi.json").status_code == 404
         response = client.get("/")
-        assert response.status_code == 200 and "Risk Center" in response.text
+        assert response.status_code == 200 and "Risk Management" in response.text
         assert "PAPER ONLY" in response.text
         assert response.headers["Cache-Control"] == "no-store"
         assert client.get("/dashboard.js").status_code == 200

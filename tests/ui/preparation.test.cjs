@@ -83,16 +83,29 @@ test('locking during a guided preview discards late private data and clears an o
  let finish;const s=setup(()=>new Promise(resolve=>{finish=resolve;}));s.ui.render(s.view,null);s.nodes['prep-policy'].value='rules';s.nodes['guided-review'].fire('click');s.ui.clear();finish(guided());await flush();
  assert.notEqual(s.nodes['guided-dialog'].open,true);assert.equal(s.nodes['guided-summary'].textContent,'');assert.equal(s.nodes['guided-review'].disabled,true);
 });
+test('pagehide and a later unlock cannot expose or submit an earlier guided preview',async()=>{
+ const events={};let finish;const s=setup(()=>new Promise(resolve=>{finish=resolve;}),{addEventListener:(name,fn)=>{events[name]=fn;}});
+ s.ui.render(s.view,null);s.nodes['prep-policy'].value='rules';s.nodes['guided-review'].fire('click');events.pagehide();
+ s.ui.render(s.view,null);finish(guided());await flush();
+ assert.notEqual(s.nodes['guided-dialog'].open,true);assert.equal(s.nodes['guided-summary'].textContent,'');
+ s.nodes['guided-ack'].checked=true;s.nodes['guided-confirm'].fire('click');await flush();assert.equal(s.calls.length,1);assert.ok(s.calls[0].path.endsWith('/preview'));
+});
+test('Escape revokes the guided acknowledgement and cannot confirm the dismissed preview',async()=>{
+ const s=setup(()=>guided());s.ui.render(s.view,null);s.nodes['prep-policy'].value='rules';s.nodes['guided-review'].fire('click');await flush();
+ s.nodes['guided-ack'].checked=true;s.nodes['guided-ack'].fire('change');s.nodes['guided-dialog'].fire('cancel');
+ assert.equal(s.nodes['guided-dialog'].open,false);assert.equal(s.nodes['guided-ack'].checked,false);assert.equal(s.nodes['guided-confirm'].disabled,true);
+ s.nodes['guided-confirm'].fire('click');await flush();assert.equal(s.calls.length,1);
+});
 test('saved guided completion or partial failure tells the operator the outcome after refresh',()=>{
  const s=setup();s.ui.render(s.view,{state:'stopped',message:'Setup stopped during connection. Saved steps remain.'});assert.match(s.nodes['guided-result'].textContent,/Saved steps remain/);
  s.ui.render(s.view,{state:'complete',message:'Setup complete. Waiting for market hours; Manual.'});assert.match(s.nodes['guided-result'].textContent,/Waiting for market hours/);
  s.ui.clear();assert.equal(s.nodes['guided-result'].textContent,'');
 });
 test('embedded review fits the visible parent viewport and removes parent listeners when closed',async()=>{
- const listeners=new Map(),parent={innerHeight:844,addEventListener:(type,fn)=>listeners.set(type,fn),removeEventListener:type=>listeners.delete(type)};
- const s=setup(()=>guided(),{parent,frameElement:{getBoundingClientRect:()=>({top:-2900})}});s.ui.render(s.view,null);s.nodes['prep-policy'].value='rules';s.nodes['guided-review'].fire('click');await flush();
- assert.equal(s.nodes['guided-dialog'].style.maxHeight,'692px');assert.equal(s.nodes['guided-dialog'].style.top,'2976px');assert.equal(listeners.size,2);
- parent.innerHeight=1100;listeners.get('resize')();assert.equal(s.nodes['guided-dialog'].style.maxHeight,'902px');
+ const listeners=new Map(),parent={innerWidth:1440,innerHeight:844,addEventListener:(type,fn)=>listeners.set(type,fn),removeEventListener:type=>listeners.delete(type)};
+ const s=setup(()=>guided(),{parent,frameElement:{getBoundingClientRect:()=>({top:-2900,bottom:1600,left:240,right:1400,width:1160,height:4500})}});s.ui.render(s.view,null);s.nodes['prep-policy'].value='rules';s.nodes['guided-review'].fire('click');await flush();
+ assert.equal(s.nodes['guided-dialog'].style.maxHeight,'812px');assert.equal(s.nodes['guided-dialog'].style.top,'3322px');assert.equal(listeners.size,2);
+ parent.innerHeight=1100;listeners.get('resize')();assert.equal(s.nodes['guided-dialog'].style.maxHeight,'1068px');
  s.nodes['guided-cancel'].fire('click');assert.equal(listeners.size,0);
 });
 function readyDailyReview(s){

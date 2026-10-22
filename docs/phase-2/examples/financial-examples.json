@@ -1,0 +1,200 @@
+{
+  "contract_id": "investment-metrics-v1-draft",
+  "fixture_kind": "synthetic_exact_arithmetic_design_examples",
+  "runtime_contract": false,
+  "currency": "INR",
+  "limitations": [
+    "Invented prices, quantities and fixed fees; not operator account data or strategy evidence.",
+    "Fixed fees are fixture inputs, not current statutory or broker charge estimates.",
+    "These expected identities are not persisted-ledger, broker or device acceptance.",
+    "All authoritative monetary inputs and outputs are decimal strings."
+  ],
+  "cases": [
+    {
+      "id": "completed_gain",
+      "seed": "1000",
+      "fills": [
+        {"side": "BUY", "quantity": 4, "price": "100", "fee": "2"},
+        {"side": "SELL", "quantity": 4, "price": "120", "fee": "3"}
+      ],
+      "expected": {
+        "cash": "1075",
+        "held_quantity": 0,
+        "held_basis": "0",
+        "realized_capital_pnl": "75",
+        "charged_fees": "5",
+        "complete_equity": "1075",
+        "net_gain": "75",
+        "simple_return_ratio": "0.075",
+        "completed_episodes": 1,
+        "win_rate_percent": "100"
+      }
+    },
+    {
+      "id": "completed_loss",
+      "seed": "1000",
+      "fills": [
+        {"side": "BUY", "quantity": 4, "price": "100", "fee": "2"},
+        {"side": "SELL", "quantity": 4, "price": "90", "fee": "3"}
+      ],
+      "expected": {
+        "cash": "955",
+        "held_quantity": 0,
+        "held_basis": "0",
+        "realized_capital_pnl": "-45",
+        "charged_fees": "5",
+        "complete_equity": "955",
+        "net_gain": "-45",
+        "simple_return_ratio": "-0.045",
+        "completed_episodes": 1,
+        "win_rate_percent": "0"
+      }
+    },
+    {
+      "id": "partial_exit_no_fee_or_reservation_double_count",
+      "seed": "1000",
+      "fills": [
+        {"side": "BUY", "quantity": 6, "price": "100", "fee": "3"},
+        {"side": "SELL", "quantity": 2, "price": "110", "fee": "2"}
+      ],
+      "valuation": {"accepted_bid": "105", "estimated_exit_price": "105", "estimated_exit_fee": "2"},
+      "constraints": {"pending_buy_cash_reservation": "50", "invented_delivery_buffer": "10"},
+      "expected": {
+        "cash": "615",
+        "released_basis": "201",
+        "held_quantity": 4,
+        "held_basis": "402",
+        "gross_market_value": "420",
+        "liquidation_value": "418",
+        "unrealized_liquidation_pnl": "16",
+        "realized_capital_pnl": "17",
+        "charged_fees": "5",
+        "complete_equity": "1033",
+        "available_cash": "555",
+        "net_gain": "33",
+        "simple_return_ratio": "0.033",
+        "completed_episodes": 0,
+        "open_episodes": 1,
+        "win_rate_percent": null,
+        "win_rate_reason": "NO_COMPLETED_TRADES",
+        "ledger_identity_cash_plus_basis": "1017",
+        "ledger_identity_seed_plus_realized": "1017"
+      }
+    },
+    {
+      "id": "dividend_declaration_then_receipt",
+      "seed": "1000",
+      "fills": [{"side": "BUY", "quantity": 4, "price": "100", "fee": "2"}],
+      "valuation": {"accepted_bid": "100", "estimated_exit_price": "100", "estimated_exit_fee": "2"},
+      "dividend": {"gross_per_share": "5", "entitled_quantity": 4, "reviewed_withholding": "2", "net_receipt": "18"},
+      "expected_before_receipt": {
+        "cash": "598",
+        "held_basis": "402",
+        "liquidation_value": "398",
+        "unrealized_liquidation_pnl": "-4",
+        "dividend_receivable": "18",
+        "dividend_income_received": "0",
+        "realized_capital_pnl": "0",
+        "complete_equity": "1014",
+        "net_gain": "14"
+      },
+      "expected_after_receipt": {
+        "cash": "616",
+        "held_basis": "402",
+        "liquidation_value": "398",
+        "unrealized_liquidation_pnl": "-4",
+        "dividend_receivable": "0",
+        "dividend_income_received": "18",
+        "realized_capital_pnl": "0",
+        "complete_equity": "1014",
+        "net_gain": "14",
+        "equity_change_on_receipt": "0"
+      }
+    },
+    {
+      "id": "split_fraction_unvalued_then_paid",
+      "seed": "1000",
+      "fills": [{"side": "BUY", "quantity": 3, "price": "100", "fee": "3"}],
+      "action": {"kind": "split", "new_share_numerator": 1, "old_share_denominator": 2, "result_whole_quantity": 1, "fraction_numerator": 1, "fraction_denominator": 2},
+      "valuation": {"accepted_post_action_bid": "220", "estimated_exit_price": "220", "estimated_exit_fee": "2"},
+      "expected_before_fraction_receipt": {
+        "cash": "697",
+        "whole_held_basis": "202",
+        "fraction_basis_pending": "101",
+        "fraction_realizable_value": null,
+        "whole_liquidation_value": "218",
+        "whole_unrealized_liquidation_pnl": "16",
+        "known_component_equity": "915",
+        "known_component_state": "partial",
+        "complete_equity": null,
+        "complete_equity_reason": "UNVALUED_FRACTION",
+        "net_gain": null,
+        "ledger_identity_cash_plus_whole_and_fraction_basis": "1000"
+      },
+      "fraction_cash_receipt": "108",
+      "expected_after_fraction_receipt": {
+        "cash": "805",
+        "whole_held_basis": "202",
+        "fraction_basis_pending": "0",
+        "fraction_realized_capital_pnl": "7",
+        "realized_capital_pnl": "7",
+        "whole_unrealized_liquidation_pnl": "16",
+        "complete_equity": "1023",
+        "net_gain": "23",
+        "ledger_identity_cash_plus_basis": "1007",
+        "ledger_identity_seed_plus_realized": "1007"
+      }
+    },
+    {
+      "id": "stale_valuation_preserves_current_ledger_cash",
+      "seed": "1000",
+      "fills": [{"side": "BUY", "quantity": 4, "price": "100", "fee": "2"}],
+      "current_valuation_cut": "2026-10-22T10:00:00+05:30",
+      "last_trusted_valuation": {
+        "as_of": "2026-10-21T10:00:00+05:30",
+        "accepted_bid": "100",
+        "estimated_exit_price": "100",
+        "estimated_exit_fee": "2"
+      },
+      "expected": {
+        "cash": "598",
+        "cash_freshness": "current",
+        "held_basis": "402",
+        "current_gross_market_value": null,
+        "current_complete_equity": null,
+        "current_equity_reason": "STALE_PRICE",
+        "current_unrealized_liquidation_pnl": null,
+        "last_trusted_equity": "996",
+        "last_trusted_equity_is_current": false
+      }
+    },
+    {
+      "id": "all_cash_known_zero_return",
+      "seed": "1000",
+      "fills": [],
+      "expected": {
+        "cash": "1000",
+        "complete_equity": "1000",
+        "net_gain": "0",
+        "simple_return_ratio": "0",
+        "cash_allocation_percent": "100",
+        "held_allocation_percent": "0",
+        "win_rate_percent": null,
+        "win_rate_reason": "NO_COMPLETED_TRADES"
+      }
+    }
+  ],
+  "return_path_examples": [
+    {
+      "id": "daily_compounding_not_summing",
+      "valuation_levels": ["1000", "1100", "990", "1089"],
+      "daily_returns": ["0.1", "-0.1", "0.1"],
+      "expected": {"total_return_ratio": "0.089", "maximum_drawdown_ratio": "0.1", "maximum_drawdown_amount": "110", "arithmetic_sum_not_total_return": "0.1", "cagr": null, "cagr_reason": "INSUFFICIENT_OBSERVATIONS"}
+    },
+    {
+      "id": "endpoint_return_with_interior_missing_session",
+      "valuation_levels": ["1000", null, "1100"],
+      "expected": {"endpoint_return_ratio": "0.1", "daily_maximum_drawdown": null, "annualized_volatility": null, "path_metric_reason": "INCOMPLETE_SERIES"}
+    }
+  ]
+}

@@ -1,5 +1,25 @@
 # Phase 2: strategy research and backtesting
 
+Version **0.17.0** adds [registered browser backtesting](browser-backtesting.md):
+CLI-reviewed copied inputs, confirmed isolated daily-replay jobs, durable lifecycle,
+cancellation and verified report views. Launch requires verified Darwin sandbox/hard
+limits and is unavailable on the implementation Mac; Linux/Pi browser jobs are not
+implemented. Existing direct CLI commands below keep their separate behavior.
+
+The browser uses the existing rules-only daily delivery replay with its declared
+holding-session cap (default 20), not a new months-to-years strategy. Connected parity,
+OOS/walk-forward orchestration, benchmark portfolio returns and rebalancing remain open.
+Event-time curves are not accepted daily cuts; annualized and monthly performance stays
+unavailable in browser reports. [Portfolio analytics](portfolio-analytics.md) documents
+the new pure calculator and exact allocation boundary.
+
+Version 0.16.0 added `investment-analyze` for isolated historical price/indicator reports.
+It is **not** a backtest: no orders, fills, fees, portfolio return or policy validation
+are simulated. The [price research/benchmark adapter](investment-research.md) is not
+automatically an account-performance comparison or a new execution strategy.
+The [Phase 2 design](phase-2/README.md) still supplies future contracts; its proposed
+budgets/endpoints are not automatically implemented by this narrower slice.
+
 Version 0.2 adds two deterministic long-only rule hypotheses and an isolated,
 quote-driven backtester. These are research tools. The connected service continues
 to use operator paper intents. ML and automatic strategy use on the feed are later

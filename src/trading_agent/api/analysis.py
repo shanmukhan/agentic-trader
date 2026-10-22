@@ -67,7 +67,12 @@ def _daily_bars(research: Any, symbol: str, now: datetime) -> list[dict[str, Any
 
 
 def analysis_snapshot(
-    desk: Any, now: datetime, *, symbol: str | None = None, timeframe: Timeframe = "1d"
+    desk: Any,
+    now: datetime,
+    *,
+    symbol: str | None = None,
+    timeframe: Timeframe = "1d",
+    include_history: bool = True,
 ) -> dict[str, Any]:
     """Read existing source records without polling engines, refreshing or granting authority."""
     now = utc(now)
@@ -160,7 +165,7 @@ def analysis_snapshot(
     message = "No saved history for this stock. Prepare and review strategy data in Strategies."
     if symbol is None:
         message = "No stocks are configured. Connect a broker and prepare strategy data first."
-    elif timeframe == "1d" and research and symbol in research_symbols:
+    elif include_history and timeframe == "1d" and research and symbol in research_symbols:
         try:
             bars = _daily_bars(research, symbol, now)
         except (OSError, ValueError, RuntimeError):
@@ -243,6 +248,59 @@ def analysis_snapshot(
     }
 
 
+def investment_snapshot(
+    desk: Any,
+    now: datetime,
+    *,
+    symbol: str | None = None,
+    timeframe: Literal["1d", "1w", "1mo"] = "1d",
+) -> dict[str, Any]:
+    from trading_agent.investment_research.series import series_snapshot
+
+    now = utc(now)
+    with desk.engine.lock:
+        research = desk.research
+        base = analysis_snapshot(desk, now, symbol=symbol, include_history=False)
+    chosen = base["symbol"]
+    base["timeframe"] = timeframe
+    if not research or chosen not in {m.symbol for m in research.dataset.manifest.universe}:
+        base["message"] = (
+            "No reviewed daily research history for this stock. Prepare data in Strategies."
+        )
+        base["research"] = {
+            "indicator_status": {},
+            "partial_periods": [],
+            "coverage": {
+                "calendar_verified": False,
+                "detail": "Daily source data is not installed.",
+            },
+            "benchmark": {"state": "unavailable", "reason": "BENCHMARK_NOT_CONFIGURED"},
+            "fundamentals": {"state": "unavailable", "reason": "LICENSED_SOURCE_NOT_CONFIGURED"},
+            "explanations": ["Opening research does not download data or authorize trading."],
+        }
+        return base
+    result = series_snapshot(research.dataset, chosen, now, timeframe=timeframe)
+    bars = result["bars"]
+    base.update(result)
+    base["bars"] = bars[-BAR_LIMIT:]
+    base["bar_limit"] = BAR_LIMIT
+    base["truncated"] = len(bars) > BAR_LIMIT
+    base["research"]["coverage"]["displayed_bars"] = len(base["bars"])
+    partial = base["research"]["partial_periods"]
+    base["research"]["partial_periods"] = partial[-24:]
+    base["research"]["partial_period_limit"] = 24
+    base["research"]["partial_periods_truncated"] = len(partial) > 24
+    base["message"] = (
+        "Saved completed share-adjusted research candles; historical evidence, not live quotes. "
+        "Incomplete periods are excluded. Indicators use full eligible history "
+        "before display slicing."
+        if bars
+        else "No complete research candles are available for this interval. "
+        "Inspect calendar coverage, missing history and warmup details below; no data was invented."
+    )
+    return base
+
+
 def mount_analysis(app: Any, desk: Any, authorized: Any, assets: Any, clock: Any) -> None:
     @app.get("/analysis", response_class=HTMLResponse)
     def page() -> str:
@@ -264,3 +322,20 @@ def mount_analysis(app: Any, desk: Any, authorized: Any, assets: Any, clock: Any
             return analysis_snapshot(desk, clock(), symbol=symbol, timeframe=timeframe)
         except UnknownAnalysisSymbol as error:
             raise HTTPException(404, str(error)) from None
+
+    @app.get("/api/research/series", dependencies=[Depends(authorized)])
+    def investment_status(
+        symbol: str | None = Query(default=None, pattern=r"^NSE:[A-Z0-9&_.-]{1,30}$"),
+        timeframe: Literal["1d", "1w", "1mo"] = "1d",
+    ) -> dict[str, Any]:
+        try:
+            return investment_snapshot(desk, clock(), symbol=symbol, timeframe=timeframe)
+        except UnknownAnalysisSymbol as error:
+            raise HTTPException(404, str(error)) from None
+        except Exception:
+            # Data-read failures must not invoke the mutation-fault handler or revoke authority.
+            raise HTTPException(
+                503,
+                "Saved research failed validation or integrity checks. "
+                "Review source files and refresh; no account state changed.",
+            ) from None

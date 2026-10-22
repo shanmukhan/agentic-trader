@@ -1,127 +1,91 @@
 (function () {
   'use strict';
   function createWorkspace(doc, win, request) {
-    const el = id => doc.getElementById(id), frame = el('workspace-frame');
-    const routes = { desk: '/desk', analysis: '/analysis', strategies: '/strategies', activity: '/activity', console: '/console', setup: '/setup', portfolio: '/portfolio' };
-    const titles = {desk:'Dashboard',analysis:'Market & Analysis',strategies:'Strategies',activity:'Paper Trading',console:'Risk Center',setup:'Broker & Settings',portfolio:'Purchases & SIP',overview:'Help & onboarding'};
-    let token = '', generation = 0, busy = false, controller = null, current = '', loaded = '', currentAnchor = '';
-    const cleanAnchor = value => typeof value === 'string' && /^[A-Za-z][A-Za-z0-9_-]{0,99}$/.test(value) ? value : '';
-    function message(text, error = false) { el('workspace-message').textContent = text; el('workspace-message').className = error ? 'error' : ''; }
-    function wanted() { const key = win.location.hash.slice(1).split('/')[0]; return ['overview', ...Object.keys(routes)].includes(key) ? key : 'desk'; }
-    function send(type, value) { if (frame.contentWindow) frame.contentWindow.postMessage({ type, ...(value ? { token: value } : {}) }, win.location.origin); }
-    function lock(text = 'Locked. Unlock again to access all menu sections.') {
-      generation++; token = ''; busy = false; if (controller) controller.abort(); controller = null;
-      send('workspace-lock'); frame.src = 'about:blank'; loaded = ''; frame.hidden = true;
-      el('workspace-token').value = ''; el('workspace-access').hidden = false;
-      el('workspace-lock').disabled = true; el('workspace-submit').disabled = false;
-      el('workspace-refresh').disabled = true;
-      el('workspace-state').textContent = 'Locked';
-      el('workspace-onboarding').hidden = true;
-      el('workspace-mode').textContent = 'Unlock to inspect the current account and its actual settings.';
-      for (const id of ['workspace-feed', 'workspace-time', 'workspace-hours']) el(id).textContent = '';
-      message(text);
+    const el=id=>doc.getElementById(id),frame=el('workspace-frame');
+    const routes={dashboard:'/dashboard',discovery:'/discovery',analysis:'/analysis',strategies:'/strategies',backtesting:'/backtesting',paper:'/paper',portfolio:'/holdings',history:'/activity',risk:'/console',broker:'/setup',settings:'/settings',learn:'/learn'};
+    const titles={dashboard:'Dashboard',discovery:'Stock Discovery',analysis:'Stock Analysis',strategies:'Strategies',backtesting:'Backtesting',paper:'Paper Trading',portfolio:'Portfolio',history:'Trade History',risk:'Risk Management',broker:'Broker & Data',settings:'Settings',learn:'Learning Center'};
+    const aliases={desk:'dashboard',activity:'history',console:'risk',setup:'broker',overview:'learn'};
+    const purchaseAnchors=new Set(['purchases','purchase','holdings-heading','buy-heading','preview-heading','plans-heading','purchase-orders-heading','lots-heading']);
+    const cleanAnchor=value=>typeof value==='string'&&/^[A-Za-z][A-Za-z0-9_-]{0,99}$/.test(value)?value:'';
+    let token='',generation=0,busy=false,controller=null,current='',currentAnchor='',loaded='',surface='',dialogOpen=false;
+    function message(text,error=false){el('workspace-message').textContent=text;el('workspace-message').className=error?'error':'';}
+    function setMenu(open){el('workspace-nav').hidden=!open&&!!win.matchMedia?.('(max-width: 767px)').matches;el('workspace-menu-toggle').setAttribute('aria-expanded',String(open));el('workspace-sidebar').classList?.toggle('menu-open',open);}
+    function setDialog(open){dialogOpen=open;el('workspace-sidebar').inert=open;el('workspace-footer').inert=open;el('workspace-nav').inert=open;el('workspace-menu-toggle').disabled=open;el('workspace-onboarding').inert=open;}
+    function send(type,value){if(frame.contentWindow)frame.contentWindow.postMessage({type,...(value?{token:value}:{})},win.location.origin);}
+    function lock(text='Locked. Unlock again to access all workspace sections.'){
+      generation++;token='';busy=false;if(controller)controller.abort();controller=null;setDialog(false);
+      send('workspace-lock');frame.src='about:blank';loaded='';surface='';frame.hidden=true;
+      el('workspace-token').value='';el('workspace-access').hidden=false;el('workspace-lock').disabled=true;el('workspace-submit').disabled=false;el('workspace-refresh').disabled=true;
+      el('workspace-state').textContent='Locked';el('workspace-onboarding').hidden=true;
+      el('workspace-mode').textContent='Unlock to inspect the current account and its actual settings.';
+      for(const id of ['workspace-feed','workspace-time','workspace-hours'])el(id).textContent='';message(text);
     }
-    function canLeave() {
-      try { return !frame.contentWindow || !frame.contentWindow.AgenticNavigation || frame.contentWindow.AgenticNavigation.canNavigate(); }
-      catch (_) { return true; }
+    function wanted(){
+      const parts=win.location.hash.slice(1).split('/');let target=aliases[parts[0]]||parts[0],anchor=cleanAnchor(parts[1]);
+      if(!Object.hasOwn(routes,target))target='dashboard';
+      if(target==='dashboard'&&['strategy-setup','execution-shortlist','apply-shortlist'].includes(anchor)){target='strategies';if(anchor==='apply-shortlist')anchor='execution-shortlist';}
+      if(parts[0]==='overview'&&!anchor)anchor='setup-checklist';
+      return {target,anchor};
     }
-    function navigate() {
-      let target = wanted();
-      const anchor = cleanAnchor(win.location.hash.slice(1).split('/')[1]);
-      if (target === 'desk' && ['strategy-setup','execution-shortlist','apply-shortlist'].includes(anchor)) {
-        target = 'strategies';
-        win.history.replaceState(null, '', '#strategies/'+anchor);
-      }
-      if (target !== current && !canLeave()) {
-        win.history.replaceState(null, '', '#'+current+(currentAnchor?'/'+currentAnchor:''));
-        message('Finish or cancel the active request, confirmation or login window before changing sections.', true); return;
-      }
-      const changed = current !== target;
-      current = target; currentAnchor = anchor;
-      if (changed && win.scrollTo) win.scrollTo({top:0,behavior:'instant'});
-      for (const name of ['overview', ...Object.keys(routes)]) {
-        const link = el('nav-'+name); link.className = (name === 'portfolio' ? 'nav-secondary ' : '') + (name === target ? 'active' : '');
-        if (name === target) link.setAttribute('aria-current', 'page'); else link.removeAttribute('aria-current');
-      }
-      el('workspace-title').textContent = titles[target];
-      el('workspace-overview').hidden = target !== 'overview';
-      el('workspace-section-note').hidden = target === 'overview';
-      frame.hidden = target === 'overview' || !token;
-      if (target === 'overview' || !token) { frame.src = 'about:blank'; loaded = ''; if (token) refreshInfo(); return; }
-      if (loaded !== target) { loaded = target; frame.src = routes[target]+(anchor?'#'+anchor:''); frame.title = titles[target]; }
-      else if (frame.contentWindow) frame.contentWindow.postMessage({type:'workspace-anchor',anchor}, win.location.origin);
-      if (changed && target === 'desk') refreshInfo();
+    function canLeave(){try{return !dialogOpen&&(!frame.contentWindow||!frame.contentWindow.AgenticNavigation||frame.contentWindow.AgenticNavigation.canNavigate());}catch(_){return false;}}
+    function navigate(){
+      if(win.location.hash==='#workspace-main'&&current){win.history.replaceState(null,'','#'+current+(currentAnchor?'/'+currentAnchor:''));if(!dialogOpen)el('workspace-main').focus?.();return;}
+      const {target,anchor}=wanted(),nextSurface=target==='portfolio'&&purchaseAnchors.has(anchor)?'/portfolio':target==='strategies'&&anchor==='investment-policy'?'/investment-policy':routes[target];
+      const changed=current!==target||surface!==nextSurface;
+      if((changed||currentAnchor!==anchor)&&!canLeave()){win.history.replaceState(null,'','#'+current+(currentAnchor?'/'+currentAnchor:''));message('Finish or cancel the active request, confirmation or login window before changing sections.',true);return;}
+      const canonical='#'+target+(anchor?'/'+anchor:'');if(win.location.hash!==canonical)win.history.replaceState(null,'',canonical);
+      current=target;currentAnchor=anchor;setMenu(false);if(changed&&win.scrollTo)win.scrollTo({top:0,behavior:'instant'});
+      for(const name of Object.keys(routes)){const link=el('nav-'+name);link.className=name===target?'active':'';if(name===target)link.setAttribute('aria-current','page');else link.removeAttribute('aria-current');}
+      el('workspace-title').textContent=titles[target];el('workspace-menu-toggle').textContent='Menu · '+titles[target];
+      el('workspace-overview').hidden=true;el('workspace-section-note').hidden=false;frame.hidden=!token;
+      if(!token){frame.src='about:blank';loaded='';surface='';return;}
+      const childAnchor=anchor==='purchases'?'buy-heading':anchor;
+      if(loaded!==target||surface!==nextSurface){setDialog(false);loaded=target;surface=nextSurface;frame.src=nextSurface+(childAnchor?'#'+childAnchor:'');frame.title=titles[target];}
+      else if(frame.contentWindow)frame.contentWindow.postMessage({type:'workspace-anchor',anchor:childAnchor},win.location.origin);
+      if(changed&&target==='dashboard')refreshInfo();
     }
-    function render(data) {
-      const needsStrategy = !data.analysis_configured;
-      const needsCalendar = !data.calendar_today;
-      const needsFeed = !data.feed_requested;
-      el('workspace-onboarding').hidden = !(needsStrategy || needsCalendar || needsFeed);
-      el('onboarding-title').textContent = needsStrategy ? 'Prepare your paper strategy' : needsCalendar ? 'Review the exchange session' : 'Connect your market data';
-      el('onboarding-detail').textContent = needsStrategy ? 'A guided review helps you prepare genuine data and choose a decision policy. Manual purchases remain available.' : needsCalendar ? 'Today has no saved reviewed session. Review the actual exchange date and hours before trading.' : 'Your strategy is configured. Check the saved broker session, then explicitly connect the read-only feed.';
-      el('onboarding-action').textContent = needsStrategy ? 'Set up a strategy →' : 'Open broker setup →';
-      el('onboarding-action').href = needsStrategy ? '#strategies' : '#setup/'+(needsCalendar?'setup-step-5':'feed-connection');
-      const manual = !data.automation_enabled;
-      if (data.analysis_configured || (data.automation_enabled && data.decision_mode)) { el('workspace-mode').textContent = (data.investment_horizon === 'long_term' ? 'Long-term paper' : 'Intraday paper') + ' · '+data.decision_mode+' mode · use Trading desk to review actual activation, proposals and data blockers.'; }
-      else
-      el('workspace-mode').textContent = (data.investment_horizon === 'long_term' ? 'Long-term paper' : 'Intraday paper') + (manual ? ' · Manual: entries require explicit operator instructions. No automatic stock picking or trading is running.' : data.automation_armed ? ' · Supervised automation armed; independent gates still apply.' : ' · Supervised automation disarmed; no new automatic entries.');
-      el('workspace-feed').textContent = data.feed_connected ? 'Market-data connection established. Freshness and price-basis gates still apply.' : data.feed_requested ? 'Feed requested but disconnected/connecting. Inspect Broker & feed setup; check the session, entitlement and network.' : 'Feed not started. The startup shortcut opens the UI without a feed. Use Broker & feed setup → step 6 → Connect paper market data.';
-      el('workspace-time').textContent = 'Last checked ' + new Intl.DateTimeFormat('en-IN', {timeZone:'Asia/Kolkata',dateStyle:'medium',timeStyle:'short'}).format(new Date(data.observed_at)) + ' IST · ' + (data.calendar_open ? 'Reviewed session currently open.' : 'No open reviewed session now.') + ' Quotes must be no older than ' + data.max_quote_age_seconds + ' seconds.';
-      el('workspace-hours').textContent = 'Configured entry window: ' + data.entry_start + '–' + data.entry_end + ' IST on reviewed sessions, subject to earlier close cutoffs. ' + (data.investment_horizon === 'long_term' ? 'No forced end-of-day sale for long-term holdings.' : 'Intraday exit request time: '+data.flatten_at+' IST or the earlier session cutoff.') + (data.automation_enabled ? ' Proposal cap: '+data.candidate_cap_per_symbol_day+' per symbol/session; signals can be rejected and are not guaranteed fills.' : 'Unlocking does not enable automation.');
+    function render(data){
+      const needsStrategy=!data.analysis_configured,needsCalendar=!data.calendar_today,needsFeed=!data.feed_requested;
+      el('workspace-onboarding').hidden=!(needsStrategy||needsCalendar||needsFeed);
+      el('onboarding-title').textContent=needsStrategy?'Prepare your paper strategy':needsCalendar?'Review the exchange session':'Connect your market data';
+      el('onboarding-detail').textContent=needsStrategy?'A guided review helps you prepare genuine data and choose a decision policy. Manual purchases remain available.':needsCalendar?'Today has no saved reviewed session. Review the actual exchange date and hours before trading.':'Your strategy is configured. Check the saved broker session, then explicitly connect the read-only feed.';
+      el('onboarding-action').textContent=needsStrategy?'Set up a strategy →':'Open Broker & Data →';el('onboarding-action').href=needsStrategy?'#strategies':'#broker/'+(needsCalendar?'setup-step-5':'feed-connection');
+      el('workspace-mode').textContent=(data.investment_horizon==='long_term'?'Long-term paper':'Intraday paper')+' · '+(data.decision_mode||'manual')+' mode. Review Paper Trading for actual authority and blockers.';
+      el('workspace-feed').textContent=data.feed_connected?'Market-data connection established. Freshness and price-basis gates still apply.':data.feed_requested?'Feed requested but disconnected/connecting. Inspect Broker & Data.':'Feed not started. Use Broker & Data → step 6 → Connect paper market data.';
+      el('workspace-time').textContent='Last checked '+new Intl.DateTimeFormat('en-IN',{timeZone:'Asia/Kolkata',dateStyle:'medium',timeStyle:'short'}).format(new Date(data.observed_at))+' IST · '+(data.calendar_open?'Reviewed session currently open.':'No open reviewed session now.')+' Quotes must be no older than '+data.max_quote_age_seconds+' seconds.';
+      el('workspace-hours').textContent='Configured entry window: '+data.entry_start+'–'+data.entry_end+' IST. '+(data.investment_horizon==='long_term'?'No forced end-of-day sale for long-term holdings.':'Intraday exit request time: '+data.flatten_at+' IST.');
     }
-    async function refreshInfo() {
-      if (!token || busy) return;
-      busy = true; el('workspace-refresh').disabled = true;
-      const version = generation, active = new AbortController(); controller = active;
-      const timeout = win.setTimeout(() => active.abort(), 10000);
-      try {
-        const response = await request('/api/workspace', {cache:'no-store',credentials:'omit',redirect:'error',signal:active.signal,headers:{Authorization:'Bearer '+token}});
-        const data = await response.json(); if (version !== generation) return;
-        if (response.status === 401 || response.status === 403) { lock('Local authorization changed. Unlock the workspace again.'); return; }
-        if (!response.ok || data.mode !== 'paper') throw Error('Operating status could not be refreshed. Displayed guidance may be stale.');
-        render(data);
-      } catch (error) { if (version === generation) message('Status refresh failed or timed out. Displayed operating information may be stale; retry Refresh operating status.', true); }
-      finally { win.clearTimeout(timeout); if (version === generation) {busy = false; controller = null; el('workspace-refresh').disabled = !token;} }
+    async function refreshInfo(){
+      if(!token||busy)return;busy=true;el('workspace-refresh').disabled=true;const version=generation,active=new AbortController();controller=active;const timeout=win.setTimeout(()=>active.abort(),10000);
+      try{const response=await request('/api/workspace',{cache:'no-store',credentials:'omit',redirect:'error',signal:active.signal,headers:{Authorization:'Bearer '+token}});const data=await response.json();if(version!==generation)return;if(response.status===401||response.status===403){lock('Local authorization changed. Unlock the workspace again.');return;}if(!response.ok||data.mode!=='paper')throw Error();render(data);}
+      catch(_){if(version===generation)message('Status refresh failed or timed out. Displayed setup guidance may be stale; retry or open the relevant section.',true);}
+      finally{win.clearTimeout(timeout);if(version===generation){busy=false;controller=null;el('workspace-refresh').disabled=!token;}}
     }
-    async function unlock() {
-      if (busy) return;
-      const supplied = el('workspace-token').value.trim(); el('workspace-token').value = '';
-      if (!supplied) return;
-      lock('Checking local operator access…'); busy = true; el('workspace-submit').disabled = true;
-      const version = generation, active = new AbortController(); controller = active;
-      const timeout = win.setTimeout(() => active.abort(), 10000);
-      try {
-        const r = await request('/api/workspace', {cache:'no-store',credentials:'omit',redirect:'error',signal:active.signal,headers:{Authorization:'Bearer '+supplied}});
-        const data = await r.json(); if (version !== generation) return;
-        if (!r.ok || data.mode !== 'paper') throw Error(r.status === 401 || r.status === 403 ? 'Use TRADING_OPERATOR_TOKEN from your local .env. Zerodha tokens do not unlock this workspace.' : 'Workspace access unavailable. Check the server and local operator configuration.');
-        token = supplied; render(data); el('workspace-access').hidden = true; el('workspace-lock').disabled = false; el('workspace-state').textContent = 'Unlocked';
-        message('Unlocked. Access is shared across this tab’s menu.'); navigate();
-      } catch (error) { if (version === generation) { lock(); message(error.name === 'AbortError' ? 'Access check timed out. Try again; no trading action was submitted.' : String(error.message), true); } }
-      finally { win.clearTimeout(timeout); if (version === generation) { busy = false; controller = null; el('workspace-submit').disabled = false; el('workspace-refresh').disabled = !token; } }
+    async function unlock(){
+      if(busy)return;const supplied=el('workspace-token').value.trim();el('workspace-token').value='';if(!supplied)return;lock('Checking local operator access…');busy=true;el('workspace-submit').disabled=true;
+      const version=generation,active=new AbortController();controller=active;const timeout=win.setTimeout(()=>active.abort(),10000);
+      try{const r=await request('/api/workspace',{cache:'no-store',credentials:'omit',redirect:'error',signal:active.signal,headers:{Authorization:'Bearer '+supplied}});const data=await r.json();if(version!==generation)return;
+        if(!r.ok||data.mode!=='paper')throw Error(r.status===401||r.status===403?'Use TRADING_OPERATOR_TOKEN from your local .env. Zerodha tokens do not unlock this workspace.':'Workspace access unavailable. Check the server and local operator configuration.');
+        token=supplied;render(data);el('workspace-access').hidden=true;el('workspace-lock').disabled=false;el('workspace-state').textContent='Unlocked';message('Unlocked. Access is shared across this tab’s workspace sections.');navigate();
+      }catch(error){if(version===generation){lock();message(error.name==='AbortError'?'Access check timed out. Try again; no trading action was submitted.':String(error.message),true);}}
+      finally{win.clearTimeout(timeout);if(version===generation){busy=false;controller=null;el('workspace-submit').disabled=false;el('workspace-refresh').disabled=!token;}}
     }
-    win.addEventListener('message', event => {
-      if (event.origin !== win.location.origin || event.source !== frame.contentWindow || !event.data) return;
-      if (event.data.type === 'workspace-ready' && token && loaded === current && event.data.view === current) send('workspace-unlock', token);
-      if (event.data.type === 'workspace-locked' && token) lock('The section locked or rejected authorization. Unlock the workspace again.');
-      if (event.data.type === 'workspace-navigate' && ['overview', ...Object.keys(routes)].includes(event.data.view)) {
-        const anchor = cleanAnchor(event.data.anchor), hash = '#'+event.data.view+(anchor?'/'+anchor:'');
-        if (win.location.hash === hash) navigate(); else win.location.hash = hash;
-      }
-      if (event.data.type === 'workspace-scroll-target' && token && loaded === current && Number.isFinite(event.data.top) && event.data.top >= 0 && event.data.top <= 12000) {
-        const nav = el('workspace-nav'), navHeight = win.getComputedStyle(nav).position === 'sticky' ? nav.getBoundingClientRect().height : 0;
-        win.scrollTo({top:Math.max(0, win.scrollY + frame.getBoundingClientRect().top + event.data.top - navHeight - 16),behavior:'instant'});
-      }
-      if (event.data.type === 'workspace-height' && Number.isFinite(event.data.height)) frame.style.height = Math.max(450, Math.min(12000, event.data.height))+'px';
+    win.addEventListener('message',event=>{
+      if(event.origin!==win.location.origin||event.source!==frame.contentWindow||!event.data)return;
+      const data=event.data;
+      if(data.type==='workspace-ready'&&token&&loaded===current&&data.view===current&&data.path===surface)send('workspace-unlock',token);
+      if(data.type==='workspace-locked'&&token)lock('The section locked or rejected authorization. Unlock the workspace again.');
+      if(data.type==='workspace-dialog'&&token&&loaded===current)setDialog(data.open===true);
+      if(data.type==='workspace-navigate'&&(Object.hasOwn(routes,data.view)||Object.hasOwn(aliases,data.view))){const anchor=cleanAnchor(data.anchor),hash='#'+data.view+(anchor?'/'+anchor:'');if(win.location.hash===hash)navigate();else win.location.hash=hash;}
+      if(data.type==='workspace-scroll-target'&&token&&loaded===current&&Number.isFinite(data.top)&&data.top>=0&&data.top<=12000){const nav=el('workspace-nav'),navHeight=win.getComputedStyle(nav).position==='sticky'?nav.getBoundingClientRect().height:0;win.scrollTo({top:Math.max(0,win.scrollY+frame.getBoundingClientRect().top+data.top-navHeight-16),behavior:'instant'});}
+      if(data.type==='workspace-height'&&Number.isFinite(data.height))frame.style.height=Math.max(450,Math.min(12000,data.height))+'px';
     });
-    el('workspace-unlock').addEventListener('submit', event => { event.preventDefault(); unlock(); });
-    el('workspace-lock').addEventListener('click', () => lock());
-    el('workspace-refresh').addEventListener('click', refreshInfo);
-    win.addEventListener('hashchange', navigate);
-    win.addEventListener('pagehide', () => lock());
-    if (doc.addEventListener) doc.addEventListener('visibilitychange', () => { if (!doc.hidden && current === 'overview') refreshInfo(); });
-    lock(); navigate();
-    return { lock, navigate };
+    el('workspace-unlock').addEventListener('submit',event=>{event.preventDefault();unlock();});el('workspace-lock').addEventListener('click',()=>lock());el('workspace-refresh').addEventListener('click',refreshInfo);
+    el('workspace-menu-toggle').addEventListener('click',()=>{setMenu(el('workspace-menu-toggle').getAttribute('aria-expanded')!=='true');});
+    win.addEventListener('hashchange',navigate);win.addEventListener('pagehide',()=>lock());win.addEventListener('resize',()=>setMenu(false));
+    if(doc.addEventListener)doc.addEventListener('visibilitychange',()=>{if(!doc.hidden&&current==='dashboard')refreshInfo();});
+    lock();navigate();return{lock,navigate};
   }
-  if (typeof module !== 'undefined' && module.exports) module.exports = { createWorkspace };
-  else createWorkspace(document, window, window.fetch.bind(window));
+  if(typeof module!=='undefined'&&module.exports)module.exports={createWorkspace};
+  else createWorkspace(document,window,window.fetch.bind(window));
 })();

@@ -2,7 +2,9 @@
 (function(){
 'use strict';
 const money=typeof module!=='undefined'&&module.exports?require('./money.js'):window.AgenticMoney;
+const createDialogs=typeof module!=='undefined'&&module.exports?require('./dialogs.js').createDialogs:window.AgenticDialogs;
 function createPortfolio(doc,win,fetcher){
+ const dialogs=createDialogs(doc,win);
  const el=id=>doc.getElementById(id), base='/api/paper/portfolio';
  let token='',generation=0,active=null,busy=false,latest=null,lastReceipt=0,review=null,pending=null,request=null,submitted=false,dynamic=[];
  const fields=['symbol','budget','stop','target','reference'];
@@ -20,7 +22,7 @@ function createPortfolio(doc,win,fetcher){
   if(win.AgenticNavigation)win.AgenticNavigation.locked();
   generation++;active?.abort();active=null;token='';latest=null;request=null;review=null;pending=null;submitted=false;busy=false;dynamic=[];
   el('token').value='';el('lock').disabled=true;el('token').required=true;
-  if(el('confirm').open)el('confirm').close();
+  dialogs.cancel(el('confirm'));
   for(const id of [...fields,'plan-id','plan-symbol','plan-budget','plan-stop','plan-target','plan-dates','plan-reference'])el(id).value='';
   fields.forEach(id=>{el(id).readOnly=false;});
   for(const id of ['cash','reserved'])el(id).textContent='—';
@@ -77,7 +79,7 @@ function createPortfolio(doc,win,fetcher){
    msg(d.allowed?'Inspect the preview, then explicitly confirm.':'Resolve the listed conditions and calculate another preview.',!d.allowed);buttons();
   });
  }
- function confirm(path,body,title,text){if(!fresh()||busy)return;pending={path,body};el('confirm-title').textContent=title;el('confirm-text').textContent=text;el('confirm').showModal();el('cancel-confirm').focus();}
+ function confirm(path,body,title,text){if(!fresh()||busy||el('confirm').open)return;pending={path,body};el('confirm-title').textContent=title;el('confirm-text').textContent=text;if(!dialogs.open(el('confirm'),{cancel:()=>{pending=null;},focus:el('cancel-confirm')}))msg('The confirmation could not be displayed. Reopen Purchases & SIP and review the action again. Nothing was submitted.',true);}
  el('access').addEventListener('submit',event=>{event.preventDefault();const supplied=el('token').value;if(supplied){lock();token=supplied;el('lock').disabled=false;el('token').required=false;}refresh();});
  el('lock').addEventListener('click',lock);
  el('purchase').addEventListener('submit',event=>{event.preventDefault();if(!request){request={intent_id:'contrib-'+win.crypto.randomUUID(),symbol:el('symbol').value.trim(),budget:el('budget').value.trim(),reference:el('reference').value.trim()};if(el('stop').value.trim()||el('target').value.trim()){request.stop=el('stop').value.trim();request.target=el('target').value.trim();}}getPreview();});
@@ -85,12 +87,12 @@ function createPortfolio(doc,win,fetcher){
  el('new-purchase').addEventListener('click',()=>{request=null;submitted=false;clearPreview();fields.forEach(id=>{el(id).value='';el(id).readOnly=false;});el('intent').textContent='';el('symbol').focus();});
  el('submit-purchase').addEventListener('click',()=>{if(review?.decision.allowed&&!submitted)confirm('/contributions',{request,preview_sha256:review.preview_sha256},'Confirm '+review.decision.quantity+' virtual shares of '+request.symbol+'?','Maximum cash debit including buy fees '+money(review.decision.cash_reservation)+'. Fresh later quotes and depth determine fills. This reserves existing virtual cash and preserves existing holding protections.');});
  el('plan-form').addEventListener('submit',event=>{event.preventDefault();const body={plan_id:el('plan-id').value.trim(),symbol:el('plan-symbol').value.trim(),budget:el('plan-budget').value.trim(),stop_pct:el('plan-stop').value.trim(),target_pct:el('plan-target').value.trim(),sessions:el('plan-dates').value.split(',').map(s=>s.trim()),reference:el('plan-reference').value.trim()};confirm('/plans',body,'Save reviewed SIP plan '+body.plan_id+'?','Cash cap '+money(body.budget)+' per date. Each listed exchange session requires a separate preview and confirmation. Missed dates stay missed.');});
- el('cancel-confirm').addEventListener('click',()=>{pending=null;el('confirm').close();});
- el('confirm').addEventListener('cancel',()=>{pending=null;});
- el('confirm-action').addEventListener('click',()=>{const action=pending;pending=null;el('confirm').close();if(!action||!fresh()||busy){msg('Refresh and review again before confirming.',true);return;}if(action.path==='/contributions')submitted=true;clearPreview();operation(action.path,action.body,data=>{msg(action.path==='/contributions'?'Paper order '+data.id+' · '+data.state+'. Inspect order fills; no automatic retry.':'Plan updated. Refresh the account to inspect its state.');});});
+ el('cancel-confirm').addEventListener('click',()=>dialogs.cancel(el('confirm')));
+ el('confirm-action').addEventListener('click',()=>{const action=pending;pending=null;dialogs.close(el('confirm'));if(!action||!fresh()||busy){msg('Refresh and review again before confirming.',true);return;}if(action.path==='/contributions')submitted=true;clearPreview();operation(action.path,action.body,data=>{msg(action.path==='/contributions'?'Paper order '+data.id+' · '+data.state+'. Inspect order fills; no automatic retry.':'Plan updated. Refresh the account to inspect its state.');});});
  doc.addEventListener('visibilitychange',()=>{if(!doc.hidden&&!busy)refresh();});
  win.setInterval(()=>{if(token&&!doc.hidden&&!busy&&!el('confirm').open)refresh();},3000);
  win.setInterval(()=>{if(token&&latest&&!fresh()){el('state').textContent='Display stale · refresh required';buttons();}},1000);
+ win.addEventListener?.('pagehide',lock);
  lock();return {refresh,lock,canNavigate:()=>!busy&&!el('confirm').open};
 }
 if(typeof module!=='undefined'&&module.exports)module.exports={createPortfolio};

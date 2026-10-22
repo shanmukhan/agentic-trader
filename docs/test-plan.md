@@ -1,5 +1,204 @@
 # Test and validation plan
 
+## V2 Phase 5 draft-policy validation scope (0.18.0, 23 October 2026)
+
+The pure contract suite has **132 passing cases**: no financial/schedule defaults,
+both horizon units/cadences, independent canonical semantic hashes, display-name
+independence, strict extras/types, exact decimal scale/bounds/nonfinite rejection,
+coupled allocation limits, immutable inputs/models and independence from a hostile
+host Decimal context. A specified draft must continue to report activation/backtest
+support false. Legacy strategy identities are not reused for this new family.
+
+Schedule checks use declared synthetic calendars to verify original-day month/leap-year
+clamping, exclusive horizon boundaries, full calendar-month/quarter coverage, aware
+knowledge time, missing parameters, skipped/no-session periods and bounded cycles.
+No weekday, session or catch-up date may be invented. Source completeness remains an
+explicitly unverified operator claim; preview availability is not execution authority.
+
+Store/API checks cover no files on read/preview, owner-private immutable records,
+independently reproducible snapshot/semantic identities, exact same-content idempotency,
+changed-preview conflict, acknowledgement and strict body/schema budgets, corrupt/unsafe
+storage, bounded counts/bytes and independent persisted-account equality. CLI checks
+must prove stdout-only inspection/scheduling, no account/lock/WAL/report creation,
+clock/calendar failure behavior and no downloads. UI checks cover labelled metadata
+forms with null defaults, exact strings, incomplete-save confirmation, copy/edit identity,
+unsaved navigation guards, explicit uncertain-save reconciliation, no automatic POST
+retry, Cancel/Escape and lock/pagehide/late-response private-content clearing.
+
+Full integrated run: **1,213 Python tests passed**, **10,537 / 11,437 statements
+(92.13%)** covered; **186 Node UI tests passed**. Ruff, formatting (**200 files**),
+mypy (**118 source files**) and whitespace checks pass. The coverage run emitted
+**56 warnings**, including remaining test-workflow SQLite ResourceWarnings; these
+are not evidence of a production connection leak. Earlier release counts remain historical.
+
+Desktop Firefox was checked with a disposable private account: blank inputs, explicit
+months/quarterly selection, deep-scroll confirmation, unchecked acknowledgement,
+Escape cancellation, confirmed incomplete save, reload/lock privacy, saved-snapshot
+survival and navigation back to the existing Strategies setup. The saved JSON was read
+independently and its selections checked; the disposable SQL ledger retained cash
+₹25,000, zero fees, zero orders and zero held positions. Its server and tab were closed.
+Broader keyboard, mobile/touch, zoom and second-engine acceptance remain open.
+
+The lockfile's 66 dependency records match the baseline exactly; 64 installed package
+versions match their pins (two platform/optional records are absent). Only the local
+project version changes. `uv` was unavailable, so a fresh frozen `uv sync` was not run.
+
+These checks are local/synthetic evidence. They do not establish genuine future exchange calendars,
+native worker isolation, investment-policy execution, broker/device acceptance or
+strategy profitability. The existing implementation-Mac runtime gate remains unavailable.
+See [the usage and failure/recovery contract](investment-policy-drafts.md).
+
+## V2 Phase 5 validation scope (0.17.0, 22 October 2026)
+
+The new suites target private resource registration/integrity, strict API admission and
+idempotency, single-worker/queue bounds, cancellation/publication races, restart
+interruption, artifact hashes and independent read-only persisted accounting. Synthetic
+launcher/lifecycle tests must remain labelled simulated; they cannot establish native
+sandbox or hard-budget enforcement. Portfolio checks independently reconstruct exact
+cash/held bid values and prove reservations/claim exclusions and whole-ledger/mode
+invariance. Pure metric tests use independent arithmetic references for endpoint/CAGR,
+daily paths, sample variance/downside formulas, primary/provisional/flow gates and
+complete/partial months, including immutable inputs and private Decimal context.
+
+New DOM checks cover resource/limit/holding-cap review, no POST on open/cancel/Escape,
+secure stable request keys, uncertain-submit reconciliation without automatic retry,
+job outcomes, exact report values, compatible-resource comparison, bounded disclosures,
+read polling/backoff and lock/pagehide/late-response privacy. Portfolio allocation checks
+cover exact values, missing/stale unavailability and private-content clearing.
+
+Final integrated run: `.venv/bin/pytest -q --cov=trading_agent` **958 passed**;
+**10,040 / 10,929 statements (91.87%)**. `node --test tests/ui/*.test.cjs`
+**172 passed**. Ruff and mypy (**113 source files**) pass, as do whitespace checks.
+The coverage run emitted **56 warnings**, including SQLite connection ResourceWarnings
+in remaining test workflows; warning attribution is not a production-leak diagnosis.
+New connection reads in the allocation/job test suites explicitly close their handles.
+Runtime-version regressions reject a changed code hash/fee definition before admission
+and reject rehashed report code/charge identities that differ from the reviewed resource.
+
+A disposable synthetic account was served on localhost and inspected in desktop
+Firefox: memory-token handoff, registered input selection, unavailable launch, collapsed
+budget disclosure, sidebar navigation and exact all-cash allocation rendered correctly.
+The temporary server/tab were stopped/closed. No operator account or broker was used.
+This limited smoke check does not certify populated report rendering, native worker
+launch, modal/device/keyboard/zoom acceptance or sustained operation.
+
+Previous releases' results below remain historical. On the implementation Mac,
+`RLIMIT_AS` failed with `ValueError` and the Codex environment denied the Darwin sandbox
+probe. Actual isolated-worker launch is unavailable, not passed. No Linux/Pi browser
+sandbox backend exists. Real OS allowed/denied reads/writes/network and budgets,
+broader Firefox/second-engine/mobile/touch/zoom, sustained broker/source entitlement,
+target-device and profitable-strategy acceptance remain open. This slice does not
+complete Phase 5's new strategy/parity/OOS/benchmark/rebalance gates.
+
+## V2 Phase 4 checks (0.16.0, 22 October 2026)
+
+Executed `.venv/bin/pytest -q --cov=trading_agent --cov-report=term-missing:skip-covered`:
+**828 passed**, 9,066/9,814 statements (92.38%). `node --test tests/ui/*.test.cjs`:
+**157 passed**. Ruff, changed-Python formatting, mypy (104 files), limited project
+secret scan and whitespace checks passed. The coverage run emitted 76 warnings,
+including SQLite connection ResourceWarnings in test workflows; cleanup is still
+open and warning attribution is not a production-leak diagnosis.
+
+New regression tests: 26 exact indicator/reference cases; 34 independent eligible-series/
+corporate-action/period/schema/report cases; 59 strict local benchmark cases; 23 exact
+legacy ranking explanation cases; 16 authenticated API/isolated CLI functional cases.
+References independently check Fraction arithmetic, warmup indices/seed rules, flat RSI,
+ATR15, MACD26/signal34, prior-only support/resistance, price-vs-TRI drawdown and 20 matched
+daily relative wealth growth rather than percent-point spread. Future perturbation,
+late review/price/membership, missing dates, cross-year/holiday/early-close inputs,
+strict hash-bound completeness declarations, partial periods, gaps and coherent split/
+volume/dividend clocks are covered. Source and final report bytes are independently hashed.
+
+API tests forbid desk.view/tick, research refresh and engine polling, then prove whole
+SQLite dumps and independent exact partial-fill cash/cost/fees/reservations unchanged
+past proposal expiry/account-day boundaries. Invalid evidence and unexpected failures
+return sanitized 503 without fault/revocation. They preserve legacy raw split bars,
+validate query scope, and prove 350-bar warmup precedes the 300-bar display slice.
+Subprocess CLI tests deny networking, prove absent account/lock/WAL files remain absent,
+verify private output hashes and manifest-last/no-overwrite/input-output separation,
+and reject ambiguous clocks or invalid context without a successful artifact.
+
+UI tests cover intervals, 15 exact indicator fields, warmup/unavailable reasons,
+source/volume/calendar context, matched/missing/simulated benchmark labels, legacy
+rank evidence, gap-safe overlays, range changes without GET/reseeding, and clearing
+private content on lock/pagehide/late JSON. These are simulated DOM checks. Full
+rendered Firefox/second-engine/mobile/touch/zoom, licensed source validity, real broker/
+device performance and strategy profitability remain external acceptance gates.
+
+
+## V2 Phase 3 runtime checks (0.15.0, 22 October 2026)
+
+Executed `.venv/bin/pytest -q --cov=trading_agent --cov-report=term-missing:skip-covered`:
+**670 passed**, 8,405/9,116 statements (92.20%). `node --test tests/ui/*.test.cjs`:
+**148 passed**. Ruff and mypy (99 modules) passed. The coverage run emitted 41 warnings,
+including SQLite connection ResourceWarnings in existing test workflows; cleanup is
+still an audit task. Full logs were kept only in temporary local files.
+
+New read-model unit/HTTP tests independently reconstruct exact persisted partial-fill
+cash/fees/basis/reservations, stale prices and a real simulated fractional corporate
+claim. Whole SQLite dumps, proposal states, mode/revision and in-memory authority are
+unchanged by reads across expiry/day boundaries; accidental writes fail on `mode=ro`;
+sanitized read failure returns 503 without invoking mutation-fault recovery. No broker
+network or operator account is used. Functional checks cover the twelve served pages,
+static helpers, no-store/framing and balanced accessible labels.
+
+New DOM/controller tests cover six saved-state destinations, exact large decimals,
+filter/sort/comparison bounds/coverage/empty/error states, unavailable capabilities,
+private-state clearing and late JSON. Shell tests cover twelve routes, legacy aliases,
+actual child path/origin/source handshake, guarded anchor/purchase-subview changes,
+mobile menu and inert parent navigation during confirmation. Shared helper/controller
+tests cover modal focus-before-open, Escape/cancel/noPOST, single submission, pagehide,
+deep scroll, visual viewport/keyboard/zoom offsets, scaled bordered frames, long content,
+offscreen refusal, native delayed close and cleanup, including 360/768/1440px scenarios.
+These are simulated DOM and geometry inputs, not browser screenshots.
+
+A disposable local read-only preview opened the locked shell in Firefox. User changes
+to the active Firefox window interrupted interactive checking. Full rendered desktop/
+mobile, keyboard/touch, 200% zoom, Firefox plus a second engine, sustained broker feed
+and target-device acceptance remain open. See [the implementation guide](frontend-modernization.md)
+and [Phase 2 acceptance matrix](phase-2/acceptance-plan.md) for remaining gates.
+
+
+## Phase 2 design validation (22 October 2026)
+
+Run the [reproducible design checks](phase-2/acceptance-plan.md#design-checks-that-can-run-now):
+`validate_design.py` passed routes/aliases, 15 proposed vectors, document links, unique
+HTML identifiers/labels/structure, offline boundary and 11 required contrast pairs;
+`validate_financial_examples.py` passed **129 independent comparisons** for 7 synthetic
+ledger cases and 2 return paths; `node --test docs/phase-2/validate-prototype.cjs`
+passed **6 tests**, including all twelve screens × four example states, local dialog
+cancel/confirm and mobile-menu state. Ruff, helper formatting and whitespace passed.
+
+These are design/simulated-DOM/arithmetic checks, not rendered-browser, persisted-ledger,
+market, strategy-performance or device acceptance. No new runtime behavior was written,
+so the financial application suite was not rerun. The [acceptance matrix](phase-2/acceptance-plan.md)
+defines the real implementation gates; named future strategy scenarios have not run.
+
+
+## V2 Phase 1 audit baseline (22 October 2026)
+
+Fresh run on commit `2d5c208`/0.14.0: **660 Python tests passed** with **92.13%**
+statement coverage (8,322/9,033), and **117 UI DOM tests passed**. Ruff, mypy on 98
+source files and the limited `scripts/check_secrets.py` pattern scan passed. Python
+3.13.16/Node 22.14.0 were used. Coverage produced unclosed SQLite connection
+ResourceWarnings during test workflows; the audit does not infer a production leak
+from warning locations, but explicit test connection cleanup needs investigation.
+
+A temporary harness instantiated the real Setup controller with an invented account
+response and frame geometry. It verified positioning before modal focus, deep scroll,
+parent resize, visual viewport/keyboard bounds, cancellation cleanup and zero mutation
+requests. This ad hoc probe is not a checked-in regression suite, CSS rendering or
+Firefox acceptance. Existing committed UI tests do not cover all rendered dialogs.
+
+Additional disposable audit probes reproduced early-year calendar preparation failure,
+a benign-repeat false-pause in the dedicated intraday controller, and indistinguishable
+403/429/503 broker recovery guidance. They used synthetic/mock inputs and no authenticated
+broker session or operator database. Proposed differential strategy tests, real browser
+layout/keyboard/zoom tests and source/benchmark/fundamentals acceptance gates are in
+[IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md). No application fixes are made in the
+Phase 1 audit; approval is required before implementation.
+
+
 ## Light workspace and saved-data analysis (0.14.0, 22 October 2026)
 
 Final validation: `.venv/bin/pytest -q` **660 passed**;

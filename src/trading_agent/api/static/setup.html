@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light"><title>Broker connection · Agentic Trader</title>
-<link rel="stylesheet" href="/dashboard.css"><script src="/workspace-bridge.js" defer></script><script src="/setup.js" defer></script></head>
+<link rel="stylesheet" href="/dashboard.css"><script src="/dialogs.js" defer></script><script src="/workspace-bridge.js" defer></script><script src="/setup.js" defer></script></head>
 <body class="portfolio-page"><a class="skip" href="#main">Skip to setup steps</a>
 <header class="masthead"><div><p class="eyebrow">AGENTIC TRADER · PAPER ONLY</p><h1>Broker &amp; settings</h1>
 <p class="muted">Connect Zerodha market data for your paper account.</p>
@@ -58,5 +58,5 @@
 <li><strong>Kite request token:</strong> returned after Zerodha login; single use, valid for only a few minutes.</li>
 <li><strong>Kite access token:</strong> obtained by exchange and used only by the server for market data; expires daily.</li></ul>
 <p class="muted">These steps do not place orders, arm automation, deposit money or clear trading safeguards. This setup is for manual paper accounts. Keep the server on loopback and use a trusted personal computer.</p></details></main><footer class="muted">Start locally with ./scripts/start_ui.sh · Keep that terminal running · Lock clears this tab; it does not stop the server or feed.</footer>
-<dialog id="confirm" aria-labelledby="confirm-title"><h2 id="confirm-title">Confirm setup change</h2><p id="confirm-text"></p><div class="dialog-actions"><button id="cancel-confirm" class="quiet">Cancel</button><button id="confirm-action">Confirm</button></div></dialog>
+<dialog id="confirm" aria-labelledby="confirm-title" aria-describedby="confirm-text"><h2 id="confirm-title">Confirm setup change</h2><p id="confirm-text"></p><div class="dialog-actions"><button id="cancel-confirm" class="quiet">Cancel</button><button id="confirm-action">Confirm</button></div></dialog>
 </body></html>

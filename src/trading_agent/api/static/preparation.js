@@ -13,16 +13,11 @@ const errors={
  DOWNLOAD_DATE_CHANGED:'The IST date changed during download. Start a new run so the calendar/action sources and history period share the same reviewed date.',
  SAVED_PREPARATION_INVALID:'Saved preparation status is invalid. Inspect the local preparation files before retrying.'
 };
+const createDialogs=typeof module!=='undefined'&&module.exports?require('./dialogs.js').createDialogs:window.AgenticDialogs;
 function createPreparation(doc,win,api,refresh,confirm,getLatest){
+ const dialogs=createDialogs(doc,win);
  const el=id=>doc.getElementById(id),node=(tag,text)=>{const n=doc.createElement(tag);if(text!==undefined)n.textContent=String(text);return n;};
- let latest=null,jobId=null,downloadId=null,busy=false,unlocked=false,guidedSupported=false,review=null;
- function positionReview(){const dialog=el('guided-dialog');if(!dialog.open||!win.parent||win.parent===win||!win.frameElement)return;
-  const height=win.parent.innerHeight,top=win.frameElement.getBoundingClientRect().top;
-  dialog.style.maxHeight=Math.floor(height*.82)+'px';dialog.style.top=Math.max(12,Math.round(height*.09)-top)+'px';dialog.style.bottom='auto';dialog.style.margin='0 auto';
- }
- function stopPositioning(){if(win.parent&&win.parent!==win){win.parent.removeEventListener('resize',positionReview);win.parent.removeEventListener('scroll',positionReview);}}
- function watchPosition(){if(win.parent&&win.parent!==win){win.parent.addEventListener('resize',positionReview);win.parent.addEventListener('scroll',positionReview);}positionReview();}
- if(win.addEventListener)win.addEventListener('pagehide',stopPositioning);
+ let latest=null,jobId=null,downloadId=null,busy=false,unlocked=false,guidedSupported=false,review=null,generation=0;
  const istDay=value=>{const parsed=new Date(value);return value&&Number.isFinite(parsed.getTime())?new Date(parsed.getTime()+19800000).toISOString().slice(0,10):'';};
  function currentReviewReady(ignoreBusy=false){const data=getLatest(),job=latest?.job;
   return Boolean(unlocked&&(ignoreBusy||!busy)&&guidedSupported&&latest?.available&&!latest.profile_override&&data?.mode==='manual'&&data.blockers?.includes('LONG_TERM_REVIEW_REQUIRED')&&['ready_for_review','installed'].includes(job?.state)&&istDay(job.snapshot_at)&&istDay(job.snapshot_at)===istDay(data.observed_at)&&(['rules','rules_ml'].includes(el('prep-policy').value)||['rules','rules_ml'].includes(data.strategy_mode)));
@@ -44,8 +39,8 @@ function createPreparation(doc,win,api,refresh,confirm,getLatest){
   el('daily-review-download').hidden=currentReviewReady(true);
   el('daily-review-message').textContent=!needsReview?'':data.mode!=='manual'?'Choose Manual before reviewing today’s setup.':latest?.profile_override||!guidedSupported||!latest?.available?'Use Advanced controls for today’s price-basis reviews; the combined review is unavailable for this account.':currentReviewReady(true)?'Today’s data is ready. Open the setup summary, inspect the sources/calendar/stocks, then acknowledge and select Confirm and prepare. This applies the displayed shortlist and eligible daily reviews and requests reconnection; Manual stays selected. Restarting or opening the summary does not approve the review.':'Today’s price-basis approval is still missing. Open data preparation below and download current-day sources/history if needed, then choose a policy. Yesterday’s download/review and a restart cannot approve today’s prices.';
  }
- function clear(){latest=null;jobId=null;downloadId=null;unlocked=false;review=null;guidedSupported=false;
-  stopPositioning();if(el('guided-dialog').open)el('guided-dialog').close();el('guided-ack').checked=false;el('guided-summary').replaceChildren();el('guided-sources').replaceChildren();el('guided-calendar').textContent='';el('guided-result').textContent='';
+ function clear(){generation++;latest=null;jobId=null;downloadId=null;unlocked=false;review=null;guidedSupported=false;
+  dialogs.cancel(el('guided-dialog'));el('guided-ack').checked=false;el('guided-summary').replaceChildren();el('guided-sources').replaceChildren();el('guided-calendar').textContent='';el('guided-result').textContent='';
   for(const id of ['prep-progress','prep-error','prep-result','prep-availability','prep-model-help','prep-calendar-conflicts'])el(id).textContent='';
   for(const id of ['prep-sources','prep-exclusions'])el(id).replaceChildren();
   for(const id of ['prep-calendar','prep-policy','prep-reference'])el(id).value='';
@@ -77,7 +72,7 @@ function createPreparation(doc,win,api,refresh,confirm,getLatest){
  async function openReview(useCurrentPolicy=false){const data=getLatest();let mode=el('prep-policy').value;if(!data||busy||!unlocked||el('guided-dialog').open)return;
   if(useCurrentPolicy&&!mode&&['rules','rules_ml'].includes(data.strategy_mode)){mode=data.strategy_mode;el('prep-policy').value=mode;}
   if(!mode){el('guided-result').textContent='Choose a decision policy above first.';el('prep-policy').focus();return;}
-  const result=await api('/api/desk/preparation/guided/preview',{revision:data.revision,strategy_mode:mode});if(!result||!unlocked)return;
+  const version=generation;const result=await api('/api/desk/preparation/guided/preview',{revision:data.revision,strategy_mode:mode});if(!result||!unlocked||version!==generation)return;
   review=result;const p=result.plan;el('guided-ack').checked=false;el('guided-summary').replaceChildren();
   for(const text of [
    (p.horizon==='long_term'?'Long-term':'Intraday')+' paper account · virtual cash INR '+p.cash,
@@ -93,15 +88,15 @@ function createPreparation(doc,win,api,refresh,confirm,getLatest){
    'This review expires in two minutes. No mode is activated by this confirmation.'
   ])el('guided-summary').append(node('p',text));
   el('guided-calendar').textContent=p.calendar_csv;el('guided-sources').replaceChildren();for(const [name,url]of Object.entries(p.sources)){const link=node('a','Review '+name+' source');link.href=url;link.target='_blank';link.rel='noopener noreferrer';el('guided-sources').append(link);}
-  controls();el('guided-dialog').showModal();watchPosition();
+  controls();if(!dialogs.open(el('guided-dialog'),{cancel:()=>{review=null;el('guided-ack').checked=false;controls();},focus:el('guided-cancel')}))el('guided-result').textContent='The review could not be displayed. Reopen Strategies and review the setup again. Nothing was applied.';
  }
  el('guided-review').addEventListener('click',()=>openReview());
  const reviewCurrent=()=>{if(currentReviewReady())return openReview(true);};
  for(const id of ['daily-review-button','quote-review-button'])el(id).addEventListener('click',reviewCurrent);
  el('prep-policy').addEventListener('change',()=>controls());
  el('guided-ack').addEventListener('change',()=>controls());
- const closeReview=()=>{review=null;stopPositioning();el('guided-ack').checked=false;el('guided-dialog').close();controls();};
- el('guided-cancel').addEventListener('click',closeReview);el('guided-dialog').addEventListener('cancel',()=>{review=null;stopPositioning();el('guided-ack').checked=false;controls();});
+ const closeReview=()=>{review=null;el('guided-ack').checked=false;dialogs.close(el('guided-dialog'));controls();};
+ el('guided-cancel').addEventListener('click',()=>dialogs.cancel(el('guided-dialog')));
  el('guided-confirm').addEventListener('click',async()=>{if(!review||!unlocked||busy||!el('guided-ack').checked)return;const body={preview_sha256:review.preview_sha256,acknowledged:true};closeReview();el('guided-result').textContent='Preparing the confirmed setup. Keep this tab open; no trading mode is being activated.';const result=await api('/api/desk/preparation/guided/confirm',body);if(result&&unlocked)el('guided-result').textContent=result.message;await refresh();});
  el('prep-download').addEventListener('click',()=>{const data=getLatest();if(!data||busy)return;const universe=el('prep-universe').value;
   if(!downloadId||latest?.job?.state!=='downloading')downloadId=Array.from(win.crypto.getRandomValues(new Uint8Array(16)),v=>v.toString(16).padStart(2,'0')).join('');
@@ -114,6 +109,7 @@ function createPreparation(doc,win,api,refresh,confirm,getLatest){
   if(!body.strategy_mode||!body.reference||!body.calendar_reviewed||!body.basis_reviewed||!body.policy_reviewed)return;
   confirm('Install this reviewed paper strategy?',job.symbols.length+' equity shares; '+job.completed_sessions+' completed sessions; '+(body.strategy_mode==='rules'?'EXPERIMENTAL RULES ONLY, without an ML filter.':'rules + the matching validated ML model, subject to validation. ')+' Your edited session calendar and source reviews will be saved.'+(body.correct_unused_calendar?' You also approve correcting the displayed saved hours; the server will recheck that no account history has used them.':'')+' Review reference: '+body.reference+'. Manual stays selected. The feed must be disconnected and pending orders resolved; current holdings are retained. Today’s execution-basis reviews remain separate.',async()=>{const result=await api('/api/desk/preparation/install',body);if(result){render(result);await refresh();}});
  });
+ win.addEventListener?.('pagehide',clear);
  clear();return{render,controls,clear,reviewCurrent,currentReviewReady,canNavigate:()=>!el('guided-dialog').open};
 }
 if(typeof module!=='undefined'&&module.exports)module.exports={createPreparation};

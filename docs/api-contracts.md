@@ -1,5 +1,178 @@
 # Operator API and command contracts
 
+## Investment policy drafts and schedule inspection (0.18.0)
+
+All `/api/investment-policies*` routes use existing local Bearer/Host/Origin access
+controls and no-store responses. They operate on separate research storage, without
+calling account mutation recovery or opening financial authority. Request bodies are
+bounded to 16 KiB and reject extra fields, duplicate JSON keys, invalid UTF-8 and
+nonfinite JSON constants. Paths, URLs, imports and execution/activation inputs are
+unsupported. GET/list/preview do not create draft storage.
+
+| Endpoint | Input/output |
+|---|---|
+| `GET /api/investment-policies` | Schema 1, ordered `field_definitions`, canonical saved `drafts`, actual storage limits, limitations, activation/backtest support false |
+| `POST /api/investment-policies/preview` | Only `draft: {label?, parameters?}`; returns schema 1, normalized `draft`, full-record `preview_sha256`; no persistence |
+| `POST /api/investment-policies` | Only `draft`, exact lowercase 64-hex `preview_sha256`, literal `acknowledged: true`; returns schema 1 and saved `draft`, 201 new or 200 same snapshot |
+| `GET /api/investment-policies/{draft_id}` | Schema 1 and verified canonical draft for `draft-` + 64 lowercase hex; 404 missing/invalid identity |
+
+Canonical inspection includes `schema_version: 1`, `family: nse-investment-policy-v2`,
+`decision_semantics: investment-decisions-v2.1`, all 25 nullable parameters, optional
+normalized label, `draft_sha256`, `policy_version_id`, `state`, ordered `missing_fields`,
+limitations and `activation_supported: false` / `backtest_supported: false`. State is
+`incomplete` until every field is non-null, then `specified`. Specified does not mean
+validated, installed, active or executable. Saved records additionally carry `draft_id`.
+
+Decimal values are exact strings, fixed scale 4 except turnover scale 2; integer fields
+reject floats, booleans and numeric strings. Bounds, choices and the four field groups
+come from `POLICY_FIELDS`; no defaults are supplied. Relationships are enforced for
+entered values: invested cap plus reserve ≤100%, stock/sector caps ≤ invested cap, and
+stock cap ≤ sector cap. See [all input bounds and examples](investment-policy-drafts.md#inputs-and-exact-values).
+
+The semantic SHA-256 binds sorted compact UTF-8 JSON over domain
+`agentic-trader.investment-policy`, schema/family/decision semantics and canonical
+parameters, including nulls. Label/path/time are excluded. `policy_version_id` equals
+that hash only for a specified draft. The preview hash binds the whole inspection,
+including the name/limitations; `draft_id` prefixes it with `draft-`. Repeating that
+exact reviewed save is idempotent. Different name/content creates another immutable
+snapshot. No automatic retry or update/delete/activate endpoint exists.
+
+Changed preview is 409 `DRAFT_PREVIEW_CHANGED`; invalid parameter/type/relationship
+is 422 `DRAFT_INVALID`; missing acknowledgement is rejected. Full storage is 429
+`DRAFT_STORAGE_FULL`, oversized record/request 413, and unreadable/unsafe/tampered stored
+evidence 503 `DRAFT_STORAGE_UNAVAILABLE`. Body validation may use FastAPI's `detail`
+response; domain failures use sanitized `error.code/message`, null incident ID,
+`retryable: false`, recovery action and field-errors array. Refresh saved drafts after an
+unknown save outcome before explicitly reviewing a same-content/hash retry.
+
+Storage defaults to the configured database path with suffix `.investment-policies`,
+with 100 immutable records maximum, 32 KiB each and 1 MiB combined. Ownership/private
+permissions, symlinks, bounded reads and canonical record identities are checked.
+There is no account schema migration or financial history update.
+
+`investment-policy DRAFT_JSON` is a separate offline stdout-only inspection command.
+Optional `--calendar CALENDAR_JSON --start YYYY-MM-DD --as-of AWARE_ISO_TIMESTAMP` must
+be supplied together for `reviewed-calendar-policy-schedule-v1`. It validates explicit
+whole-period calendar coverage and knowledge time without installing that calendar or
+scheduling execution. Reads are bounded to 32 KiB draft / 128 KiB calendar and hashes of
+the original bytes are returned in `input_sha256`; `draft` contains canonical inspection
+and `schedule` is null when not requested. The pure preview returns `available`, `partial` or `unavailable`,
+exact cycles/reasons, source-declaration labels, `execution_authorized: false` and
+`policy_activated: false`. See [calendar schema and failure/recovery](investment-policy-drafts.md#inspect-a-local-draft-or-preview-review-dates).
+No HTTP schedule or policy-backtest endpoint is introduced.
+
+## Registered backtest jobs and allocation (0.17.0)
+
+All `/api/backtests/*` routes use existing local Bearer/Host/Origin controls and no-store
+responses. GETs only inspect research storage; they do not start/retry jobs or touch
+account authority. JSON body is bounded to 4 KiB, parsed strictly and rejects extra
+fields; paths, URLs, config overrides, executable models and uploads are unsupported.
+
+| Endpoint | Input/output |
+|---|---|
+| `GET /api/backtests/resources` | Schema 1, registered public resource identities/coverage/strategy/economic policy/provenance, bound runtime code hash and complete observed fee schedule, actual budgets, `capability.available/reason`, limitations |
+| `GET /api/backtests/jobs` | Schema 1, retained bounded saved jobs; no inferred ETA |
+| `POST /api/backtests/jobs` | Only `resource_id` (`bundle-` + 24 lowercase hex), exact 64-hex `resource_sha256`, 32–64 character alphanumeric/underscore/hyphen `request_key`, `acknowledged: true`; new 202, same request 200 |
+| `GET /api/backtests/jobs/{job_id}` | Schema 1, saved state/stage/timestamps/resource/request key/report link or 404 |
+| `POST /api/backtests/jobs/{job_id}/cancel` | Only `acknowledged: true`; retained cancelled/terminal outcome, never a financial-order action |
+| `GET /api/backtests/reports/{report_id}` | Only succeeded/verified report: exact summary/snapshot, event curves, orders/fills/trades, provenance/hash/limitations and truncation |
+
+States are `queued`, `running`, `succeeded`, `failed`, `cancelled`, `interrupted`.
+A duplicate key conflicts (409) if resource/hash differs. Admission is unavailable
+(503) unless OS/hard-budget detection passed, full (429 with `Retry-After: 5`) with
+one active and one queued admission or 100 retained jobs. Resource identity/integrity
+failure returns a sanitized error; read failures never call account mutation recovery.
+Resource/report JSON never exposes raw policy credentials or operator paths. Body
+validation uses HTTP 413/422; domain errors carry sanitized `error.code/message`,
+null incident ID, `retryable: false`, recovery action and field-errors array.
+
+Private registration uses `register-backtest` with explicit local paths; defaults to
+the configured account path's `.research-jobs` sibling. Resource identities bind copied
+inputs plus validated strategy, sanitized economic policy and public metadata. Report
+publication independently checks exact hashes and read-only persisted accounting.
+Only Darwin sandbox backend exists, with launch unavailable on the implementation Mac.
+See [exact runtime budgets and failure/recovery](browser-backtesting.md).
+
+`GET /api/workspace/views` additionally exposes `portfolio.allocation` with method,
+state/reasons, exact actual cash/accepted-bid whole-share values/percentages, excluded
+claims and separately labelled commitments. It is not liquidation equity, risk exposure,
+target allocation or a mutation. Missing/stale/unreviewed held evidence disables weights.
+`capabilities.allocation_snapshot` describes the read-only view; the target-allocation
+capability remains unsupported. `backtests.state` is `registered_jobs`, whose actual
+launch is still capability-gated. `portfolio.performance.daily_metrics` stays typed
+unavailable until accepted daily/flow history exists; no client-supplied performance API
+is exposed. [Definitions and null/recovery behavior](portfolio-analytics.md).
+
+## Installed investment price series (0.16.0)
+
+`GET /api/research/series` is an authenticated, no-store, nonmutating query. It accepts
+only a saved symbol matching `NSE:[A-Z0-9&_.-]{1,30}` and timeframe `1d`, `1w` or `1mo`.
+Unknown supported-format symbols return 404; invalid symbols/intervals 422. Extra
+query names are ignored and cannot select paths, datasets, context, URLs or benchmarks.
+The browser still uses legacy `/api/analysis` for minute charts; its raw daily resource
+keeps its original meanings.
+
+Schema 1 retains analysis quote/symbol/screen context and adds `research` with
+`series_version`, `formula_version`, `snapshot_id`, exact input/source-code hashes,
+`basis`, 15 `indicator_status` entries, coverage/seed/daily quality, excluded period
+states, benchmark availability and explicit unavailable fundamentals. A status carries
+its exact decimal string/null, formula, warmup/lookback, reason, basis and dependency
+availability time. OHLC/volume are share-adjusted per contiguous segment; the separate
+gross index includes known share/cash benefits. Drawdown/volatility are price measures,
+not portfolio results. Research labels never change legacy ranking or financial state.
+
+Calculate full eligible history before returning at most 300 display bars. The excluded
+period list is bounded to 24 with explicit truncation. Dataset files and optional
+fixed-name `investment-context.json`/`investment-benchmark.json` are bounded and
+hash-checked. Context binds both original data hashes, explicit reviewed calendar
+coverage and any benchmark hash; neither file can be selected through an HTTP path.
+Partial periods/unknown coverage are excluded rather than inferred. Benchmark relative
+wealth uses 20 matched **daily** intervals even on weekly/monthly charts. Source/license
+fields remain unverified declarations; synthetic stock/benchmark labels must agree.
+
+New read failures return sanitized 503 without invoking the account mutation-fault
+handler or revoking authority. Nothing polls fills, refreshes strategy, expires
+proposals, downloads, opens an account or submits an order. CLI `investment-analyze`
+accepts explicit local paths for isolated research artifacts, creates a new private
+output directory and publishes its hashed finished manifest last. See
+[the research data schemas](investment-research.md).
+
+
+## Installed V2 workspace read model (0.15.0)
+
+`GET /api/workspace/views` requires the existing local Bearer operator token and is
+`no-store`; unauthorized reads return 401. Schema version 1 returns `observed_at`,
+`capabilities`, `discovery`, `portfolio`, `settings`, `backtests`, and `dashboard`.
+Research is bounded to 500 rows, positions to 10, recent materialized decisions to
+10; bounds/truncation are explicit. Exact account/metric decimals remain strings.
+Missing performance fields are null with an unavailable capability, never zero.
+The read returns dataset-declared synthetic labels and unknown historic fill origin
+honestly. No credential fields or config paths are included in Settings.
+
+One engine-lock/SQLite `BEGIN` cut uses a separately closed `mode=ro` connection.
+No desk tick/view/expiry, research refresh, broker call, download, fill poll,
+reconciliation or recovering engine construction runs. `observed_at` is response
+observation time; stored accounting `day`, research `as_of` and quote timestamps keep
+their separate meanings. Proposal state is last materialized state, possibly awaiting
+the normal expiry workflow. Read failures return sanitized 503 without routing through
+the mutation-fault handler. POST is unsupported (405). This is a narrow current read
+contract; named-watchlist and target-allocation mutations remain unimplemented; the additive
+0.17 job/current-allocation contracts above supersede the older CLI-only limitation.
+
+Page routes `/dashboard`, `/discovery`, `/holdings`, `/settings` and `/learn` use this
+model. Since 0.17, `/backtesting` uses its separate research-job API above. `/paper` reuses the existing desk API/controller. Public page
+shells carry no private values. The workspace handoff checks exact origin/source,
+canonical destination and reported child path. See [frontend behavior and recovery](frontend-modernization.md).
+
+
+## V2 Phase 2 proposed contracts
+
+[phase-2/api-contracts.md](phase-2/api-contracts.md) defines the current/proposed endpoint
+matrix, future exact-value/provenance/null/read/error/cursor schemas and reviewed
+mutation/job contracts. Existing routes and fields below are unchanged. Do not call
+proposed resources or interpret prototype states as actual API/account results.
+
+
 ## Saved market analysis (0.14.0)
 
 `GET /api/analysis?symbol=NSE:SYMBOL&timeframe=1d|1m|5m` uses the existing bearer/Host

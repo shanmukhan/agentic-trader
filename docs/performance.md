@@ -1,5 +1,20 @@
 # Performance design and measured baseline
 
+## Phase 5 resource budgets and financial metrics (0.17.0)
+
+The registered browser replay worker has explicit admission/process/file budgets;
+see [browser-backtesting.md](browser-backtesting.md). They are enforced prerequisites,
+not measured throughput promises. Native isolation/hard-memory detection failed on the
+implementation Mac and no Linux/Pi browser-job backend exists; actual worker/deployment
+performance acceptance is open. No new hardware, broker-network or full-sized replay
+benchmark is claimed by the synthetic lifecycle tests.
+
+Financial **portfolio performance** is a separate meaning of performance. The pure
+34-digit daily-cut calculator and accepted-bid allocation method are documented in
+[portfolio-analytics.md](portfolio-analytics.md). Existing event-time curves do not
+supply accepted daily-cut history; annualized account/replay statistics stay unavailable.
+Older timing results below retain their original dates, fixtures and limitations.
+
 ## Trading desk reads and analysis isolation (0.12.0)
 
 Daily file parsing/ranking and intraday historical HTTP execute outside the quote/risk

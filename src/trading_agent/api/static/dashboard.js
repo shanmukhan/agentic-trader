@@ -4,7 +4,9 @@
 
   const formatMoney = typeof module !== 'undefined' && module.exports ? require('./money.js') : window.AgenticMoney;
 
+  const createDialogs = typeof module !== 'undefined' && module.exports ? require('./dialogs.js').createDialogs : window.AgenticDialogs;
   function createConsole(doc, win, request) {
+    const dialogs = createDialogs(doc, win);
     let token = '', generation = 0, busy = false, mutating = false, fresh = false;
     let controller = null, lastReceipt = 0, latest = null, pendingAction = null, holdingExitButtons = [];
     const el = id => doc.getElementById(id);
@@ -64,7 +66,7 @@
       if (controller) controller.abort();
       controller = null;
       pendingAction = null;
-      if (el('confirm').open) el('confirm').close();
+      dialogs.cancel(el('confirm'));
       el('token').value = ''; el('token').required = true; el('lock').disabled = true;
       for (const id of ['equity', 'cash', 'pnl']) el(id).textContent = '—';
       for (const id of ['reserved', 'fees', 'risk', 'valuation', 'order-count', 'details'])
@@ -228,7 +230,7 @@
     });
     el('lock').addEventListener('click', lock);
     function confirmAction(name, body) {
-      if (!token || !latest || mutating) return;
+      if (!token || !latest || mutating || el('confirm').open) return;
       pendingAction = { name, body };
       el('confirm-title').textContent = name === 'review' ? 'Record ' + (body.no_corporate_action ? 'clear review' : 'persistent quarantine') + ' for ' + body.symbol + '?' : name === 'exit' ? 'Queue full paper exit for ' + body.symbol + '?' :
         name === 'arm' ? 'Arm paper automation?' : 'Reset the kill switch?';
@@ -237,7 +239,8 @@
         'The entire remaining virtual holding will be queued for sale. This request persists across restarts; fresh reviewed quotes and liquidity are required for fills.' : name === 'arm' ?
         'This permits new virtual entries while all server-side readiness and risk checks pass. Protective exits remain active.' :
         'The server must verify a flat account and eligible risk state. This does not rearm automation.';
-      el('confirm').showModal(); el('cancel-confirm').focus();
+      if (!dialogs.open(el('confirm'), { cancel: () => { pendingAction = null; }, focus: el('cancel-confirm') }))
+        message('The confirmation could not be displayed. Reopen Risk Center and review the action again. Nothing was submitted.', true);
     }
     for (const name of controls) el(name).addEventListener('click', () => {
       if (['arm', 'reset'].includes(name)) confirmAction(name);
@@ -248,18 +251,18 @@
       confirmAction('review', { symbol: el('review-symbol').value.trim(), session_date: el('review-date').value,
         no_corporate_action: el('review-clear').checked, reference: el('review-reference').value.trim() });
     });
-    el('cancel-confirm').addEventListener('click', () => { pendingAction = null; el('confirm').close(); });
+    el('cancel-confirm').addEventListener('click', () => dialogs.cancel(el('confirm')));
     el('confirm-action').addEventListener('click', () => {
-      const pending = pendingAction; pendingAction = null; el('confirm').close();
+      const pending = pendingAction; pendingAction = null; dialogs.close(el('confirm'));
       if (pending) action(pending.name, pending.body);
     });
-    el('confirm').addEventListener('cancel', () => { pendingAction = null; });
     doc.addEventListener('visibilitychange', () => { if (!doc.hidden) refresh(); });
     win.setInterval(() => { if (token && !doc.hidden) refresh(); }, 3000);
     win.setInterval(() => {
       if (token && fresh && win.Date.now() - lastReceipt > 6000)
         stale('No fresh update for over 6 seconds. Displayed values may be stale.');
     }, 1000);
+    win.addEventListener?.('pagehide', lock);
     lock();
     return { refresh, lock, canNavigate: () => !mutating && !el('confirm').open };
   }

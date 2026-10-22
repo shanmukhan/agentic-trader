@@ -1,19 +1,18 @@
-# Risk Center: desktop and mobile browsers
+# Risk Management: desktop and mobile browsers
 
-Version **0.14.0**, 22 October 2026, labels the existing `/console` **Risk Center**
-in the light sidebar workspace. It keeps detailed entry readiness, exposure,
-long-term basis reviews and emergency/entry controls together. Broker credentials,
-session login, catalog, subscriptions, exchange-calendar setup and feed
-administration belong in **Broker & Settings**.
+Version **0.15.0** labels `/console` **Risk Management** (`#risk`). It retains
+current-basis review, exposure, readiness and emergency/entry controls. **Broker &
+Data** contains credentials, calendar and connection administration; **Settings**
+is read-only configuration. **Paper Trading** contains modes and proposals, while
+**Trade History** contains orders/fills. The saved Dashboard and Portfolio views
+do not grant execution authority. See [workspace.md](workspace.md) for all routes.
 
-Use **Dashboard** for portfolio summary, market status, the next action, modes and
-proposals; **Strategies** for setup and shortlist review; **Paper Trading** for
-orders/fills and proposal outcomes, with **Purchases & SIP** beneath it. **Market &
-Analysis** offers [actual saved-candle charts](market-analysis.md), without starting
-broker downloads on view. Incomplete setup shows contextual onboarding, and
-**Help & onboarding** remains at the sidebar bottom. See [workspace.md](workspace.md)
-for the six main areas and routes. This reorganization retains the existing token,
-confirmations, risk gates and paper-only execution behavior.
+Risk confirmations now use the same dialog helper as Setup, Purchases and strategy
+reviews. It positions before opening in the visible parent viewport, restores focus
+on close and cancels on Escape or pagehide. The menu remains inert while open;
+Cancel sends nothing. A failed geometry/reveal closes safely. Lock/pagehide ignores
+late reads; it does not undo an already received server action. Exact financial and
+risk behavior is unchanged. See [the shared component guide](frontend-modernization.md).
 
 The UI is a local browser application served by FastAPI. It is **paper only**.
 There is no native Android/iOS app, installable PWA, public hosting or real-money
