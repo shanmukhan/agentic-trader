@@ -28,6 +28,38 @@ history loading, telemetry and operations reports. No live orders or transfers a
 implemented. This delivers Phase 4 engineering; sustained real-feed, broker entitlement,
 fill calibration and target-device acceptance remain unverified.
 
+## Whole-second Kite updates
+
+The [official full-packet layout](https://kite.trade/docs/connect/v3/websocket/)
+provides an integer exchange timestamp. Observed real packets have whole-second times
+with multiple ordered books within a second. The updated broker/candle path accepts a
+changed same-time book only when both quotes are Kite, symbol/token match, the exchange
+time has no fractional part and receipt time strictly increases. Tick/depth, cumulative
+volume, clock/freshness, basis and financial checks remain mandatory. Non-Kite/replay
+input retains strictly increasing exchange times; older exchange times and ambiguous
+receipt ties are rejected. No timestamp is fabricated or advanced to force acceptance.
+
+An unchanged repeat at the same exchange time ignores receipt-time differences and
+does nothing: no quote/receipt renewal, candles, fills or fault clearing. A changed tied
+book can update quotes/marks, latch protection and add only actual cumulative-volume
+deltas to candles. It does not call fill processing for that timestamp again. A later
+strictly newer exchange timestamp is needed for another depth budget, in addition to
+the existing order-creation/latency requirements. Zero-depth observations still
+invalidate the symbol; malformed packets and backward/volume-regressing inputs retain
+their fail-closed behavior.
+
+Load the fix by stopping the owning terminal, running `./scripts/start_ui.sh` and
+unlocking again; reopening an already running process does not load new Python code.
+Review actual readiness and explicitly reconnect/choose the desired mode. Cancelled
+daily proposals are retained and are not automatically replayed by a restart/mode switch.
+
+Validation is split: synthetic raw-packet callback tests, exact persisted monetary
+checks and the full suite verify deterministic behavior. An independent eight-second
+real-feed probe into an isolated disposable engine accepted 68 quotes, including 20
+changed same-second books, with no quality failures, runtime fault or orders. It was
+not connected to the operator account's callbacks and is not sustained/device/fill
+acceptance. No operating mode or historical proposal was changed by that probe.
+
 ## Run the offline fault drills
 
 From the repository root using the prepared Python 3.13.16 environment:

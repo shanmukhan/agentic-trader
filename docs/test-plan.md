@@ -1,5 +1,62 @@
 # Test and validation plan
 
+## Live quote ties and cancellation/idle-mode evidence (22 October 2026)
+
+Full suite: **650 Python**, **99 JavaScript** tests passed; Ruff lint/format, mypy and
+diff whitespace checks passed. New synthetic tests validate unchanged-repeat no-ops
+without clock/depth renewal, strict receipt-ordered live ties, backward/ambiguous/source
+and volume failures, replay strictness, candle OHLC/volume deltas and exact independent
+persisted cash/fill reconciliation. Tied books cannot reuse a fill budget; a tied stop
+can cancel residual buys/queue protection, but its sale waits for a newer exchange
+timestamp. Raw full-mode packets through Setup callbacks no longer cancel Approval
+on normal ties; a true backward packet still pauses with a concrete recorded cause.
+Hard fault/disconnect tests ensure snapshot failure cannot precede memory revocation.
+UI cases distinguish proposal/order cancellation, creation/update times, pause causes
+and daily no-replay summaries. A cancelled signal remains cancelled after mode changes.
+
+Separate real observations: the account journal contained six Approval proposals
+cancelled five seconds after creation, no orders and repeated quote-order failures.
+An eight-second raw broker probe saw 44 quotes with eight same-second ties (three
+unchanged receipts, five changed books). A later isolated corrected-engine probe saw
+68 quotes, 20 changed ties, no quality failure/fault and no order. These are different
+short live windows, not a controlled performance comparison or sustained acceptance.
+The operator account's mode, history and orders were not modified by those probes.
+
+## Direct daily-review shortcut (22 October 2026)
+
+97 JavaScript tests pass, including same-day IST readiness, stale data, Manual and
+custom-route restrictions, installed/first/ML policy handling without fallback, preview
+only until unchecked acknowledgement is explicitly changed, cancel/lock/late responses,
+readiness-card wiring and hiding after resolution. The 17 guided unit/HTTP tests pass;
+the new HTTP case independently compares persisted SQLite, exact ₹25,000 cash and
+config before/after preview and rejected acknowledgement, with no reviews/orders/fills
+or feed request. Ruff lint and changed-test formatting pass. Tests use invented sources.
+
+Separately, the current local server serves all new button/script assets (HTTP 200).
+The genuine-data preparation completed 65 stocks × 60 sessions for a review only.
+A later actual read-only status/database inspection found today's seven reviews,
+incoming accepted quote times, zero API blockers, Manual, unchanged cash/fees and no
+orders/holdings. This assistant did not submit the confirmation. This bounded evidence
+does not establish sustained feed continuity, strategy returns or interactive/device QA.
+
+## Quote review blockers and workspace fragment recovery (22 October 2026)
+
+Full validation: `./.venv/bin/pytest -q` **637 passed**; `node --test tests/ui/*.test.cjs`
+**90 passed**. Ruff lint/changed-Python formatting, mypy on all source modules and
+`git diff --check` passed. Unit/functional tests independently read SQLite to retain
+exact cash and persisted state across diagnostic reads, reject next-day quotes until
+today's review, and require a new accepted quote after review. Desk and console report
+the same cause; stale/empty/reconnect observations remain unusable under existing gates.
+
+JavaScript checks cover direct legacy redirects, same/cross-section fragments,
+unlock/render deferral, details expansion, height-before-scroll ordering, sticky versus
+static navigation offsets, focus, repeated-link handling and matching origin/source.
+No reveal issues a POST or auto-applies a shortlist. Modified text is rendered safely.
+Live journal inspection found review-blocked incoming quotes and only prior-day reviews;
+this is distinct from simulated checks and does not attest corporate-action clearance,
+fresh-market fills, broker entitlement, interactive desktop/mobile or target-device
+acceptance. The operator-owned account/service/selection/reviews/mode were not changed.
+
 ## Combined guided setup (0.13.1)
 
 New invented-data unit and HTTP tests cover read-only previews, exact ranked shortlist,

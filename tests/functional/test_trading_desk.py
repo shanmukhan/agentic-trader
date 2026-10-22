@@ -1,3 +1,4 @@
+import sqlite3
 from datetime import timedelta
 from decimal import Decimal as D
 
@@ -8,6 +9,43 @@ from trading_agent.api.app import create_app
 from trading_agent.persistence.database import Database
 
 AUTH = {"Authorization": "Bearer " + TOKEN}
+
+
+def test_next_day_incoming_quotes_report_review_block_on_both_views_without_account_changes(
+    desk_factory,
+):
+    desk, _, _ = desk_factory(horizon="long_term")
+    e = desk.engine
+    now = NOW + timedelta(days=1)
+    incoming = quote(1).model_copy(update={"exchange_time": now, "received_time": now})
+    assert not e.ingest(incoming, now)
+
+    def persisted():
+        with sqlite3.connect(e.settings.database) as db:
+            assert D(db.execute("SELECT value FROM meta WHERE key='cash'").fetchone()[0]) == D(
+                "25000"
+            )
+            assert db.execute("SELECT count(*) FROM orders").fetchone()[0] == 0
+            assert db.execute("SELECT count(*) FROM fills").fetchone()[0] == 0
+            return list(db.iterdump())
+
+    with TestClient(
+        create_app(e, clock=lambda: now, background=False, desk=desk),
+        base_url="http://127.0.0.1",
+    ) as client:
+        before = persisted()
+        overview = client.get("/api/desk", headers=AUTH).json()
+        console = client.get("/api/console", headers=AUTH).json()
+        for result in (overview["readiness"]["quotes"][0], console["quotes"][0]):
+            assert result["status"] == "PRICE_BASIS_REVIEW_REQUIRED"
+            assert not result["usable"] and result["basis_reviewed"] is False
+            assert "Incoming quotes cannot be accepted" in result["detail"]
+        checks = {row["key"]: row for row in overview["readiness"]["checks"]}
+        assert overview["readiness"]["session_open"]
+        assert "Resolve today's price-basis reviews" in overview["readiness"]["next_action"]
+        assert "blocked before storage" in checks["quotes"]["detail"]
+        assert checks["selection"]["href"] == "#execution-shortlist"
+        assert persisted() == before
 
 
 def test_new_tabs_are_public_shells_but_controls_are_authenticated(desk_factory):

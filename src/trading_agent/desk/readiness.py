@@ -3,8 +3,8 @@
 from datetime import datetime
 from typing import Any
 
+from trading_agent.execution.quote_status import quote_status
 from trading_agent.market_data.calendar import IST
-from trading_agent.models import stamp
 
 
 def readiness(desk: Any, now: datetime, blockers: list[str]) -> dict[str, Any]:
@@ -26,19 +26,7 @@ def readiness(desk: Any, now: datetime, blockers: list[str]) -> dict[str, Any]:
         )
         quotes = []
         for row in selected:
-            q = e._quote(tx, row["symbol"])
-            quotes.append(
-                {
-                    "symbol": row["symbol"],
-                    "usable": bool(q and e._fresh(q, now)),
-                    "exchange_time": stamp(q.exchange_time) if q else None,
-                    "received_time": stamp(q.received_time) if q else None,
-                    "age_seconds": max(0, (now - q.exchange_time).total_seconds()) if q else None,
-                    "basis_reviewed": e.long_term.reviewed(tx, row["symbol"], now)
-                    if e.long_term
-                    else None,
-                }
-            )
+            quotes.append(quote_status(e, tx, row["symbol"], now))
     local = now.astimezone(IST)
     bounds = e.calendar.bounds(now)
     future = [
@@ -85,7 +73,13 @@ def readiness(desk: Any, now: datetime, blockers: list[str]) -> dict[str, Any]:
             "ready": fresh > 0,
             "detail": f"{fresh} of {len(quotes)} selected symbols have quotes within "
             f"the {e.settings.max_quote_age_seconds}-second limit. Empty bid/ask "
-            "or zero-depth observations cannot fill an order.",
+            "or zero-depth observations cannot fill an order."
+            + (
+                f" {basis} symbols await today's price-basis review; incoming quotes "
+                "are blocked before storage until review is resolved."
+                if basis
+                else ""
+            ),
             "action": "Inspect quote details",
             "href": "#quote-details",
         },
@@ -142,7 +136,7 @@ def readiness(desk: Any, now: datetime, blockers: list[str]) -> dict[str, Any]:
                 "detail": "The execution list must use reviewed equity shares. Apply the ranked "
                 "shortlist explicitly while disconnected; held symbols are always retained.",
                 "action": "Review the ranked shortlist",
-                "href": "#apply-shortlist",
+                "href": "#execution-shortlist",
             }
         )
         checks.append(
@@ -177,18 +171,45 @@ def readiness(desk: Any, now: datetime, blockers: list[str]) -> dict[str, Any]:
             "href": "/console",
         }
     )
+    if not blockers:
+        next_action = (
+            "Choose Approval or Automatic and confirm. "
+            "Each proposal still needs independent risk approval."
+        )
+    elif not profile_ok:
+        next_action = (
+            "Prepare and review a strategy below first. Reconnecting alone will not enable modes."
+        )
+    elif any(r in blockers for r in ("EXECUTION_SHORTLIST_NOT_REVIEWED", "NO_EXECUTION_SHORTLIST")):
+        next_action = (
+            "Review the execution shortlist and apply it while disconnected in Manual. "
+            "Then resolve today's price-basis reviews and wait for new valid quotes."
+        )
+    elif basis:
+        next_action = (
+            f"Resolve today's price-basis reviews for {basis} selected symbols in Advanced "
+            "controls, then wait for new valid quotes. An open market does not clear this review."
+        )
+    elif not e.connected:
+        next_action = "Check the broker session and connect market data in Broker & data."
+    elif not e.calendar.is_open(now) or "OUTSIDE_ENTRY_WINDOW" in blockers:
+        next_action = (
+            "Wait for a reviewed open entry session; inspect the session and entry-window checks."
+        )
+    elif not fresh:
+        next_action = (
+            "The reviewed session is open. Inspect quote details and feed diagnostics "
+            "for the remaining quote blocker."
+        )
+    else:
+        next_action = "Resolve the outstanding readiness checks before choosing a trading mode."
     return {
         "checks": checks,
         "quotes": quotes,
         "now_ist": local.isoformat(),
+        "session_open": e.calendar.is_open(now),
         "next_reviewed_open": next_open,
         "blocking_count": len(blockers),
         "can_start": not blockers,
-        "next_action": "Choose Approval or Automatic and confirm. "
-        "Each proposal still needs independent risk approval."
-        if not blockers
-        else "Prepare and review a strategy below first. Reconnecting alone will not enable modes."
-        if not profile_ok
-        else "Review the execution shortlist, then resolve the outstanding checks. "
-        "Wait for an open entry session and fresh quotes.",
+        "next_action": next_action,
     }

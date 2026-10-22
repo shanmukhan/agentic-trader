@@ -63,7 +63,7 @@ function createPortfolio(doc,win,fetcher){
   rows('holdings',data.account.positions||[],'Flat · no current holdings',(row,p)=>{row.append(node('strong',p.symbol+' · '+p.quantity+' current shares'));row.append(node('p','Current pooled basis '+money(p.cost)+' · estimated unrealized P&L '+money(p.unrealized_pnl)));row.append(node('p','Stop '+money(p.stop)+' · target '+money(p.target)));});
   el('lots-count').textContent=data.lots_truncated?'Latest 100 acquisition lots shown; older purchases remain in the ledger.':data.lots.length+' filled acquisition lots';
   rows('lots',data.lots,'No filled purchases yet. Accepted orders appear here only after actual quote-driven fills.',(row,lot)=>{row.append(node('strong',lot.symbol+' · '+lot.original_quantity+' original shares'));row.append(node('p','Original debit '+money(lot.original_cost)+' · buy fees '+money(lot.fees)));row.append(node('p',lot.lot_id+' · '+lot.order_state+(lot.plan_id?' · SIP '+lot.plan_id:'')));});
-  el('details').textContent=JSON.stringify(data,null,2);msg('Account refreshed. Choose a due occurrence or preview a purchase.');buttons();
+  el('details').textContent=JSON.stringify(data,null,2);msg('Account refreshed. Choose a due occurrence or preview a purchase.');buttons();if(win.AgenticNavigation?.updated)win.AgenticNavigation.updated();
  }
  const refresh=()=>operation('',null,render);
  function getPreview(){

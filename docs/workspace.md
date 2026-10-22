@@ -62,21 +62,47 @@ request/login popup. Finish/cancel it first. Changing sections clears unsaved fo
 previews and local login state; confirmed orders/plans remain server-side. The
 server's normal freshness/idempotency checks remain authoritative after navigation.
 
+Readiness links now preserve their destination within a section: for example,
+`/desk#apply-shortlist` redirects to `/workspace#desk/apply-shortlist`, while the new
+shortlist link uses `/workspace#desk/execution-shortlist`. After unlock/render, the
+target section receives keyboard focus and the outer page scrolls it into view below
+the sticky menu. Quote-details links also expand their closed details panel. Repeated
+links work without a section reload or repeated scrolling on polling. Section-change
+guards, origin/window checks and shared in-memory access remain in force. Navigation
+does not apply a shortlist or submit a mutation. Reload the full workspace to update
+the parent navigation script; changing only the embedded section is insufficient.
+
+Daily price-basis warnings now expose **Review today’s setup** directly, including
+inside expanded quote details, when same-day data is ready. The button opens the
+existing summary/unchecked confirmation; it does not navigate away, approve a review
+or change a mode. Cancel preserves the blocker. Successful resolution hides the shortcut
+on the next status update. Load this child-page addition by visiting another section
+and returning to Trading desk; no additional backend restart is required.
+
 ## What to do after unlocking
 
 1. Read **Start here**. It distinguishes *feed not started* from *requested but
    disconnected*, and shows the actual account horizon/automation state and hours.
    The launcher starts the UI without requesting a feed.
 2. Open **Broker & data**. In step 3, **Check saved broker session**. An available
-   token can be expired. If renewal is required, disconnect a requested feed in
+   token can be expired. Progress and the final result appear directly under the
+   login/check buttons; the check button stays disabled while waiting. A failed
+   recheck clears the earlier verification claim; a timeout allows a manual retry.
+   If renewal is required, disconnect a requested feed in
    step 6, open Zerodha login/2FA, then explicitly exchange the returned request token.
 3. Step 4 shows the imported catalog and selected symbols. These are subscriptions,
    not profitable-stock recommendations. No need to reimport/resave an unchanged
    selection merely to connect. Preserve all held symbols; ETF costs remain unsupported.
+   The catalog is a reference lookup; the saved list streams at most ten symbols under
+   the app's current limit. Unsaved edits do not change **Saved feed subscriptions**.
+   Use Trading desk's Nifty 100/500 preparation for a broader reviewed shortlist.
 4. In step 5, add the next confirmed NSE session with its reviewed date, opening/closing
    times and notice/reference. Ordinary cash-equity hours are 09:15–15:30 IST, but
    holidays/special sessions require their actual notices. Adding a future date does
    not open today's market. The form requires explicit review and confirmation.
+   Opening/closing fields now start at **09:15 AM / 03:30 PM IST** on unlock. Edit
+   them for a supported reviewed session; refresh preserves edits. Defaults never
+   precheck the review or save a date, and existing saved hours stay unchanged.
 5. In step 6, **Connect paper market data**, review the confirmation and refresh status.
    Connecting can resume existing pending fills/protective exits; it creates no new
    intent. A connected socket alone does not establish accepted quote freshness.

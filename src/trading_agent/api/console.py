@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
 from trading_agent.execution.paper_broker import PaperBroker
+from trading_agent.execution.quote_status import quote_status
 from trading_agent.models import stamp, utc
 
 if TYPE_CHECKING:
@@ -45,12 +46,7 @@ def console_snapshot(
                 quote = engine._quote(tx, symbol)
                 quotes.append(
                     {
-                        "symbol": symbol,
-                        "exchange_time": stamp(quote.exchange_time) if quote else None,
-                        "age_seconds": (now - quote.exchange_time).total_seconds()
-                        if quote
-                        else None,
-                        "fresh": engine._fresh(quote, now),
+                        **quote_status(engine, tx, symbol, now),
                         "reasons": engine._entry_reasons(tx, quote, now),
                     }
                 )

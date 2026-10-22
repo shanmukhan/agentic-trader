@@ -51,6 +51,11 @@ test('money retains all server decimal digits and groups Indian rupees without f
     ['0E-5', '₹0.00000'], ['-1.234E-2', '-₹0.01234'], ['1E+100000', '₹1E+100000']]) assert.equal(formatMoney(value), expected);
   for (const bad of [undefined, null, 25000, 'NaN', 'Infinity', '<img src=x>']) assert.equal(formatMoney(bad), '—');
 });
+test('observed quote rows explain daily review blocking instead of claiming a stale feed',async()=>{
+ const s=setup(async()=>ok(data({quotes:[{symbol:'NSE:DEMO',fresh:false,detail:"Today's price-basis review is missing. Incoming quotes cannot be accepted."}]})));
+ await s.unlock();assert.match(s.nodes.quotes.textContent,/price-basis review is missing/);
+ assert.doesNotMatch(s.nodes.quotes.textContent,/Stale or missing/);
+});
 
 test('locked shell loads no private data; unlocking clears input, uses only bearer, and renders text safely', async () => {
   const view = data({ orders: [{ symbol: '<img src=x onerror=alert(1)>', id: 'id', side: 'BUY', state: 'REJECTED',

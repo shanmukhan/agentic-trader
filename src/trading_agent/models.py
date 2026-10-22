@@ -51,6 +51,21 @@ class Quote(DomainModel):
             raise ValueError("exchange clock is ahead of receipt")
         return self
 
+    def ordered_kite_second_update(self, previous: "Quote") -> bool:
+        """Kite has whole-second exchange clocks; socket receipt orders book updates.
+
+        This does not advance exchange time or grant a second fill/liquidity budget.
+        Replay inputs retain their strict exchange-time ordering.
+        """
+        return (
+            self.source == previous.source == "kite"
+            and self.symbol == previous.symbol
+            and self.token == previous.token
+            and self.exchange_time == previous.exchange_time
+            and self.exchange_time.microsecond == 0
+            and self.received_time > previous.received_time
+        )
+
 
 class Candidate(DomainModel):
     intent_id: str = Field(min_length=1, max_length=100, pattern=r"^[A-Za-z0-9_.:-]+$")

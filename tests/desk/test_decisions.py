@@ -99,6 +99,87 @@ def test_automatic_needs_explicit_mode_and_submits_without_trade_approval(desk_f
     assert offer(desk)["id"] == result["id"] and len(desk.engine.orders()) == 1
 
 
+def test_ordered_kite_updates_keep_approval_active_but_true_staleness_cancels_and_records_cause(
+    desk_factory,
+):
+    desk, _, _ = desk_factory(horizon="long_term")
+    e = desk.engine
+    first = quote(1).model_copy(update={"source": "kite"})
+    assert e.ingest(first, first.received_time)
+    activate(desk, now=first.received_time)
+    record = desk.offer(
+        candidate("daily", now=first.received_time),
+        first.received_time,
+        {"kind": "daily", "signal_key": "daily-entry"},
+    )
+    for second in range(2, 9):
+        current = quote(second).model_copy(update={"source": "kite"})
+        assert e.ingest(current, current.received_time)
+        tied = current.model_copy(
+            update={
+                "received_time": current.received_time + timedelta(milliseconds=200),
+                "ask_size": 101,
+            }
+        )
+        assert e.ingest(tied, tied.received_time)
+        desk.tick(tied.received_time)
+        assert desk.mode == "approval"
+    stopped = NOW + timedelta(seconds=14)
+    desk.tick(stopped)
+    assert desk.mode == "manual"
+    cancelled = desk.view(stopped)["decisions"][0]
+    assert cancelled["id"] == record["id"] and cancelled["state"] == "cancelled"
+    assert cancelled["pause_reasons"] == ["NO_FRESH_EXECUTION_QUOTES"]
+    with e.db.transaction() as tx:
+        pause = json.loads(
+            tx.execute(
+                "SELECT payload FROM events WHERE kind='desk_pause' ORDER BY seq DESC LIMIT 1"
+            ).fetchone()[0]
+        )
+        assert pause["causes"] == ["NO_FRESH_EXECUTION_QUOTES"]
+    restored = quote(15).model_copy(update={"source": "kite"})
+    e.ingest(restored, restored.received_time)
+    activate(desk, "automatic", restored.received_time)
+    same = desk.offer(
+        candidate("daily", now=restored.received_time),
+        restored.received_time,
+        {"kind": "daily", "signal_key": "daily-entry"},
+    )
+    assert same["id"] == record["id"] and same["state"] == "cancelled"
+    summary = desk.view(restored.received_time)["daily_signal_summary"]
+    assert summary["states"] == {"cancelled": 1}
+    assert "does not replay" in summary["message"]
+    assert not e.orders()
+    assert D(e.snapshot(restored.received_time)["cash"]) == D("25000")
+    with e.db.transaction() as tx:
+        Database.reconcile(tx)
+
+
+@pytest.mark.parametrize(
+    "failure,cause", [("fault", "ACCOUNT_FAULTED"), ("disconnect", "FEED_DISCONNECTED")]
+)
+def test_hard_watchdog_failure_revokes_mode_without_reading_a_snapshot(
+    desk_factory, monkeypatch, failure, cause
+):
+    desk, _, _ = desk_factory()
+    activate(desk)
+    offer(desk)
+    if failure == "fault":
+        desk.engine.faulted = True
+    else:
+        desk.engine.set_connected(False)
+
+    def broken_snapshot(now):
+        raise AssertionError("Snapshot must not precede hard-failure authority revocation")
+
+    monkeypatch.setattr(desk.engine, "snapshot", broken_snapshot)
+    desk.tick(NOW)
+    assert desk.mode == "manual"
+    with desk.engine.db.transaction() as tx:
+        payload = json.loads(tx.execute("SELECT payload FROM desk_decisions").fetchone()[0])
+        assert payload["state"] == "cancelled" and payload["pause_reasons"] == [cause]
+
+
 @pytest.mark.parametrize("change", ["expired", "drift", "stale", "mode", "review_hash", "risk"])
 def test_old_or_changed_proposals_cannot_authorize_orders(desk_factory, change):
     desk, _, _ = desk_factory()

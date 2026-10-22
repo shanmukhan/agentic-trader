@@ -1,5 +1,123 @@
 # Implementation plan, enhancements and status
 
+## Same-second quote handling, cancellation causes and idle-mode explanation (22 October 2026)
+
+Live journal inspection traced six Approval proposals created at 10:52:31 IST to a
+safety cancellation at 10:52:36, with repeated data-order failures and no orders.
+A later read-only status showed Manual/SESSION_FEED_OR_RISK_PAUSE despite recovered
+7/7 quotes. Automatic activations also encountered the already terminal daily signal
+identities; existing no-replay behavior is preserved and now explained in the UI.
+
+The model/broker/candle path now recognizes changed Kite whole-second ties ordered by
+strictly later receipt time and matching identity/source. Unchanged repeats exclude
+receipt time from equality and do not renew clocks, liquidity or clear faults. Tied
+changes update actual books/marks/protection/cumulative-volume candles but skip fill
+processing for that timestamp. Replay order, backward/ambiguous timestamps, volume,
+tick/depth, basis, session, latency and independent financial checks stay in force.
+
+New cancellation records retain concrete pause causes and a durable `desk_pause` event;
+hard failures revoke memory authority without first depending on snapshot I/O. Activity
+separates proposal/order cancellation and created/updated times. Long-term desks show a
+current-day/profile daily signal summary from the existing bounded history, explaining
+cancelled/expired/declined/submitted signals without resetting them or forcing retries.
+
+Validation: 650 Python tests, 99 UI tests, Ruff lint/format and mypy passed. New raw-packet
+functional callbacks keep Approval active through eight seconds of tied updates and
+still cancel on a real backward quote. Unit checks independently reconcile persisted
+cash/fills/fees and confirm one depth budget, same-second protective exit latching with
+later fills, actual candle deltas, hard-fault authority revocation and no replay.
+Distinct external evidence: an eight-second raw probe observed repeated/changed tied
+books; an isolated corrected engine then accepted 68 real quotes (20 changed ties),
+with zero quality failures, faults or orders. The operator account was not restarted,
+rearmed or used for test orders. Sustained/device/execution acceptance remains pending.
+Updated main/detailed usage, API, architecture, feed, risk and validation documents.
+
+## Direct daily-review recovery actions (22 October 2026)
+
+Added **Review today’s setup** in the next-step notice, expanded quote details and
+quote/basis readiness cards. The existing guided summary opens directly with an
+unchecked acknowledgement, reusing an existing installed policy only when the operator
+has not selected another. First-time policy selection stays explicit; no ML fallback.
+Buttons require a current IST source snapshot, Manual mode and supported guided setup.
+Stale/missing data and custom/legacy configurations show recovery guidance instead.
+Lock/cancel/late-response guards remain; successful status removes the shortcut.
+
+Validation: 97 JavaScript tests and 17 guided unit/HTTP workflow tests passed, plus
+Ruff lint/format checks. Added independent persisted SQLite/exact cash/config checks
+showing preview and rejected acknowledgement do not record a basis review or order.
+UI cases cover current/stale data, installed versus first/ML policy, cancel/lock,
+readiness-card wiring, single explicit confirmation and removal after resolution.
+No new Python runtime behavior or dependencies. Updated main, detailed, component and
+validation guides; child-page re-entry loads these controls without another restart.
+
+Operational evidence is separate: a 22 October genuine-data download completed 65 × 60
+sessions and a preview; those did not approve reviews. Later read-only inspection at
+10:51 IST found seven current-day reviews, incoming stored quote timestamps, Manual
+mode, zero API blockers, ₹25,000 cash, zero fees and no orders/holdings. No confirmation
+request was sent by this assistant. This is a bounded real-feed observation, not
+full-session, strategy-profit, phone/Pi or interactive browser acceptance.
+
+## Open-session quote explanations and working shortlist links (22 October 2026)
+
+Read-only inspection of the existing account found incoming quotes rejected for all
+eight selected symbols with `LONG_TERM_REVIEW_REQUIRED`, reviews dated 21 October and
+no accepted stored quotes. This explains the observed connected/open-session screen;
+it is not an independent broker probe or new action approval. The price-basis gate is
+preserved. A shared read-only quote diagnostic now distinguishes basis review from
+missing/old/rejected/post-reconnect quotes and disconnection in desk and console views.
+Readiness shows the current reviewed-session state and blocker-specific next actions.
+
+Workspace links now retain fragments across standalone redirects and section changes,
+defer reveal until unlocked/rendered, expand details, focus the review section and
+scroll the outer viewport with the applicable sticky-menu offset. Height updates precede
+scrolling, and polling does not repeat the jump. Legacy `apply-shortlist` targets the
+containing review section instead of a disabled button. Origin/source checks, guarded
+section changes and explicit mutations/confirmations remain; viewing cannot apply a list.
+
+Validation: full 637 Python and 90 JavaScript tests passed; Ruff lint/format and mypy
+passed. Tests cover next-day blocked incoming quotes across both APIs, independent
+persisted SQLite/exact cash equality, post-review new quotes, stale/reconnect/rejection
+states, direct/same-section/cross-section links, hidden targets, detail expansion,
+desktop/mobile sticky offsets, keyboard focus and spoofed-message rejection. Updated
+main/detailed usage, workspace, API and validation guides. These tests simulate workflow;
+interactive browser/device acceptance and actual fresh quote execution remain pending.
+Reload the workspace for navigation; restart an older Python service for diagnostics.
+No operator-owned service, review, feed, shortlist or mode was changed by this work.
+
+## Feed-selection explanation and session-hour defaults (22 October 2026)
+
+Setup step 4 now explains reference catalog versus saved live subscriptions, the app's
+ten-symbol limit, token/tick meanings, broader Nifty 100/500 screening and unsaved-input
+versus committed-list behavior. Added an accessible saved subscription heading/count
+and input help. No actual account selection is changed by these explanatory UI edits.
+
+Step 5 initializes editable 09:15/15:30 IST fields on unlock. Refresh preserves edits,
+including intentionally cleared values; lock clears them and a later unlock restores
+defaults. Date-specific review, reference, confirmation and server calendar validation
+remain mandatory; no session is implicitly saved and existing hours are not rewritten.
+Validation: 28 setup/workspace UI and 24 setup unit/API tests pass, covering defaults,
+edit preservation, cancel/confirm payloads, unreviewed/blank-time rejection, independent
+saved-calendar reads and exact persisted financial-state equality. These are simulated
+workflow checks; no broker/market or interactive device acceptance is claimed.
+
+## Saved broker session feedback (22 October 2026)
+
+Implemented visible progress, a pending button label and inline live success/error
+feedback in setup step 3. Failed rechecks clear stale local profile verification,
+give connectivity/login recovery and permit explicit retry; locking/auth failure
+clears feedback and late results cannot restore it. Existing authenticated read-only
+profile routes and private token persistence are unchanged. Login/exchange requests
+also report their progress/results beside the controls. UI assets load on section
+re-entry without restarting the account service.
+
+Validation: 25 setup/workspace UI tests and 23 setup unit/API tests exercise delayed
+success, duplicate prevention, failure/retry, timeout, lock/auth clearing, secret
+redaction and independent persisted SQLite/credential/config equality. Broker responses
+are simulated. Firefox initially showed an unverified session and later displayed
+“Profile verified this run” on 22 October. This is an observed UI status, not an
+independent broker probe or streaming acceptance. Automated coordinate clicks returned
+`noWindowsAvailable`; desktop/mobile interactive acceptance of the updated UI is pending.
+
 ## Simplified combined preparation review (0.13.1)
 
 Implemented the requested shorter setup: download → choose policy → review one summary

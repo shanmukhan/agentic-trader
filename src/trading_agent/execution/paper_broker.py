@@ -705,18 +705,25 @@ class PaperBroker:
                     self.bad_symbols.add(quote.symbol)
                     raise ValueError("quote price violates instrument tick size")
                 previous = self._quote(tx, quote.symbol)
+                same_second_update = False
                 if previous and quote.exchange_time <= previous.exchange_time:
-                    if quote == previous:
+                    if quote.model_dump(exclude={"received_time"}) == previous.model_dump(
+                        exclude={"received_time"}
+                    ):
+                        # An unchanged broker repeat is not fresh data and must never
+                        # replenish depth, renew receipt time or clear a previous fault.
                         return False
-                    self.bad_symbols.add(quote.symbol)
-                    self.db.event(
-                        tx,
-                        stamp(now),
-                        "data_quality",
-                        quote.symbol,
-                        {"reason": "DUPLICATE_OR_OUT_OF_ORDER"},
-                    )
-                    return False
+                    same_second_update = quote.ordered_kite_second_update(previous)
+                    if not same_second_update:
+                        self.bad_symbols.add(quote.symbol)
+                        self.db.event(
+                            tx,
+                            stamp(now),
+                            "data_quality",
+                            quote.symbol,
+                            {"reason": "DUPLICATE_OR_OUT_OF_ORDER"},
+                        )
+                        return False
                 same_day = (
                     previous
                     and previous.exchange_time.astimezone(IST).date()
@@ -769,7 +776,11 @@ class PaperBroker:
                 ).fetchall():
                     if quote.bid <= D(order["stop"]) or quote.bid >= D(order["target"]):
                         self._cancel(tx, order, stamp(now), "STOP_OR_TARGET_BEFORE_FILL")
-                self._process(tx, quote, now)
+                if not same_second_update:
+                    # Preserve one displayed-depth fill budget per exchange second.
+                    # Tied updates can refresh the book/marks and latch protection,
+                    # but cannot execute against that second's liquidity again.
+                    self._process(tx, quote, now)
                 self._watch(tx, now)
                 return True
         except (sqlite3.Error, RuntimeError):

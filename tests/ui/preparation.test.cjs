@@ -95,3 +95,61 @@ test('embedded review fits the visible parent viewport and removes parent listen
  parent.innerHeight=1100;listeners.get('resize')();assert.equal(s.nodes['guided-dialog'].style.maxHeight,'902px');
  s.nodes['guided-cancel'].fire('click');assert.equal(listeners.size,0);
 });
+function readyDailyReview(s){
+ Object.assign(s.data,{strategy_mode:'rules',observed_at:'2026-10-22T05:10:00Z',blockers:['LONG_TERM_REVIEW_REQUIRED']});
+ s.ui.render({...s.view,job:job({snapshot_at:'2026-10-22T05:07:28Z'})},null);
+}
+test('daily-review shortcut beside the warning opens a preview using the existing policy without approving',async()=>{
+ const s=setup(()=>guided());readyDailyReview(s);
+ assert.equal(s.nodes['daily-review'].hidden,false);assert.equal(s.nodes['daily-review-button'].disabled,false);
+ assert.equal(s.nodes['quote-review-button'].hidden,false);assert.equal(s.nodes['daily-review-download'].hidden,true);
+ assert.match(s.nodes['daily-review-message'].textContent,/Restarting or opening the summary does not approve/);
+ assert.equal(s.nodes['prep-policy'].value,'');assert.equal(s.calls.length,0);
+ s.nodes['daily-review-button'].fire('click');await flush();
+ assert.equal(s.calls.length,1);assert.deepEqual(s.calls[0],{path:'/api/desk/preparation/guided/preview',body:{revision:s.data.revision,strategy_mode:'rules'}});
+ assert.equal(s.nodes['guided-dialog'].open,true);assert.equal(s.nodes['guided-ack'].checked,false);
+ assert.equal(s.nodes['guided-confirm'].disabled,true);
+ s.nodes['guided-cancel'].fire('click');assert.equal(s.calls.length,1);
+ assert.equal(s.nodes['daily-review'].hidden,false);
+});
+test('quote-row shortcut still requires acknowledgement before exactly one confirmation',async()=>{
+ const s=setup(path=>path.endsWith('preview')?guided():{state:'complete',message:'Manual stays selected.'});readyDailyReview(s);
+ s.nodes['quote-review-button'].fire('click');await flush();
+ s.nodes['guided-confirm'].fire('click');assert.equal(s.calls.length,1);
+ s.nodes['guided-ack'].checked=true;s.nodes['guided-ack'].fire('change');
+ s.nodes['guided-confirm'].fire('click');s.nodes['guided-confirm'].fire('click');await flush();
+ assert.equal(s.calls.length,2);assert.equal(s.calls[1].path,'/api/desk/preparation/guided/confirm');
+ assert.deepEqual(s.calls[1].body,{preview_sha256:'e'.repeat(64),acknowledged:true});
+});
+test('daily-review shortcut refuses stale sources, non-manual mode and unavailable combined setup',()=>{
+ const s=setup();readyDailyReview(s);
+ s.ui.render({...s.view,job:job({snapshot_at:'2026-10-21T05:07:28Z'})},null);
+ assert.equal(s.nodes['daily-review-button'].disabled,true);assert.equal(s.nodes['daily-review-download'].hidden,false);
+ assert.match(s.nodes['daily-review-message'].textContent,/Yesterday’s download\/review/);
+ s.nodes['daily-review-button'].fire('click');assert.equal(s.calls.length,0);
+ s.data.mode='automatic';readyDailyReview(s);assert.equal(s.nodes['daily-review-button'].disabled,true);
+ assert.match(s.nodes['daily-review-message'].textContent,/Choose Manual/);
+ s.data.mode='manual';s.ui.render({...s.view,profile_override:true,job:job({snapshot_at:'2026-10-22T05:07:28Z'})},null);
+ assert.equal(s.nodes['daily-review-button'].disabled,true);assert.match(s.nodes['daily-review-message'].textContent,/Advanced controls/);
+});
+test('first-time policy stays explicit and existing ML policy is never downgraded by the daily shortcut',async()=>{
+ const s=setup(()=>guided());readyDailyReview(s);s.data.strategy_mode='unconfigured';s.ui.controls();
+ assert.equal(s.nodes['daily-review-button'].disabled,true);
+ s.nodes['prep-policy'].value='rules';s.nodes['prep-policy'].fire('change');assert.equal(s.nodes['daily-review-button'].disabled,false);
+ s.nodes['prep-policy'].value='';s.data.strategy_mode='rules_ml';s.ui.controls();
+ s.nodes['daily-review-button'].fire('click');await flush();assert.equal(s.calls[0].body.strategy_mode,'rules_ml');
+});
+test('locking hides the shortcut and discards a late review; polling does not approve anything',async()=>{
+ let finish;const s=setup(()=>new Promise(r=>{finish=r;}));readyDailyReview(s);
+ s.nodes['daily-review-button'].fire('click');s.ui.clear();finish(guided());await flush();
+ assert.equal(s.nodes['daily-review'].hidden,true);assert.equal(s.nodes['quote-review-button'].hidden,true);
+ assert.equal(s.nodes['daily-review-message'].textContent,'');assert.notEqual(s.nodes['guided-dialog'].open,true);
+ assert.equal(s.calls.length,1);
+});
+test('completed daily review hides both shortcut locations instead of leaving the warning visible',()=>{
+ const s=setup();readyDailyReview(s);s.data.blockers=[];
+ s.ui.render({...s.view,job:job({state:'installed',strategy_mode:'rules',snapshot_at:'2026-10-22T05:07:28Z'})},{state:'complete'});
+ assert.equal(s.nodes['daily-review'].hidden,true);assert.equal(s.nodes['quote-review-button'].hidden,true);
+ assert.equal(s.nodes['daily-review-button'].disabled,true);assert.equal(s.nodes['daily-review-message'].textContent,'');
+ assert.equal(s.ui.currentReviewReady(),false);assert.equal(s.calls.length,0);
+});

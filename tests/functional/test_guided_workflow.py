@@ -1,5 +1,6 @@
 """Isolated HTTP flow with invented sources, profile authentication and execution quotes."""
 
+import sqlite3
 from datetime import timedelta
 from decimal import Decimal as D
 
@@ -13,6 +14,69 @@ from trading_agent.persistence.database import Database
 
 AUTH = {"Authorization": "Bearer " + TOKEN}
 BASE = "/api/desk/preparation/guided/"
+
+
+def test_daily_review_shortcut_previews_ready_sources_but_does_not_approve_prices(
+    preparation_factory,
+):
+    from preparation_support import download
+
+    s = preparation_factory("long_term")
+    download(s)
+    config = s.setup.config.read_bytes()
+    with TestClient(
+        create_app(
+            s.engine, clock=lambda: s.clock[0], setup=s.setup, desk=s.desk, background=False
+        ),
+        base_url="http://127.0.0.1",
+    ) as client:
+
+        def persisted():
+            with sqlite3.connect(s.engine.settings.database) as db:
+                assert D(db.execute("SELECT value FROM meta WHERE key='cash'").fetchone()[0]) == D(
+                    "25000.00"
+                )
+                assert (
+                    db.execute("SELECT count(*) FROM meta WHERE key GLOB 'lt_review:*'").fetchone()[
+                        0
+                    ]
+                    == 0
+                )
+                assert db.execute("SELECT count(*) FROM orders").fetchone()[0] == 0
+                assert db.execute("SELECT count(*) FROM fills").fetchone()[0] == 0
+                return list(db.iterdump())
+
+        shell = client.get("/desk").text
+        assert 'id="daily-review-button"' in shell and 'id="quote-review-button"' in shell
+        assert 'aria-describedby="daily-review-message"' in shell
+        before = persisted()
+        status = client.get("/api/desk", headers=AUTH).json()
+        assert status["preparation"]["job"]["state"] == "ready_for_review"
+        assert status["preparation"]["job"]["snapshot_at"][:10] == status["observed_at"][:10]
+        preview = client.post(
+            BASE + "preview",
+            headers=AUTH,
+            json={
+                "revision": status["revision"],
+                "strategy_mode": "rules",
+            },
+        )
+        assert preview.status_code == 200
+        assert preview.json()["plan"]["basis_reviews"]
+        assert (
+            client.post(
+                BASE + "confirm",
+                headers=AUTH,
+                json={
+                    "preview_sha256": preview.json()["preview_sha256"],
+                    "acknowledged": False,
+                },
+            ).status_code
+            == 422
+        )
+        assert persisted() == before
+        assert s.setup.config.read_bytes() == config
+        assert s.setup.stream is None and s.desk.mode == "manual"
 
 
 @pytest.mark.parametrize("mode", ["approval", "automatic"])

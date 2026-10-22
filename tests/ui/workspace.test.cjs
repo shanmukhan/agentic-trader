@@ -112,3 +112,49 @@ test('returning to Start here refreshes feed state without losing the workspace 
  assert.equal(s.calls.length,2);assert.match(s.nodes['workspace-feed'].textContent,/connection established/);
  assert.equal(s.nodes['workspace-access'].hidden,true);
 });
+test('direct desk fragment survives redirect into a bookmarkable workspace route',()=>{
+ let redirected;
+ const win={location:{search:'',pathname:'/desk',hash:'#apply-shortlist',replace:v=>{redirected=v;}}};win.parent=win;
+ vm.runInNewContext(readFileSync('src/trading_agent/api/static/workspace-bridge.js','utf8'),{window:win,document:{},URLSearchParams});
+ assert.equal(redirected,'/workspace#desk/apply-shortlist');
+});
+test('workspace retains destination fragments, guards section changes and scrolls below sticky navigation',async()=>{
+ const s=setup();await s.unlock();s.navigate('desk/apply-shortlist');
+ assert.equal(s.nodes['workspace-frame'].src,'/desk#apply-shortlist');
+ s.ready('desk');assert.equal(s.posts.at(-1)[0].type,'workspace-unlock');
+ s.navigate('desk/execution-shortlist');assert.equal(s.posts.at(-1)[0].type,'workspace-anchor');
+ assert.equal(s.posts.at(-1)[0].anchor,'execution-shortlist');
+ s.child.AgenticNavigation.canNavigate=()=>false;s.navigate('setup/feed-connection');
+ assert.equal(s.win.location.hash,'#desk/execution-shortlist');
+ s.win.scrollY=500;s.win.scrollTo=value=>{s.scrolled=value;};
+ s.nodes['workspace-frame'].getBoundingClientRect=()=>({top:-100});
+ s.nodes['workspace-nav'].getBoundingClientRect=()=>({height:70});
+ s.win.getComputedStyle=()=>({position:'sticky'});
+ const event={origin:s.win.location.origin,source:s.child,data:{type:'workspace-scroll-target',top:1300}};
+ s.events.message({...event,origin:'https://evil.test'});assert.equal(s.scrolled,undefined);
+ s.events.message({...event,source:{}});assert.equal(s.scrolled,undefined);
+ s.events.message({...event,data:{type:'workspace-scroll-target',top:Infinity}});assert.equal(s.scrolled,undefined);
+ s.events.message(event);assert.equal(s.scrolled.top,1614);
+ s.win.getComputedStyle=()=>({position:'static'});s.events.message(event);assert.equal(s.scrolled.top,1684);
+ assert.equal(s.calls.length,1); // Navigation and reveal never submit an action.
+});
+test('embedded links preserve fragments and reveal legacy shortlist after unlock without applying it',()=>{
+ const events={},posts=[],clicks={};let hidden=true,focused=0;
+ const details={tagName:'DETAILS',open:false,parentElement:null};
+ const target={parentElement:details,tabIndex:-1,closest:()=>hidden?{}:null,getClientRects:()=>[{}],getBoundingClientRect:()=>({top:1500}),focus:()=>{focused++;}};
+ const win={parent:{postMessage:(...a)=>posts.push(a)},location:{origin:'http://127.0.0.1:8004',pathname:'/desk',hash:'#apply-shortlist'},scrollY:0,addEventListener:(n,f)=>{events[n]=f;}};
+ const doc={body:{classList:{add(){}},getBoundingClientRect:()=>({height:3000})},getElementById:id=>id==='execution-shortlist'?target:null,addEventListener:(n,f)=>{clicks[n]=f;}};
+ vm.runInNewContext(readFileSync('src/trading_agent/api/static/workspace-bridge.js','utf8'),{window:win,document:doc,URLSearchParams,URL});
+ win.AgenticNavigation.connect({canNavigate:()=>true},'access');assert.equal(focused,0);
+ hidden=false;win.AgenticNavigation.updated();assert.equal(focused,1);assert.equal(details.open,true);
+ assert.equal(posts.at(-1)[0].type,'workspace-scroll-target');assert.equal(posts.at(-1)[0].top,1500);
+ assert.equal(posts.at(-2)[0].type,'workspace-height');assert.equal(posts.at(-2)[0].height,3032);
+ win.AgenticNavigation.updated();assert.equal(focused,1); // Polling does not keep jumping.
+ let prevented=false;
+ const anchor={href:win.location.origin+'/desk#execution-shortlist'};
+ clicks.click({target:{closest:()=>anchor},preventDefault(){prevented=true;}});
+ assert.equal(prevented,true);assert.equal(posts.at(-1)[0].view,'desk');assert.equal(posts.at(-1)[0].anchor,'execution-shortlist');
+ const count=posts.length;clicks.click({target:{closest:()=>anchor},ctrlKey:true});assert.equal(posts.length,count);
+ events.message({origin:'https://evil.test',source:win.parent,data:{type:'workspace-anchor',anchor:'execution-shortlist'}});assert.equal(focused,1);
+ events.message({origin:win.location.origin,source:win.parent,data:{type:'workspace-anchor',anchor:'execution-shortlist'}});assert.equal(focused,2);
+});

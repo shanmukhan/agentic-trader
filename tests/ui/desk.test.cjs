@@ -46,6 +46,25 @@ test('connected feed still explains missing strategy and quotes beside disabled 
  assert.match(s.nodes['mode-status'].textContent,/2 prerequisites/);assert.match(s.nodes['next-action'].textContent,/Prepare and review/);assert.match(s.nodes['readiness-checks'].textContent,/Prepare strategy data/);assert.match(s.nodes['quote-observations'].textContent,/no accepted quote/);
  assert.equal(s.nodes['readiness-checks'].children[0].children.at(-1).href,'#strategy-setup');
 });
+test('daily-review quote blocker explains missing acceptance and links to a focusable shortlist section',async()=>{
+ const detail="Today's price-basis review is missing. Incoming quotes cannot be accepted.";
+ const s=setup(async()=>ok(status({blockers:['EXECUTION_SHORTLIST_NOT_REVIEWED','LONG_TERM_REVIEW_REQUIRED'],readiness:{now_ist:'2026-10-22T10:00:00+05:30',session_open:true,checks:[{title:'Supported execution shortlist',ready:false,action:'Review the ranked shortlist',href:'#execution-shortlist'}],quotes:[{symbol:'NSE:DEMO',detail,usable:false,exchange_time:null,basis_reviewed:false}]}})));
+ await s.unlock();assert.equal(s.nodes['next-step-link'].href,'#execution-shortlist');
+ assert.match(s.nodes['quote-observations'].textContent,/Incoming quotes cannot be accepted/);
+ assert.doesNotMatch(s.nodes['quote-observations'].textContent,/Stale or unavailable/);
+ assert.match(s.nodes['session-clock'].textContent,/Reviewed session open now/);
+ assert.equal(s.calls.length,1);
+ const html=readFileSync('src/trading_agent/api/static/desk.html','utf8');
+ assert.match(html,/<section id="execution-shortlist" class="panel" tabindex="-1"/);
+ assert.match(html,/href="\/setup#feed-connection"/);
+});
+test('readiness cards offer the same explicit daily review after preparation is rendered',async()=>{
+ let rendered=false,opened=0;
+ const s=setup(async()=>ok(status({blockers:['LONG_TERM_REVIEW_REQUIRED'],readiness:{now_ist:'2026-10-22T10:00:00+05:30',checks:[{key:'basis',title:'Today’s basis review',ready:false,detail:'Review missing.',action:'Review individually',href:'/console#long-term'}]}})),false,{AgenticPreparation:()=>({clear(){},controls(){},render(){rendered=true;},currentReviewReady:()=>rendered,reviewCurrent(){opened++;}})});
+ await s.unlock();const card=s.nodes['readiness-checks'].children[0];
+ const action=card.children.find(n=>n.textContent==='Review today’s setup');assert.ok(action);
+ action.fire('click');assert.equal(opened,1);assert.equal(s.calls.length,1);
+});
 test('trade preview shows maximum shares/cash/risk before approval and preserves raw signal text safely',async()=>{
  const d=decision({candidate:{reason:'<script>unsafe</script>',stop:'490',target:'520'}});
  const s=setup(async(url)=>url.endsWith('/preview')?ok({...d,preview_sha256:'b'.repeat(64),review:{allowed:true,maximum_quantity:14,maximum_price:'501.00',maximum_cash:'7014.00',maximum_risk:'250.00'}}):ok(status({mode:'approval',blockers:[],decisions:[d]})));
@@ -71,4 +90,18 @@ test('activity separates accepted orders from fills and uses exact decimal displ
  assert.match(s.nodes.activity.textContent,/ACCEPTED/);assert.match(s.nodes.activity.textContent,/0 of 14 shares filled/);assert.match(s.nodes.activity.textContent,/Reviewed trend reason/);
  assert.match(s.nodes['decision-history'].textContent,/expired/);assert.equal(s.nodes.older.disabled,false);s.nodes.older.fire('click');await flush();assert.ok(s.calls.some(c=>c.url==='/api/activity?before=9'));
  assert.equal(s.intervals.length,0);
+});
+test('automatic daily signal history explains why cancelled signals do not create new orders',async()=>{
+ const s=setup(async()=>ok(status({mode:'automatic',blockers:[],daily_signal_summary:{message:'Today’s signals: 6 cancelled. Changing mode does not replay these signals.'}})));
+ await s.unlock();assert.match(s.nodes['daily-signal-status'].textContent,/6 cancelled/);
+ assert.match(s.nodes['daily-signal-status'].textContent,/does not replay/);
+ assert.equal(s.calls.length,1);s.instance.lock();assert.equal(s.nodes['daily-signal-status'].textContent,'');
+});
+test('cancelled activity distinguishes a proposal from an order and shows updated time and pause triggers',async()=>{
+ const proposal=decision({state:'cancelled',updated_at:'2026-10-20T04:30:05Z',outcome:'SESSION_FEED_OR_RISK_PAUSE',pause_reasons:['NO_FRESH_EXECUTION_QUOTES'],order_id:null,context:{kind:'daily'}});
+ const s=setup(async url=>ok(url.startsWith('/api/activity')?{observed_at:'2026-10-20T04:30:05Z',entries:[],next_before:null}:status({decisions:[proposal]})),true);
+ await s.unlock();const text=s.nodes['decision-history'].textContent;
+ assert.match(text,/proposal cancelled · no order created/);assert.match(text,/last updated.*10:00:05/);
+ assert.match(text,/Pause triggers: No fresh usable quote/);assert.match(text,/Switching to Automatic does not retry/);
+ assert.match(text,/Proposal mode: Approval/);
 });

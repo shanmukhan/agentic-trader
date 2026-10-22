@@ -53,7 +53,13 @@ new entries; missing marks never make a position disappear.
 Bid crossing a stop or target queues an exit; a later quote supplies the actual
 simulated fill, which can be worse than the trigger. Bid liquidity bounds each
 partial sell. The total available side depth is consumed at most once per accepted
-quote event. Even configured zero latency requires a strictly later exchange quote
+distinct exchange timestamp. Kite's ordered same-second book updates can change the
+observed mark/protection/candle but skip fill processing entirely, preserving that
+timestamp's consumed depth budget. Unchanged repeats do not renew freshness or depth.
+The live-only exception requires strictly increasing receipt time at a whole-second
+exchange tie with matching symbol/token/source; replay ordering remains strict.
+Backward/ambiguous timestamps, volume regressions and invalid books still fail closed.
+Even configured zero latency requires a strictly later exchange quote
 than creation, preventing same-time or same-candle-close executions.
 Kill and session exits never manufacture cash from stale prices. With
 no fresh data or reviewed open session the exit remains pending; overnight exposure

@@ -1,5 +1,39 @@
 # Operator API and command contracts
 
+## Pause causes and handled daily signals (22 October 2026)
+
+New cancelled proposal records include `pause_reasons`; existing `outcome` codes remain
+compatible. A `desk_pause` journal event records the previous mode, Manual result,
+generic reason and concrete causes. Hard fault/disconnect/date/controller conditions
+revoke memory authority before attempting a snapshot. This changes diagnostic evidence,
+not pause thresholds or trade authorization. Old records are not backfilled with guesses.
+
+`GET /api/desk` additionally returns nullable `daily_signal_summary` for a long-term
+research profile: `handled`, `selected`, state counts and a plain-language message from
+matching current-day/profile daily-entry proposals in the existing latest-100 window.
+This explains terminal signals/idle modes; it cannot reset an identity, rearm authority,
+retry a cancelled signal or create an order. Activity distinguishes unapproved proposal
+cancellation from order cancellation and displays created/updated times separately.
+
+## Quote diagnostics and readiness navigation (22 October 2026)
+
+`GET /api/desk` readiness quote rows and `GET /api/console` quote rows now share additive
+`status`, `detail`, `usable`, `basis_reviewed` and exchange/receipt timestamp fields.
+Existing freshness, age and entry-reason fields remain available. Statuses distinguish
+`PRICE_BASIS_REVIEW_REQUIRED`, `FEED_DISCONNECTED`, `NO_ACCEPTED_QUOTE`, `QUOTE_REJECTED`,
+`AWAITING_NEW_QUOTE`, `STALE_QUOTE` and `USABLE`. Basis review takes explanatory priority
+over quote absence: long-term review rejection occurs before storage. `fresh` retains
+the existing quote-clock/connection-generation meaning; `usable` additionally excludes
+the missing basis-review case. Neither grants execution authority or bypasses other gates.
+No price, quote or financial journal row is created by reading these diagnostics.
+
+Readiness additionally returns `session_open` for the reviewed account calendar, and
+blocker-specific next actions. The supported-shortlist link is `#execution-shortlist`.
+Workspace section fragments use `#view/element-id`, with strictly bounded IDs and
+matching-origin/frame messages for reveal/scroll. Legacy `apply-shortlist` resolves
+to the containing review section so a disabled button cannot swallow keyboard focus.
+All mutations and confirmations retain their original API requirements.
+
 ## Combined preparation setup (0.13.1)
 
 All routes below retain the same bearer, Host and mutation-Origin checks. Extra fields

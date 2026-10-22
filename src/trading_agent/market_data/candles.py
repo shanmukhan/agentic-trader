@@ -17,7 +17,11 @@ class CandleBuilder:
 
     def update(self, quote: Quote) -> list[Candle]:
         previous = self.previous.get(quote.symbol)
-        if previous and quote.exchange_time <= previous.exchange_time:
+        if (
+            previous
+            and quote.exchange_time <= previous.exchange_time
+            and not quote.ordered_kite_second_update(previous)
+        ):
             raise ValueError("non-monotonic candle input")
         same_day = (
             previous

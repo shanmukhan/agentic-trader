@@ -1,4 +1,6 @@
+import csv
 import json
+import sqlite3
 import struct
 from contextlib import nullcontext
 from decimal import Decimal
@@ -168,6 +170,43 @@ def test_upstream_failure_is_redacted_without_disabling_existing_risk_engine(
     assert not service.engine.faulted
 
 
+def test_saved_session_check_failure_and_retry_preserve_persisted_account(
+    setup_client, monkeypatch
+):
+    client, service = setup_client
+    service._save_values(
+        {"api_key": "unitkey", "api_secret": "unitsecret", "access_token": "savedtoken"}
+    )
+    credentials = service.path.read_bytes()
+    config = service.config.read_bytes()
+
+    def persisted():
+        with sqlite3.connect(service.engine.settings.database) as db:
+            cash = db.execute("SELECT value FROM meta WHERE key='cash'").fetchone()[0]
+            assert Decimal(cash) == Decimal("25000.00")
+            return list(db.iterdump())
+
+    before = persisted()
+    upstream = Mock()
+    monkeypatch.setattr(service, "broker", lambda: upstream)
+    response = client.post("/api/setup/profile", headers=AUTH, json={})
+    assert response.status_code == 200 and response.json()["profile_verified_this_run"]
+    upstream.get_profile.side_effect = RuntimeError("private-upstream-savedtoken")
+    response = client.post("/api/setup/profile", headers=AUTH, json={})
+    assert response.status_code == 409 and "profile check failed" in response.json()["detail"]
+    assert "savedtoken" not in response.text
+    status = client.get("/api/setup", headers=AUTH).json()
+    assert not status["profile_verified_this_run"] and status["access_token_available"]
+    upstream.get_profile.side_effect = None
+    response = client.post("/api/setup/profile", headers=AUTH, json={})
+    assert response.status_code == 200 and response.json()["profile_verified_this_run"]
+    assert "savedtoken" not in response.text and "unitsecret" not in response.text
+    assert upstream.get_profile.call_count == 3
+    assert persisted() == before
+    assert service.path.read_bytes() == credentials and service.config.read_bytes() == config
+    assert not service.engine.faulted
+
+
 def test_operator_help_explicitly_distinguishes_broker_tokens(setup_client):
     client, _ = setup_client
     for path in ("/", "/portfolio", "/setup"):
@@ -207,6 +246,41 @@ def test_calendar_api_requires_explicit_attestation_and_preserves_existing_defin
         == 409
     )
     assert Decimal(service.engine.snapshot(NOW)["cash"]) == Decimal("25000.00")
+
+
+def test_standard_hours_are_only_saved_with_review_and_do_not_change_accounting(setup_client):
+    client, service = setup_client
+    service.engine.calendar.sources = {
+        day: "invented existing session" for day in service.engine.calendar.sessions
+    }
+    config_before = service.config.read_bytes()
+    body = {
+        "date": "2026-10-22",
+        "open": "09:15",
+        "close": "15:30",
+        "source": "invented standard-hours review",
+        "reviewed": False,
+    }
+
+    def persisted():
+        with sqlite3.connect(service.engine.settings.database) as db:
+            assert Decimal(
+                db.execute("SELECT value FROM meta WHERE key='cash'").fetchone()[0]
+            ) == Decimal("25000.00")
+            return list(db.iterdump())
+
+    before = persisted()
+    response = client.post("/api/setup/session", headers=AUTH, json=body)
+    assert response.status_code == 409
+    assert service.config.read_bytes() == config_before and persisted() == before
+    response = client.post("/api/setup/session", headers=AUTH, json={**body, "reviewed": True})
+    assert response.status_code == 200
+    with service.engine.settings.calendar.open(newline="") as file:
+        saved = [row for row in csv.DictReader(file) if row["date"] == body["date"]]
+    assert len(saved) == 1
+    assert saved[0]["open"] == "09:15" and saved[0]["close"] == "15:30"
+    assert saved[0]["source"] == body["source"]
+    assert persisted() == before
 
 
 def test_setup_disabled_for_apps_without_the_manual_manager(engine):

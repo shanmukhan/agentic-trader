@@ -26,6 +26,90 @@ Version 0.12.0 adds a decision workflow for intraday and long-term **paper** acc
 It does not enable real broker orders. The existing account is not automatically
 switched, re-funded or assigned a new universe/model by an upgrade.
 
+## Cancelled proposals and idle Automatic mode
+
+In Approval mode, a proposal is only an invitation to review a trade. Before your
+explicit approval it creates no order, fill or cash reservation. The activity heading
+now says **proposal cancelled · no order created** for these records, and shows both
+the proposal time and last-update time, its mode, outcome and recorded pause triggers.
+Older records retain their original generic outcome; missing historical triggers are
+not invented. New watchdog cancellations include specific causes such as
+`NO_FRESH_EXECUTION_QUOTES`, with a durable `desk_pause` event.
+
+A session/feed/risk pause revokes pending proposals and changes the mode to Manual.
+Fresh quotes returning does not automatically reactivate Approval or Automatic. Hard
+fault/disconnect/date/controller revocation does not first depend on a snapshot read.
+Inspect the current mode and reasons, then explicitly choose a mode when ready.
+
+The original live parser supplied whole-second Kite exchange times. Multiple book
+updates within that second, including unchanged repeats with different receipt times,
+were incorrectly treated as bad ordering. This could invalidate the entire shortlist
+between updates and trip the watchdog. The broker/candle path now accepts changed
+Kite books tied at a whole-second exchange time only with strictly later receipt
+time, matching symbol/token/source and nonregressing volume. Unchanged repeats are
+ignored without renewing freshness; genuine backward/ambiguous data remains blocked.
+Tied updates preserve actual marks, protection and candle volume, but cannot process
+another fill or replenish liquidity at that exchange timestamp. Replay inputs keep
+strict exchange-time ordering. See [the feed details](paper-feed.md#whole-second-kite-updates).
+
+Automatic can also be idle because today's daily signals were already handled.
+The desk now shows matching current-day/profile outcomes from its latest 100 records.
+For example, **6 cancelled** means those six daily signals remain terminal. Switching
+modes or receiving new prices does not replay a cancelled/expired/declined/submitted
+signal. Any remaining selected stock still needs its own eligible entry signal,
+price-gap bounds and all risk checks. Starting Automatic is not an instruction to buy
+every selected stock, and a screened candidate is not automatically an order.
+
+Load the Python fix once: inspect holdings/pending orders, Ctrl+C in the owning server
+terminal, run `./scripts/start_ui.sh`, reload/unlock, then connect/review and explicitly
+select the intended mode. The launcher otherwise reopens an existing process. Restart
+cancels unfilled recovery residue, retains held shares and starts the normal profile
+desk in Manual. It does not reset daily signal history or automatically retry a trade.
+
+## Open session with no usable quotes
+
+An open reviewed session and a connected socket are separate from quote acceptance.
+For long-term accounts, today's explicit corporate-action/price-basis review is required
+before incoming quotes can be stored, marked or used for fills. A review saved yesterday
+does not cover today. Consequently, **no accepted quote** can coexist with a working
+live feed. Read the per-symbol explanation in Trading desk's **Inspect quote details**
+or Advanced controls, rather than interpreting every missing quote as a network failure.
+
+When today's source/history data is ready, **Review today’s setup** appears beside the
+warning and in quote/basis readiness cards. It opens the existing combined source,
+calendar and stock summary with an unchecked acknowledgement. The existing installed
+policy can be reused; you must choose a policy explicitly for a first installation.
+Inspect the included daily reviews and separate manual requirements, then select
+**Confirm and prepare** to apply the shown changes. Pending reviews remain pending
+after a restart; a restart only loads code. Old data requires a fresh current-day
+download through the displayed preparation link. The shortcut disappears once resolved.
+
+The shared read-only diagnostic distinguishes required/blocked basis reviews, feed
+disconnection, no stored quote, rejected newer observations, waiting for a post-connection
+quote, stale timestamps and usable quotes. Its labels never authorize a trade. The
+header shows whether the reviewed session is open now separately from the next opening.
+
+If **Supported execution shortlist** needs attention, select **Review the ranked
+shortlist**. It opens/focuses **Review the execution shortlist**, showing the exact
+proposal and held-symbol retention. The old `/desk#apply-shortlist` link is preserved
+through `/workspace#desk/apply-shortlist`; the current destination is
+`/workspace#desk/execution-shortlist`. Merely opening either link changes no account data.
+To apply, select Manual, disconnect the requested feed in **Broker & data → step 6**,
+resolve pending orders, then inspect and confirm **Use reviewed ranked shortlist**.
+Held symbols remain required. The review section links directly to feed controls.
+
+Next, review each supported selected symbol's current-day action/price basis in
+**Advanced controls**, with an actual source/reference and explicit confirmation.
+Quarantine needs the offline action workflow and cannot be cleared by a normal review.
+Reconnect explicitly if disconnected, then wait for a new valid quote. Neither a review
+nor a stored historical candle invents a live quote, arms a mode or submits an order.
+
+Reload the workspace to load the navigation changes. Restart an older Python service
+to load the new diagnostic API: review pending orders/holdings, stop its owning terminal
+with Ctrl+C, run `./scripts/start_ui.sh`, unlock, then explicitly connect if needed.
+Restart cancels pending residue under existing recovery rules; disconnected holdings
+cannot fill exits. No session, review, shortlist or trading mode is approved by this upgrade.
+
 ## What the current five stocks mean
 
 BEL, EXIDEIND, GOLDCASE, HDFCBANK and MAZDOCK were operator-selected feed subscriptions.

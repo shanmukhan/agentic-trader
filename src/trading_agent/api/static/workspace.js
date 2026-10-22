@@ -3,9 +3,10 @@
   function createWorkspace(doc, win, request) {
     const el = id => doc.getElementById(id), frame = el('workspace-frame');
     const routes = { desk: '/desk', activity: '/activity', console: '/console', setup: '/setup', portfolio: '/portfolio' };
-    let token = '', generation = 0, busy = false, controller = null, current = '', loaded = '';
+    let token = '', generation = 0, busy = false, controller = null, current = '', loaded = '', currentAnchor = '';
+    const cleanAnchor = value => typeof value === 'string' && /^[A-Za-z][A-Za-z0-9_-]{0,99}$/.test(value) ? value : '';
     function message(text, error = false) { el('workspace-message').textContent = text; el('workspace-message').className = error ? 'error' : ''; }
-    function wanted() { const key = win.location.hash.slice(1); return ['overview', ...Object.keys(routes)].includes(key) ? key : 'desk'; }
+    function wanted() { const key = win.location.hash.slice(1).split('/')[0]; return ['overview', ...Object.keys(routes)].includes(key) ? key : 'desk'; }
     function send(type, value) { if (frame.contentWindow) frame.contentWindow.postMessage({ type, ...(value ? { token: value } : {}) }, win.location.origin); }
     function lock(text = 'Locked. Unlock again to access all menu sections.') {
       generation++; token = ''; busy = false; if (controller) controller.abort(); controller = null;
@@ -24,11 +25,12 @@
     }
     function navigate() {
       const target = wanted();
+      const anchor = cleanAnchor(win.location.hash.slice(1).split('/')[1]);
       if (target !== current && !canLeave()) {
-        win.history.replaceState(null, '', '#'+current);
+        win.history.replaceState(null, '', '#'+current+(currentAnchor?'/'+currentAnchor:''));
         message('Finish or cancel the active request, confirmation or login window before changing sections.', true); return;
       }
-      current = target;
+      current = target; currentAnchor = anchor;
       for (const name of ['overview', ...Object.keys(routes)]) {
         const link = el('nav-'+name); link.className = name === target ? 'active' : '';
         if (name === target) link.setAttribute('aria-current', 'page'); else link.removeAttribute('aria-current');
@@ -37,7 +39,8 @@
       el('workspace-section-note').hidden = target === 'overview';
       frame.hidden = target === 'overview' || !token;
       if (target === 'overview' || !token) { frame.src = 'about:blank'; loaded = ''; if (token) refreshInfo(); return; }
-      if (loaded !== target) { loaded = target; frame.src = routes[target]; frame.title = el('nav-'+target).textContent; }
+      if (loaded !== target) { loaded = target; frame.src = routes[target]+(anchor?'#'+anchor:''); frame.title = el('nav-'+target).textContent; }
+      else if (frame.contentWindow) frame.contentWindow.postMessage({type:'workspace-anchor',anchor}, win.location.origin);
     }
     function render(data) {
       const manual = !data.automation_enabled;
@@ -82,7 +85,14 @@
       if (event.origin !== win.location.origin || event.source !== frame.contentWindow || !event.data) return;
       if (event.data.type === 'workspace-ready' && token && loaded === current && event.data.view === current) send('workspace-unlock', token);
       if (event.data.type === 'workspace-locked' && token) lock('The section locked or rejected authorization. Unlock the workspace again.');
-      if (event.data.type === 'workspace-navigate' && ['overview', ...Object.keys(routes)].includes(event.data.view)) { win.location.hash = '#'+event.data.view; }
+      if (event.data.type === 'workspace-navigate' && ['overview', ...Object.keys(routes)].includes(event.data.view)) {
+        const anchor = cleanAnchor(event.data.anchor), hash = '#'+event.data.view+(anchor?'/'+anchor:'');
+        if (win.location.hash === hash) navigate(); else win.location.hash = hash;
+      }
+      if (event.data.type === 'workspace-scroll-target' && token && loaded === current && Number.isFinite(event.data.top) && event.data.top >= 0 && event.data.top <= 12000) {
+        const nav = el('workspace-nav'), navHeight = win.getComputedStyle(nav).position === 'sticky' ? nav.getBoundingClientRect().height : 0;
+        win.scrollTo({top:Math.max(0, win.scrollY + frame.getBoundingClientRect().top + event.data.top - navHeight - 16),behavior:'instant'});
+      }
       if (event.data.type === 'workspace-height' && Number.isFinite(event.data.height)) frame.style.height = Math.max(450, Math.min(12000, event.data.height))+'px';
     });
     el('workspace-unlock').addEventListener('submit', event => { event.preventDefault(); unlock(); });

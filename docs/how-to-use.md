@@ -1,6 +1,6 @@
 # How to use Agentic Trader
 
-Updated 21 October 2026 for version 0.13.1. This guide and corresponding detailed
+Updated 22 October 2026 for version 0.13.1. This guide and corresponding detailed
 guides are updated with every feature or changed workflow, as required by [AGENTS.md](../AGENTS.md).
 
 **If the feed connects but Approval/Automatic stay disabled:** open Trading desk →
@@ -8,9 +8,51 @@ guides are updated with every feature or changed workflow, as required by [AGENT
 ML or open a market session. The cards now explain every prerequisite, current IST
 time, next reviewed opening, entry hours and each selected stock's quote age/basis.
 
+In **Broker & data**, step 4 separates the complete catalog lookup from the account's
+saved live-feed watchlist (at most ten symbols under the app's current limit). The
+displayed names are editable saved subscriptions; broader Nifty 100/500 research is
+available on Trading desk. Editing the input does not change the saved list until
+you validate, save and confirm. Step 5 now defaults to **09:15 AM–03:30 PM IST**.
+The times remain editable and survive status refresh; review the date/notices, supply
+a reference and explicitly confirm before saving. Defaults do not approve a session.
+
+**Feed connected, market open, but no usable quotes:** a missing daily price-basis
+review can block incoming long-term quotes before they are stored. Yesterday's review
+does not cover today. With current-day data ready, select **Review today’s setup**
+beside the warning, inspect the summary/sources and explicitly confirm. This uses the
+existing installed policy unless you selected another policy; a first setup still needs
+an explicit policy choice. The summary lists which daily reviews are eligible and
+which need separate attention. The shortcut opens a preview; approval is still pending
+until **Confirm and prepare**. It disappears after the blocker clears. For older/missing
+data, use the displayed preparation link to download current-day sources first.
+Quote details in Trading desk and Advanced controls now explain
+this separately from an old quote, a rejected observation or a disconnected feed.
+Resolve the supported shortlist, review actual current-day corporate actions/price
+basis in Advanced controls and await a new valid quote. Do not approve a review merely
+to clear the warning. See [quote and shortlist recovery](trading-desk.md#open-session-with-no-usable-quotes).
+**Review the ranked shortlist** now opens and focuses the review section; it never
+applies the list. Reload the whole workspace for the navigation fix. The new Python
+diagnostics require restarting an older server in its owning terminal, then running
+`./scripts/start_ui.sh`, unlocking and explicitly reconnecting as appropriate.
+
+**Approval proposals cancelled, or Automatic looks idle:** inspect Buy / sell activity.
+A cancelled proposal without an order bought no shares. A safety pause cancels pending
+approval authority and returns the desk to Manual; recovering quotes do not rearm it.
+The corrected Kite path accepts receipt-ordered whole-second book updates without
+reusing that second's fill liquidity; unchanged repeats cannot renew freshness.
+See [cancellation and idle-mode recovery](trading-desk.md#cancelled-proposals-and-idle-automatic-mode).
+To load this Python fix, stop the owning server with Ctrl+C, run
+`./scripts/start_ui.sh`, reload/unlock, then review readiness before explicitly choosing
+a mode. Restart retains cancelled history. Existing daily signals are not replayed by
+mode changes; Automatic still needs a new eligible signal and independent risk approval.
+
 For the missing strategy, use Trading desk → **Prepare a paper strategy**:
 
 1. Check your saved broker session and import the NSE catalog in **Broker & data**.
+   Step 3 shows **Checking…**, then a result directly below the buttons. A successful
+   profile check does not prove streaming access or fresh quotes. On failure, check
+   connectivity and retry; if expired, disconnect a requested feed in step 6 and
+   complete a fresh login/token exchange. See [session-check recovery](ui-setup.md#saved-session-check-feedback).
 2. In the desk, choose Nifty 100 or Nifty 500 and confirm **Download strategy data**.
    Watch progress; review sources and exclusions. It can run after hours. Your feed,
    mode and virtual cash are unchanged by the download.

@@ -6,6 +6,10 @@
     const secretFields = ['token', 'api-key', 'api-secret', 'request-token'];
     const actionIds = ['save-credentials', 'login', 'profile', 'exchange-button', 'catalog', 'save-symbols', 'save-session', 'connect', 'disconnect', 'refresh-status'];
     function message(text, error = false) { el('message').textContent = text; el('message').className = error ? 'error' : ''; }
+    function sessionMessage(text, error = false) { el('session-feedback').textContent = text; el('session-feedback').className = error ? 'error' : ''; }
+    function sessionStatus(data) {
+      el('session-state').textContent = (data.access_token_available ? 'A broker access token is available. ' : 'No broker access token is available. ') + (data.profile_verified_this_run ? 'Profile verified this run; streaming entitlement still needs a feed check.' : 'Saved credentials have not been verified this run.');
+    }
     function buttons() {
       for (const id of actionIds) el(id).disabled = !token || busy;
       el('unlock').disabled = busy;
@@ -24,19 +28,27 @@
       el('session-reviewed').checked = false; el('private').hidden = true; el('lock').disabled = true;
       for (const id of ['credentials-state', 'session-state', 'catalog-state', 'calendar-state', 'feed-state', 'redirect']) el(id).textContent = '';
       el('selected').replaceChildren(); el('sessions').replaceChildren();
+      el('selected-title').textContent = 'Saved feed subscriptions';
       if (el('confirm').open) el('confirm').close();
+      sessionMessage(''); el('profile').textContent = 'Check saved broker session';
       el('state').textContent = 'Locked'; buttons(); message('Locked. Broker credentials and setup status are hidden.');
       el('token').required = true;
     }
     function row(parent, text) { const p = doc.createElement('p'); p.textContent = text; el(parent).append(p); }
     function render(data) {
+      if (!latest) {
+        el('session-open').value = '09:15';
+        el('session-close').value = '15:30';
+      }
       latest = data;
       el('private').hidden = false; el('lock').disabled = false; el('state').textContent = 'Local setup unlocked';
       el('token').required = false;
       el('redirect').textContent = 'Register this redirect URL: ' + win.location.origin + '/';
       el('credentials-state').textContent = data.credentials_configured ? 'API key and secret configured (values hidden).' : 'API key and secret not configured.';
-      el('session-state').textContent = (data.access_token_available ? 'A broker access token is available. ' : 'No broker access token is available. ') + (data.profile_verified_this_run ? 'Profile verified this run; streaming entitlement still needs a feed check.' : 'Saved credentials have not been verified this run.');
+      sessionStatus(data);
+      sessionMessage('');
       el('catalog-state').textContent = data.catalog_count + ' catalog instruments stored. Selected tokens and tick sizes below are server-validated.';
+      el('selected-title').textContent = 'Saved feed subscriptions (' + data.selected.length + ' of 10)';
       el('calendar-state').textContent = data.calendar_today ? 'Today has a reviewed session definition.' : 'Today is not in the reviewed calendar; entries remain blocked.';
       const diagnostic = data.feed_diagnostics;
       const failures = {
@@ -63,10 +75,14 @@
       if (!el('symbol-list').value) el('symbol-list').value = data.selected.map(s => s.symbol).join(', ');
       if (!el('session-date').value) el('session-date').value = data.today;
       if (!data.manual) message('This account is automation/model-bound. Setup changes are unavailable; use its dedicated workflow.', true);
+      if (win.AgenticNavigation?.updated) win.AgenticNavigation.updated();
     }
     async function call(path = '', body) {
       if (!token || busy) return;
       const version = generation; busy = true; buttons();
+      const sessionAction = ['/profile', '/login', '/exchange'].includes(path);
+      if (sessionAction) sessionMessage(path === '/profile' ? 'Checking saved broker session with Zerodha… Please wait (up to 30 seconds).' : path === '/exchange' ? 'Exchanging the request token and verifying the broker session…' : 'Opening Zerodha login…');
+      if (path === '/profile') el('profile').textContent = 'Checking saved broker session…';
       const active = new AbortController(); controller = active;
       const timeout = win.setTimeout(() => active.abort(), 30000);
       try {
@@ -78,10 +94,19 @@
         if (!response.ok) throw Error(typeof data.detail === 'string' ? data.detail : 'Setup request failed.');
         if (path !== '/login') render(data);
         message(path ? 'Setup action completed. Review the updated status; no orders were submitted.' : 'Setup status updated. All trading safeguards remain active.');
+        if (sessionAction) sessionMessage(path === '/login' ? 'Complete login and 2FA in the Zerodha window, then exchange the returned request token here.' : 'Broker session verified successfully. This checks profile access only; connect paper market data in step 6 and check fresh usable quotes separately.');
+        else if (path === '/credentials') sessionMessage('App credentials saved. Open Zerodha login to create a new broker session.');
         return data;
       } catch (error) {
-        if (version === generation) message(error.name === 'AbortError' ? 'Outcome unknown after timeout. Refresh status before retrying. A consumed login token needs a fresh login.' : String(error.message), true);
-      } finally { win.clearTimeout(timeout); if (version === generation) { busy = false; controller = null; buttons(); } }
+        if (version === generation) {
+          let text = error.name === 'AbortError' ? 'Outcome unknown after timeout. Refresh status before retrying. A consumed login token needs a fresh login.' : String(error.message);
+          if (path === '/profile') {
+            if (latest) { latest = { ...latest, profile_verified_this_run: false }; sessionStatus(latest); }
+            text = (error.name === 'AbortError' ? 'Saved broker session check timed out.' : text) + ' The session could not be verified. Check your connection and retry. If the session has expired, disconnect any requested feed in step 6, then open Zerodha login and exchange a fresh request token.';
+          }
+          message(text, true); if (sessionAction) sessionMessage(text, true);
+        }
+      } finally { win.clearTimeout(timeout); if (version === generation) { busy = false; controller = null; el('profile').textContent = 'Check saved broker session'; buttons(); } }
     }
     function confirm(text, action) { if (!token || busy) return; pending = action; el('confirm-text').textContent = text; el('confirm').showModal(); }
     el('access').addEventListener('submit', event => { event.preventDefault(); if (busy) return; token = el('token').value.trim() || token; el('token').value = ''; generation++; call(); });

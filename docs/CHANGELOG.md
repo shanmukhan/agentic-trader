@@ -1,5 +1,85 @@
 # Change log
 
+## 2026-10-22 — Prevent false quote-order pauses and explain cancelled signals
+
+- Fix live whole-second Kite handling: ignore unchanged repeats without refreshing
+  freshness, and accept changed tied books only in strict receipt order with valid
+  identity/source/volume. Update marks/protection/candles while skipping repeated fill
+  processing at that exchange timestamp. Replay/backward/ambiguous and financial guards
+  remain; no timestamp or liquidity is invented.
+- Persist specific pause causes and previous-mode events; distinguish cancelled
+  unapproved proposals from orders and display both proposal/update times. Explain
+  daily signals already handled, preserving terminal history and no automatic replay
+  when switching to Automatic. No trade, mode activation or retry was introduced.
+- Validation: 650 Python and 99 UI tests; Ruff and mypy passed. Independent exact
+  ledger, tied-book/fill/protection/candle, authority-revocation and raw-callback tests
+  passed. A separate isolated eight-second real-feed engine accepted 68 quotes with
+  20 changed tied books, zero quality failures/faults and no orders; sustained/device
+  acceptance is still separate. The running operator account was not restarted/rearmed.
+- Updated usage, trading desk, feed, risk, API, architecture, implementation and test
+  guides. A real backend restart is required to load these Python changes; existing
+  cancelled daily proposals remain terminal after the upgrade.
+
+## 2026-10-22 — Make pending daily review directly actionable
+
+- Add **Review today’s setup** beside next-step/quote warnings and readiness cards.
+  Reuse the existing guided summary, unchecked acknowledgement and explicit confirmation.
+  Retain an installed policy without a first-policy default or ML fallback. Require
+  same-day source data/Manual/supported setup; show stale/unavailable recovery guidance.
+- Hide the shortcut after resolution and clear it on lock; cancel/preview/restart do
+  not approve reviews. Updated usage, strategy, workspace and validation documentation.
+- Validation: 97 UI tests and 17 guided unit/API workflow tests passed; Ruff passed.
+  New independent persisted-state checks cover the preview/confirmation boundary.
+- Distinct actual observation: today's 65-stock/60-session download and preview completed;
+  later read-only status showed seven current-day reviews, accepted quote timestamps
+  and zero blockers in Manual, with ₹25,000 cash, zero fees and no trades. No review
+  confirmation was submitted by this assistant; sustained/device acceptance remains open.
+
+## 2026-10-22 — Explain blocked live quotes and repair shortlist navigation
+
+- Confirmed from the existing journal that incoming quotes for eight selected symbols
+  were blocked by missing current-day price-basis reviews. Yesterday's reviews do not
+  cover today; no review or quote-acceptance safeguard was relaxed.
+- Replaced generic stale/missing labels with shared read-only basis/feed/quality/clock
+  explanations. Show the reviewed session's current open/closed state and specific
+  next actions, instead of always telling an open-session operator to wait for opening.
+- Preserve readiness-link fragments through the workspace; reveal/focus shortlist and
+  quote details after unlock/render, expand details and scroll below sticky navigation.
+  Legacy `/desk#apply-shortlist` opens the containing review section. Opening links
+  does not apply a shortlist; feed/Manual/no-pending and explicit confirmation remain.
+- Validation: 637 Python and 90 JavaScript tests, Ruff and mypy passed. Independent
+  persisted financial-state equality, daily rollover/new-quote requirements, navigation,
+  focus, responsive offsets and origin checks are covered with simulated workflows.
+  Actual account inspection was read-only; broker/device execution acceptance remains
+  pending. Reload workspace assets; restart an older Python server for new diagnostics.
+
+## 2026-10-22 — Explain feed symbols and default session hours
+
+- Explain catalog lookup versus the saved live-feed watchlist, the application limit
+  of ten subscriptions, token/tick meanings and broader Trading desk screening. Label
+  saved subscriptions/count separately from unsaved symbol input.
+- Default editable session times to 09:15 AM / 03:30 PM IST on unlock. Refresh keeps
+  edits; date/source review and explicit confirmation are required before any save.
+  No account selection, existing session or financial policy is changed by loading.
+- Updated main/detailed usage, workspace and implementation docs. Validation: 28
+  setup/workspace JavaScript and 24 setup unit/API tests passed, including independent
+  persisted calendar and exact financial-state checks. Broker responses are simulated;
+  interactive desktop/mobile acceptance of these changes remains pending.
+
+## 2026-10-22 — Visible saved broker session checks
+
+- Show step-3 progress and success/failure beside the broker session buttons, with
+  a pending check label, duplicate prevention and explicit timeout/retry/login recovery.
+  Failed rechecks clear the page's stale verification claim. Login/exchange requests
+  also show inline progress/results; lock/auth failures clear private feedback.
+- Updated usage, setup, workspace and implementation documentation. UI-only assets
+  load on section re-entry or workspace reload; no server restart is required.
+- Validation: 25 setup/workspace JavaScript tests and 23 setup unit/API Python tests
+  passed, including exact cash and independent persisted database/config/credential
+  preservation through mocked profile success, failure and retry. Firefox subsequently
+  displayed “Profile verified this run”; no independent broker/streaming acceptance is
+  claimed. Coordinate automation returned `noWindowsAvailable`, limiting browser QA.
+
 ## 2026-10-21 — One combined paper setup review (0.13.1)
 
 - Replaced the normal CSV/notes/multiple-review workflow with policy selection and one

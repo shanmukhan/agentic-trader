@@ -27,6 +27,21 @@ It does not enable real-money orders or establish profitable expected returns.
 
 ## Recommended: one combined setup review
 
+For a new day's **LONG_TERM_REVIEW_REQUIRED** warning, the Trading desk now offers
+**Review today’s setup** in the next-step panel, quote details and relevant readiness
+cards when the current-day download is ready. It opens this same summary directly,
+using your currently installed rules/rules-plus-ML policy if no new policy was chosen.
+There is no ML-to-rules fallback and no implicit first-time policy choice. Review the
+displayed policy, dates, stock changes and included/manual reviews before acknowledging.
+Opening the summary, refreshing or restarting never approves today's price basis.
+
+Stale/missing downloads, active download, non-Manual mode, custom profile overrides and
+unavailable guided routes keep the shortcut disabled with preparation/manual guidance.
+The UI compares source snapshot and server observation dates in IST; the server still
+performs its full date, source, policy and account-binding validation. The shortcut and
+warning hide when the blocker clears. Changing workspace sections and returning to
+Trading desk loads this UI-only addition; another backend restart is unnecessary.
+
 After a same-day download reaches **Ready for review**, choose the decision policy and
 select **Review and finish setup**. Already downloaded data can be reused; this action
 only previews the setup and saves a private review record. It does not install a profile,

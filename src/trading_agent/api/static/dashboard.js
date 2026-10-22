@@ -124,7 +124,7 @@
         el('reasons').append(textNode('li', 'Data prerequisites met; candidate risk checks still apply.'));
       records('quotes', data.quotes, 'No observed quotes. Connect a reviewed read-only feed.', (row, q) => {
         row.append(textNode('strong', q.symbol));
-        row.append(textNode('p', q.fresh ? 'Fresh' : 'Stale or missing', 'record-value'));
+        row.append(textNode('p', q.detail || (q.fresh ? 'Fresh' : 'Stale or missing'), 'record-value'));
       });
       holdingExitButtons = [];
       records('positions', a.positions, 'Flat · no open positions', (row, p) => {
@@ -153,6 +153,7 @@
       }).format(new Date(data.observed_at)) + ' IST';
       message('Account updated. All amounts are virtual INR.');
       buttons();
+      if (win.AgenticNavigation?.updated) win.AgenticNavigation.updated();
     }
     async function call(path, method, signal, body) {
       const response = await request(path, { method, signal, cache: 'no-store',

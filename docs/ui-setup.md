@@ -42,6 +42,65 @@ the [shared workspace menu and step-by-step guide](workspace.md). The existing
 Python 3.13.16 environment and frozen dependencies remain sufficient. The page is
 responsive browser UI, not a native mobile app. No real order or fund transfer exists.
 
+## Saved-session check feedback
+
+In **Broker & data → step 3**, select **Check saved broker session**. No request-token
+input is needed: this checks the server's saved access token. The button changes to
+**Checking saved broker session…** and a polite live status directly below the buttons
+shows progress, followed by success or an error. Setup actions remain disabled while
+the request is pending; there is no automatic retry. Previously, errors appeared only
+at the top of the long setup page, so a failed check could appear to do nothing.
+
+Success verifies broker profile access only. It does not connect the feed, establish
+streaming/history entitlement or approve fresh quotes. A failed recheck removes the
+page's earlier verification claim; the saved token is preserved. Check connectivity
+and retry. If the token has expired, disconnect any requested feed in step 6, complete
+**Open Zerodha login** and 2FA, then **Exchange and verify session** with the new
+one-time request token. Login/exchange requests also show progress/results in step 3.
+The UI stops waiting after 30 seconds. A profile-check timeout allows an explicit
+retry; it does not consume a one-time login token. An exchange timeout remains uncertain:
+refresh status before proceeding and start a new login if another exchange is needed.
+
+To load this UI-only change, switch to another workspace section and back to
+**Broker & data**, or reload the workspace and unlock again. Existing servers read
+the setup assets on request; no service restart is needed. Verify with
+`node --test tests/ui/setup.test.cjs tests/ui/workspace.test.cjs` and
+`.venv/bin/pytest tests/unit/test_setup.py tests/functional/test_setup_api.py -q`.
+These use simulated broker responses; they do not certify your current broker session.
+
+## Connected feed but missing quotes during an open session
+
+Daily long-term price-basis reviews apply to one IST date. Without today's review,
+incoming prices are rejected before quote storage, even with a valid broker session,
+connected feed and open market. A missing accepted quote therefore does not prove
+that the socket is silent. Trading desk/Advanced controls now show this review blocker
+explicitly; quote freshness and execution readiness remain separate checks.
+
+With a same-day download ready, use **Review today’s setup** directly in Trading desk's
+warning/quote details. Inspect and confirm the combined source/calendar/shortlist and
+eligible current-day reviews. It preserves the installed policy unless you explicitly
+chose another; there is no automatic first policy or ML fallback. The button only
+previews; **Confirm and prepare** is the consequential approval. If the button is
+disabled, follow its current-day download/Manual/custom-profile guidance. Restarting
+does not approve the review, and another restart is unnecessary for this UI shortcut.
+
+Review/apply the supported ranked shortlist in Trading desk while disconnected in
+Manual, resolve the selected symbols' current-day basis in Advanced controls, reconnect
+explicitly as necessary and wait for new valid quotes. Do not approve unknown actions
+just to obtain prices. See [the full recovery steps](trading-desk.md#open-session-with-no-usable-quotes).
+The shortlist review link now preserves its fragment, focuses the review section and
+does not apply anything automatically. Reload the workspace for the link fix; restart
+an older Python server as described in the recovery guide for the new diagnostic API.
+
+If prices are already reviewed but proposals cancel almost immediately, inspect
+**Buy / sell activity** and the current mode. A safety pause returns the desk to Manual;
+new good quotes do not rearm it. The whole-second Kite update fix prevents legitimate
+receipt-ordered books/repeats from being mistaken for backward data, while preserving
+clock/volume/depth checks and one fill budget per exchange timestamp. Restart once to
+load that Python change; see [exact cancellation/Automatic behavior](trading-desk.md#cancelled-proposals-and-idle-automatic-mode).
+Cancelled daily signals remain terminal when switching to Automatic; its new summary
+explains already-handled signals rather than implying immediate new trades.
+
 ## After-hours feed offline fix (0.11.1)
 
 On 21 October 2026 after market hours, a read-only probe confirmed a valid profile
@@ -208,6 +267,15 @@ explicit, not automatic background login or credential probing.
    Starting a new login supersedes an earlier pending attempt. An uncertain/failed
    exchange consumes that attempt locally; start a new login, not a replay.
 5. **Download / validate catalog**, then enter one to ten comma-separated symbols.
+   The catalog is a lookup of supported names/tokens; it does not stream all catalog
+   instruments. The current saved watchlist receives live quotes for paper fills and
+   holdings monitoring. Names are not hardcoded, and ten is an application limit.
+   **Saved feed subscriptions (N of 10)** shows the committed selection separately
+   from unsaved input edits. The count/list changes only after validation and explicit
+   confirmation succeed. Tokens identify instruments to the broker; tick is the
+   permitted rupee price increment. For wider discovery, use Trading desk's Nifty
+   100/500 preparation and review the proposed execution shortlist. Qualifying reviewed
+   shares are ranked by historical gross return, not a proven future-profit estimate.
    `BEL` and `NSE:BEL` normalize to the same exact catalog instrument. Review the
    symbol list in the confirmation dialog, then save. The server resolves tokens
    and tick sizes; missing/duplicate symbols and held-symbol omissions are refused.
@@ -216,7 +284,13 @@ explicit, not automatic background login or credential probing.
 6. **Add a reviewed session.** Enter a current/future IST date, supported opening
    and closing times, and a source reference. Review NSE notices yourself and check
    the attestation; the UI never assumes weekdays or prechecks the box. Confirm the
-   date/times/reference in the dialog. Existing definitions cannot be changed;
+   date/times/reference in the dialog. On unlock, open defaults to **09:15 AM** and
+   close to **03:30 PM IST**. Both remain editable; status refresh preserves edits,
+   including a cleared value. Lock clears the form; unlocking restores the defaults
+   and an unchecked review. Default hours do not create or approve calendar entries.
+   Supported special-session changes must still fit the existing 09:15–15:30 bounds;
+   this change does not extend supported exchange hours. Review the
+   date-specific notices. Existing definitions cannot be changed;
    identical repeats are a no-op. Unsupported evening sessions stay closed. A
    private immutable calendar snapshot is written before the config points at it;
    the running engine uses the saved definitions without a restart. Future dates

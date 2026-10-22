@@ -133,8 +133,13 @@ quote trust are never restored from disk.
 
 Instrument mapping uses `NSE:symbol` identity plus unique token and tick size.
 Conflicting remaps are rejected. Quotes validate depth, tick grid, positivity,
-timestamp order, cumulative volume and age. Repeated identical quotes have no effect;
-conflicting same-time or out-of-order quotes block the symbol until a valid later one.
+timestamp order, cumulative volume and age. Repeated identical market values at the
+same exchange time ignore receipt differences and have no effect. Changed Kite books
+at whole-second exchange ties may advance by strictly later receipt time with matching
+identity/source, while replay remains strict. Tied updates persist marks/candle volume
+and can latch protection, but skip fill processing so the timestamp's depth is never
+reused. Older exchange times, ambiguous receipt ties and regressing volume still block
+the symbol until valid data arrives. Exchange/freshness timestamps are never fabricated.
 The packet timestamp has second resolution, so multiple changed packets in the same
 second are conservatively rejected. This trades some data completeness for safety;
 it is unsuitable for tick-level strategy research.

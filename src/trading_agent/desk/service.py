@@ -226,9 +226,10 @@ class TradingDesk:
                 )
             return self.view(now)
 
-    def pause(self, now: datetime, reason: str) -> None:
+    def pause(self, now: datetime, reason: str, *, causes: list[str] | None = None) -> None:
         with self.engine.lock:
             # Revoke authority even if durable cancellation encounters an I/O fault.
+            previous_mode = self.mode
             self.mode, self.reason, self.revision = "manual", reason, secrets.token_hex(16)
             if self.automation:
                 self.automation.disarm(now, reason)
@@ -238,6 +239,7 @@ class TradingDesk:
                 ).fetchall():
                     record = json.loads(row[0])
                     record.update(state="cancelled", outcome=reason)
+                    record["pause_reasons"] = causes or [reason]
                     self._save(tx, record, now)
                 # Cancel desk buys; retain held shares and protective exits.
                 for row in tx.execute(
@@ -246,27 +248,48 @@ class TradingDesk:
                     "WHERE o.side='BUY' AND o.state IN ('ACCEPTED','PARTIAL')"
                 ).fetchall():
                     self.engine._cancel(tx, row, stamp(now), reason)
+                if previous_mode != "manual":
+                    self.engine.db.event(
+                        tx,
+                        stamp(now),
+                        "desk_pause",
+                        "system",
+                        {
+                            "reason": reason,
+                            "causes": causes or [reason],
+                            "previous_mode": previous_mode,
+                            "mode": "manual",
+                        },
+                    )
 
     def tick(self, now: datetime) -> None:
         with self.engine.lock:
-            if self.mode != "manual" and (
-                self.mode_day != now.astimezone(IST).date()
-                or self.engine.faulted
-                or not self.engine.connected
-                or self.engine.snapshot(now)["kill"]
-                or self.automation
-                and not self.automation.armed
-                or any(
-                    reason
-                    in {
-                        "NO_FRESH_EXECUTION_QUOTES",
-                        "ML_MODEL_NOT_CURRENT",
-                        "UNSUPPORTED_HELD_ASSET_CLASS",
-                    }
-                    for reason in self.blockers(now)
-                )
-            ):
-                self.pause(now, "SESSION_FEED_OR_RISK_PAUSE")
+            if self.mode != "manual":
+                pause_causes = []
+                if self.mode_day != now.astimezone(IST).date():
+                    pause_causes.append("SESSION_DATE_CHANGED")
+                if self.engine.faulted:
+                    pause_causes.append("ACCOUNT_FAULTED")
+                if not self.engine.connected:
+                    pause_causes.append("FEED_DISCONNECTED")
+                if self.automation and not self.automation.armed:
+                    pause_causes.append("AUTOMATION_DISARMED")
+                if not pause_causes:
+                    # Hard runtime failures must revoke memory authority without
+                    # first reading a snapshot that can itself fail on damaged I/O.
+                    pause_causes = [
+                        reason
+                        for reason in self.blockers(now)
+                        if reason
+                        in {
+                            "KILL_SWITCH",
+                            "NO_FRESH_EXECUTION_QUOTES",
+                            "ML_MODEL_NOT_CURRENT",
+                            "UNSUPPORTED_HELD_ASSET_CLASS",
+                        }
+                    ]
+                if pause_causes:
+                    self.pause(now, "SESSION_FEED_OR_RISK_PAUSE", causes=pause_causes)
             with self.engine.db.transaction() as tx:
                 for row in tx.execute(
                     "SELECT payload FROM desk_decisions WHERE state='awaiting_approval' AND time<?",
@@ -692,6 +715,36 @@ class TradingDesk:
         # Snapshot opens another transaction; do not nest it in the view transaction.
         result = self.research.result if self.research else None
         blockers = self.blockers(now)
+        daily_signal_summary = None
+        if self.research and self.engine.long_term:
+            selected_symbols = {row["symbol"] for row in selected}
+            current_signals = [
+                record
+                for record in records
+                if record["profile"] == self.identity
+                and record["symbol"] in selected_symbols
+                and datetime.fromisoformat(record["created_at"]).astimezone(IST).date()
+                == now.astimezone(IST).date()
+                and record["context"].get("signal_key") == "daily-entry"
+            ]
+            counts = {
+                state: sum(r["state"] == state for r in current_signals)
+                for state in sorted({r["state"] for r in current_signals})
+            }
+            if counts:
+                outcomes = ", ".join(
+                    f"{count} {state.replace('_', ' ')}" for state, count in counts.items()
+                )
+                daily_signal_summary = {
+                    "handled": len(current_signals),
+                    "selected": len(selected),
+                    "states": counts,
+                    "message": f"Today's daily entry signals already handled for "
+                    f"{len(current_signals)} of {len(selected)} selected stocks: {outcomes}. "
+                    "Changing mode or receiving fresh prices does not replay these signals. "
+                    "A remaining stock still needs its own eligible signal "
+                    "and independent risk checks.",
+                }
         return {
             "mode": self.mode,
             "revision": self.revision,
@@ -703,6 +756,7 @@ class TradingDesk:
             "selected": selected,
             "decisions": records,
             "decisions_limit": 100,
+            "daily_signal_summary": daily_signal_summary,
             "selection_basis": "reviewed_daily_screen" if result else "operator_watchlist",
             "profile_name": self.research.profile.name if self.research else None,
             "strategy_mode": self.research.profile.strategy_mode

@@ -23,6 +23,10 @@ function createPreparation(doc,win,api,refresh,confirm,getLatest){
  function stopPositioning(){if(win.parent&&win.parent!==win){win.parent.removeEventListener('resize',positionReview);win.parent.removeEventListener('scroll',positionReview);}}
  function watchPosition(){if(win.parent&&win.parent!==win){win.parent.addEventListener('resize',positionReview);win.parent.addEventListener('scroll',positionReview);}positionReview();}
  if(win.addEventListener)win.addEventListener('pagehide',stopPositioning);
+ const istDay=value=>{const parsed=new Date(value);return value&&Number.isFinite(parsed.getTime())?new Date(parsed.getTime()+19800000).toISOString().slice(0,10):'';};
+ function currentReviewReady(ignoreBusy=false){const data=getLatest(),job=latest?.job;
+  return Boolean(unlocked&&(ignoreBusy||!busy)&&guidedSupported&&latest?.available&&!latest.profile_override&&data?.mode==='manual'&&data.blockers?.includes('LONG_TERM_REVIEW_REQUIRED')&&['ready_for_review','installed'].includes(job?.state)&&istDay(job.snapshot_at)&&istDay(job.snapshot_at)===istDay(data.observed_at)&&(['rules','rules_ml'].includes(el('prep-policy').value)||['rules','rules_ml'].includes(data.strategy_mode)));
+ }
  function controls(isBusy=busy,isUnlocked=unlocked){busy=isBusy;unlocked=isUnlocked;const data=getLatest(),job=latest?.job;
   const available=unlocked&&latest?.available&&data?.mode==='manual';
   el('prep-download').disabled=busy||!available||job?.state==='downloading';
@@ -34,6 +38,11 @@ function createPreparation(doc,win,api,refresh,confirm,getLatest){
   el('guided-confirm').disabled=busy||!unlocked||!review||!el('guided-ack').checked;
   el('prep-calendar-correction').disabled=busy||!available||!latest?.can_correct_unused_calendar||job?.state!=='ready_for_review';
   el('prep-ml-option').disabled=!latest?.ml_configured;
+  const needsReview=unlocked&&Boolean(data?.blockers?.includes('LONG_TERM_REVIEW_REQUIRED'));
+  el('daily-review').hidden=!needsReview;el('quote-review-button').hidden=!needsReview;
+  for(const id of ['daily-review-button','quote-review-button'])el(id).disabled=!currentReviewReady();
+  el('daily-review-download').hidden=currentReviewReady(true);
+  el('daily-review-message').textContent=!needsReview?'':data.mode!=='manual'?'Choose Manual before reviewing today’s setup.':latest?.profile_override||!guidedSupported||!latest?.available?'Use Advanced controls for today’s price-basis reviews; the combined review is unavailable for this account.':currentReviewReady(true)?'Today’s data is ready. Open the setup summary, inspect the sources/calendar/stocks, then acknowledge and select Confirm and prepare. This applies the displayed shortlist and eligible daily reviews and requests reconnection; Manual stays selected. Restarting or opening the summary does not approve the review.':'Today’s price-basis approval is still missing. Open data preparation below and download current-day sources/history if needed, then choose a policy. Yesterday’s download/review and a restart cannot approve today’s prices.';
  }
  function clear(){latest=null;jobId=null;downloadId=null;unlocked=false;review=null;guidedSupported=false;
   stopPositioning();if(el('guided-dialog').open)el('guided-dialog').close();el('guided-ack').checked=false;el('guided-summary').replaceChildren();el('guided-sources').replaceChildren();el('guided-calendar').textContent='';el('guided-result').textContent='';
@@ -65,7 +74,8 @@ function createPreparation(doc,win,api,refresh,confirm,getLatest){
   el('prep-exclusions').replaceChildren();for(const item of job?.excluded||[]){const why={CORPORATE_ACTION_IN_HISTORY:'Excluded: corporate action in the history interval; adjustment is not guessed.',CATALOG_MATCH_MISSING:'Excluded: no supported NSE token in the imported broker catalog.',INCOMPLETE_DAILY_HISTORY:'Excluded: missing or unexpected daily sessions.',UNSUPPORTED_SHARE_SERIES:'Excluded: unsupported series/class, including REIT or trade-to-trade entries.',UNSUPPORTED_SHARE_IDENTIFIER:'Excluded: no supported equity-share ISIN; dummy/other instruments cannot execute.'}[item.reason]||item.reason;el('prep-exclusions').append(node('p',item.symbol+' · '+why));}
   controls();
  }
- el('guided-review').addEventListener('click',async()=>{const data=getLatest(),mode=el('prep-policy').value;if(!data||busy)return;
+ async function openReview(useCurrentPolicy=false){const data=getLatest();let mode=el('prep-policy').value;if(!data||busy||!unlocked||el('guided-dialog').open)return;
+  if(useCurrentPolicy&&!mode&&['rules','rules_ml'].includes(data.strategy_mode)){mode=data.strategy_mode;el('prep-policy').value=mode;}
   if(!mode){el('guided-result').textContent='Choose a decision policy above first.';el('prep-policy').focus();return;}
   const result=await api('/api/desk/preparation/guided/preview',{revision:data.revision,strategy_mode:mode});if(!result||!unlocked)return;
   review=result;const p=result.plan;el('guided-ack').checked=false;el('guided-summary').replaceChildren();
@@ -84,7 +94,11 @@ function createPreparation(doc,win,api,refresh,confirm,getLatest){
   ])el('guided-summary').append(node('p',text));
   el('guided-calendar').textContent=p.calendar_csv;el('guided-sources').replaceChildren();for(const [name,url]of Object.entries(p.sources)){const link=node('a','Review '+name+' source');link.href=url;link.target='_blank';link.rel='noopener noreferrer';el('guided-sources').append(link);}
   controls();el('guided-dialog').showModal();watchPosition();
- });
+ }
+ el('guided-review').addEventListener('click',()=>openReview());
+ const reviewCurrent=()=>{if(currentReviewReady())return openReview(true);};
+ for(const id of ['daily-review-button','quote-review-button'])el(id).addEventListener('click',reviewCurrent);
+ el('prep-policy').addEventListener('change',()=>controls());
  el('guided-ack').addEventListener('change',()=>controls());
  const closeReview=()=>{review=null;stopPositioning();el('guided-ack').checked=false;el('guided-dialog').close();controls();};
  el('guided-cancel').addEventListener('click',closeReview);el('guided-dialog').addEventListener('cancel',()=>{review=null;stopPositioning();el('guided-ack').checked=false;controls();});
@@ -100,7 +114,7 @@ function createPreparation(doc,win,api,refresh,confirm,getLatest){
   if(!body.strategy_mode||!body.reference||!body.calendar_reviewed||!body.basis_reviewed||!body.policy_reviewed)return;
   confirm('Install this reviewed paper strategy?',job.symbols.length+' equity shares; '+job.completed_sessions+' completed sessions; '+(body.strategy_mode==='rules'?'EXPERIMENTAL RULES ONLY, without an ML filter.':'rules + the matching validated ML model, subject to validation. ')+' Your edited session calendar and source reviews will be saved.'+(body.correct_unused_calendar?' You also approve correcting the displayed saved hours; the server will recheck that no account history has used them.':'')+' Review reference: '+body.reference+'. Manual stays selected. The feed must be disconnected and pending orders resolved; current holdings are retained. Today’s execution-basis reviews remain separate.',async()=>{const result=await api('/api/desk/preparation/install',body);if(result){render(result);await refresh();}});
  });
- clear();return{render,controls,clear,canNavigate:()=>!el('guided-dialog').open};
+ clear();return{render,controls,clear,reviewCurrent,currentReviewReady,canNavigate:()=>!el('guided-dialog').open};
 }
 if(typeof module!=='undefined'&&module.exports)module.exports={createPreparation};
 if(typeof window!=='undefined')window.AgenticPreparation=createPreparation;

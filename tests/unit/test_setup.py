@@ -54,6 +54,31 @@ def test_private_credentials_saved_without_exposing_values_and_survive_restart(s
     assert accounting(s) == before
 
 
+def test_profile_recheck_resets_verification_on_failure_without_changing_saved_state(
+    setup_service, monkeypatch
+):
+    s = setup_service
+    s._save_values({"api_key": "unitkey", "api_secret": "unitsecret", "access_token": "saved"})
+    before, credentials, config = accounting(s), s.path.read_bytes(), s.config.read_bytes()
+    upstream = Mock()
+    monkeypatch.setattr(s, "broker", lambda: upstream)
+    s.check_profile()
+    assert s.status()["profile_verified_this_run"]
+    upstream.get_profile.side_effect = RuntimeError("private upstream credentials")
+    with pytest.raises(SetupError, match="Kite profile check failed") as failure:
+        s.check_profile()
+    assert "private upstream" not in str(failure.value)
+    assert not s.status()["profile_verified_this_run"]
+    assert s.status()["access_token_available"]
+    assert accounting(s) == before
+    assert s.path.read_bytes() == credentials and s.config.read_bytes() == config
+    upstream.get_profile.side_effect = None
+    s.check_profile()
+    assert s.status()["profile_verified_this_run"]
+    assert upstream.get_profile.call_count == 3
+    assert accounting(s) == before
+
+
 def test_unsafe_credential_files_and_atomic_write_failure(setup_service, monkeypatch):
     s = setup_service
     s.path.write_text("{}")
@@ -149,6 +174,9 @@ def test_calendar_requires_review_cannot_rewrite_and_persists_new_session(setup_
     }
     for patch in (
         {"reviewed": 1},
+        {"reviewed": False},
+        {"open": ""},
+        {"close": ""},
         {"date": "2026-10-19"},
         {"open": "18:00"},
         {"source": "bad\nsource"},
