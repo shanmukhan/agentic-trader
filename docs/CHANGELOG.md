@@ -1,5 +1,38 @@
 # Change log
 
+## 2026-10-23 — Workspace usability and local icons (0.19.0)
+
+Added a same-origin SVG icon sprite for all twelve labelled navigation destinations
+and selected access, refresh and section headings. Icons remain decorative; text,
+keyboard focus, active-destination semantics and confirmations carry their meaning.
+The compact header preserves paper identity and lock access. Setup keeps its next
+step visible while its longer explanation starts collapsed after unlock. Removed
+the repeated general unsaved-form notice; actual draft/request/navigation guards remain.
+
+Shortened routine saved-view feedback without changing observation timestamps or stale
+states. Portfolio keeps valuation coverage visible and groups scope/formulas in details;
+Stock Analysis groups chart help/legend. Policy drafts present their existing four
+groups as steps with progress, Previous group/Next group, unit-aware help and field-linked errors.
+Step navigation has no persistence or financial defaults; exact preview and explicit
+acknowledged save remain unchanged. Shared responsive styles retain readable exact
+tables, visible focus and labelled touch targets. No financial or broker behavior changes.
+
+Backtest evidence tables are individually expandable, with bounded scrolling; bundle
+labels lead job cards and full job identity remains available. Risk actions are split
+into emergency and entry fieldsets. Analysis distinguishes an empty stock inventory
+from an unmatched search and disables Open chart without a result. Corrected policy
+previews clear obsolete error feedback.
+
+Validation: **1,216 Python / 193 UI tests**, **92.13% statement coverage**, Ruff lint,
+source/test formatting and mypy pass. Disposable desktop Firefox checked rendering,
+policy step/validation/dialog/Escape, Portfolio warnings and Risk grouping; independent
+SQL showed unchanged empty-account accounting. No user account or broker action.
+
+See [usage, component behavior and recovery](ui-experience.md). Validation scope is
+recorded in [test-plan.md](test-plan.md); rendered checks must use a disposable account.
+Full Phase 5, native-worker, investment execution/rebalance and external broker/device
+acceptance remain open; this usability pass does not close those gates.
+
 ## 2026-10-23 — V2 Phase 5 investment-policy drafts and date previews (0.18.0)
 
 Added a separate nullable schema-1 investment-policy draft family with months/years

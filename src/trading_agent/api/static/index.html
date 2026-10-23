@@ -23,7 +23,7 @@
     <form id="unlock" autocomplete="off">
       <label for="token" class="sr-only">Operator token</label>
       <input id="token" type="password" autocomplete="off" placeholder="Operator token" spellcheck="false" required>
-      <button type="submit" id="refresh">Unlock / refresh</button><button type="button" id="lock" class="quiet" disabled>Lock</button>
+      <button type="submit" id="refresh"><svg class="icon" aria-hidden="true" focusable="false" width="20" height="20"><use href="/icons.svg#unlock"/></svg>Unlock / refresh</button><button type="button" id="lock" class="quiet" disabled><svg class="icon" aria-hidden="true" focusable="false" width="20" height="20"><use href="/icons.svg#lock"/></svg>Lock</button>
     </form>
   </section>
   <p id="message" role="status" aria-live="polite">Locked. Enter an operator token to view the account.</p>
@@ -35,21 +35,23 @@
     </section>
     <div class="workspace">
       <section class="panel" aria-labelledby="readiness-heading">
-        <div class="section-heading"><h2 id="readiness-heading">Entry readiness</h2><span id="readiness" class="badge">Locked</span></div>
+        <div class="section-heading"><h2 id="readiness-heading"><svg class="icon" aria-hidden="true" focusable="false" width="20" height="20"><use href="/icons.svg#check"/></svg>Entry readiness</h2><span id="readiness" class="badge">Locked</span></div>
         <p class="muted">Prerequisites only. Every candidate must still pass the independent risk gate.</p>
         <ul id="reasons" class="reasons"><li>Unlock to inspect readiness.</li></ul>
         <h3>Observed quotes</h3><div id="quotes" class="records"><p class="muted">Locked</p></div>
       </section>
       <section class="panel" aria-labelledby="controls-heading">
-        <div class="section-heading"><h2 id="controls-heading">Emergency &amp; entry controls</h2><span id="armed" class="badge">Locked</span></div>
+        <div class="section-heading"><h2 id="controls-heading"><svg class="icon" aria-hidden="true" focusable="false" width="20" height="20"><use href="/icons.svg#shield"/></svg>Emergency &amp; entry controls</h2><span id="armed" class="badge">Locked</span></div>
         <p id="risk" class="muted">Unlock to inspect risk state.</p>
-        <div class="controls">
-          <button id="kill" class="danger" disabled>Activate kill switch</button>
-          <button id="flatten" class="danger secondary" disabled>Queue flatten</button>
-          <button id="disarm" class="quiet" disabled>Disarm entries</button>
-          <button id="arm" disabled>Arm paper automation</button>
-          <button id="reset" class="quiet" disabled>Reset kill switch</button>
-        </div>
+        <fieldset class="control-group emergency-controls"><legend>Emergency actions</legend><div class="controls">
+          <button id="kill" class="danger" disabled><svg class="icon" aria-hidden="true" focusable="false" width="20" height="20"><use href="/icons.svg#shield"/></svg>Activate kill switch</button>
+          <button id="flatten" class="danger secondary" disabled><svg class="icon" aria-hidden="true" focusable="false" width="20" height="20"><use href="/icons.svg#warning"/></svg>Queue flatten</button>
+        </div></fieldset>
+        <fieldset class="control-group"><legend>Entry permissions</legend><div class="controls">
+          <button id="disarm" class="quiet" disabled><svg class="icon" aria-hidden="true" focusable="false" width="20" height="20"><use href="/icons.svg#lock"/></svg>Disarm entries</button>
+          <button id="arm" disabled><svg class="icon" aria-hidden="true" focusable="false" width="20" height="20"><use href="/icons.svg#unlock"/></svg>Arm paper automation</button>
+          <button id="reset" class="quiet" disabled><svg class="icon" aria-hidden="true" focusable="false" width="20" height="20"><use href="/icons.svg#refresh"/></svg>Reset kill switch</button>
+        </div></fieldset>
         <p class="notice">Queued exits need fresh quotes and liquidity. A queued exit is not a completed fill. Resetting the kill switch does not rearm automation.</p>
       </section>
     </div>

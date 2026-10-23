@@ -84,17 +84,19 @@
       }
       el('jobs').replaceChildren(); jobButtons = [];
       for (const job of jobs) {
-        const article = node('article'), heading = node('h3', job.job_id + ' · ' + friendly(job.state));
+        const article = node('article'), heading = node('h3', jobLabel(job) + ' · ' + friendly(job.state));
         article.append(heading, node('p', 'Stage: ' + friendly(job.stage) + ' · Updated ' + exact(job.updated_at) + '. ' + (job.state === 'succeeded' ? 'Execution finished; inspect the report for research and valuation coverage.' : alive.has(job.state) ? 'No completion percentage or ETA is inferred.' : 'This is a saved job outcome, not a financial order status.')));
+        const identity = node('details'); identity.append(node('summary', 'Job identity'), node('p', job.job_id)); article.append(identity);
         if (job.error) article.append(node('p', 'Job error: ' + exact(job.error.code) + '. ' + (job.error.message || 'Review the registered inputs and server diagnostics before retrying.')));
         if (job.report_id && job.state === 'succeeded') {const button = node('button', 'Inspect recorded report'); button.type = 'button'; button.disabled = busy; button.addEventListener('click', () => loadReport(job)); jobButtons.push(button); article.append(button);}
         if (alive.has(job.state)) {const button = node('button', 'Review cancellation'); button.type = 'button'; button.className = 'quiet'; button.disabled = busy; button.addEventListener('click', () => reviewCancel(job)); jobButtons.push(button); article.append(button);}
         el('jobs').append(article);
       }
-      const a = el('compare-a').value, b = el('compare-b').value, completed = jobs.filter(job => job.state === 'succeeded' && job.report_id).map(job => ({job_id: job.job_id, label: job.job_id}));
+      const a = el('compare-a').value, b = el('compare-b').value, completed = jobs.filter(job => job.state === 'succeeded' && job.report_id).map(job => ({job_id: job.job_id, label: jobLabel(job) + ' · ' + job.job_id}));
       options('compare-a', completed, 'Choose a completed job', completed.some(j => j.job_id === a) ? a : ''); options('compare-b', completed, 'Choose a completed job', completed.some(j => j.job_id === b) ? b : '');
       el('jobs-state').textContent = jobs.length ? jobs.length + ' saved jobs returned. Refreshed job states do not start or retry work.' : 'No saved jobs. Reviewing inputs or refreshing this page does not start a simulation.'; controls();
     }
+    function jobLabel(job) {return resources.find(resource => resource.resource_id === job.resource_id)?.label || 'Historical simulation';}
     async function refresh(withResources = true) {
       if (!token || busy || pending) return; const version = generation; busy = true; controls();
       try {

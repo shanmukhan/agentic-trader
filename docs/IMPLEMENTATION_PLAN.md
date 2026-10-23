@@ -1,7 +1,14 @@
 # Agentic Trader V2 — proposed implementation plan
 
 Date: 22 October 2026 IST. Baseline: `2d5c208`, version 0.14.0.
-Updated: 23 October 2026 IST for the 0.18.0 implementation and validation.
+Updated: 23 October 2026 IST for the 0.19.0 usability pass.
+Version **0.19.0** adds local labelled SVG icons, compact shell/status feedback,
+progressive setup/valuation/chart explanations and a four-step policy-draft form
+with contextual help and linked validation. It preserves exact money, stale/missing
+evidence, reviewed actions and draft/account separation. See [the interface guide](ui-experience.md)
+and [validation record](test-plan.md). It does not complete Phase 5 or change the
+implementation-Mac native-worker gate or external acceptance status.
+
 Authority: [improvements.txt](../improvements.txt). The user authorized continued
 implementation. Version **0.18.0** adds a distinct blank/nullable investment-policy
 draft contract, immutable reviewed private snapshots in Strategies and pure calendar

@@ -1,4 +1,4 @@
-# Investment policy drafts and review-date previews — 0.18.0
+# Investment policy drafts and review-date previews — 0.19.0
 
 **Strategies → Create or inspect investment policy drafts** opens
 `/workspace#strategies/investment-policy`. This is a separate planning workspace for
@@ -20,12 +20,17 @@ allocation/rebalancing and platform acceptance remain open.
    local operator token. Restart an older owning process explicitly if it has not loaded
    these routes. Open **Strategies**, then **Create or inspect investment policy drafts**.
    Existing strategy preparation, shortlist links and legacy routes remain available.
-2. Optionally name the draft, then choose values in **Horizon and reviews**,
-   **Screening**, **Allocation**, and **Execution and exits**. Empty fields stay null;
+2. Optionally name the draft, then use the four step buttons: **Horizon**,
+   **Screening**, **Allocation**, and **Exits**. Only the selected group is shown.
+   **Previous group** and **Next group** move focus to its fieldset. Progress counts
+   entered choices; it does not certify validity. Navigation never sends a preview
+   or save, and your unsaved entries persist across groups. Empty fields stay null;
    no strategy, duration, return target or reserve is silently selected. You may save
    an incomplete draft while researching the remaining decisions.
-3. Select **Review draft**. The server validates every entered choice, normalizes exact
-   decimal strings and returns a preview. It writes no draft record. Read the exact
+3. Select **Review all choices**. Local checks flag invalid ranges, precision and
+   allocation relationships and focus the first affected input, including hidden
+   groups. Clear an invalid field to keep it unresolved. The server still validates
+   every entered choice, normalizes exact decimal strings and returns a preview. It writes no draft record. Read the exact
    values, unresolved fields and reproducibility identities in the confirmation.
 4. Check **I reviewed this draft snapshot and its limitations**, then select **Save
    draft snapshot**. Cancel/Escape saves nothing and leaves your unsaved form available.
@@ -36,8 +41,8 @@ allocation/rebalancing and platform acceptance remain open.
    the same canonical content returns the existing snapshot instead of duplicating it.
 
 Menu navigation blocks while the form has unsaved choices, a review is open, a request
-is pending or a save outcome is uncertain. Save or **Discard unsaved changes / new
-draft** before leaving through the workspace menu. **Lock**, authorization failure and
+is pending or a save outcome is uncertain. Save or **Discard changes / start fresh**
+before leaving through the workspace menu. **Lock**, authorization failure and
 page exit clear private form/preview state; they do not undo an already received save.
 The form is memory-only until explicitly saved. The browser's standard unload warning
 is requested while edits, review, requests or uncertain outcomes remain; choosing to
@@ -50,7 +55,11 @@ The schema is `1`, family `nse-investment-policy-v2`, with proposed decision sem
 is an error, never reclassified as an unresolved choice. Unknown fields and unsupported
 options are rejected. Integer inputs must be actual integers. Decimal API/file inputs
 must be strings: JSON floats, integers, booleans, NaN and Infinity are not accepted as
-decimal values. The browser uses text inputs for decimal fields.
+decimal values. The browser uses text inputs for decimal fields and BigInt for exact local checks.
+Changing the horizon unit changes the displayed bounds (1–100 years or 1–1200 months)
+without converting or resetting your count. Inspect the number before review.
+Saved snapshots show a labelled exact-value table; expand their details for all
+choices and the complete snapshot identifier.
 
 Percentages and basis points use up to four decimal places; turnover uses up to two.
 Redundant trailing zeros normalize, while extra nonzero precision is rejected instead
@@ -239,3 +248,14 @@ These are local/synthetic software checks, not real-market, broker/device, futur
 or investment-policy execution acceptance. The v0.17 isolated-job capability still fails
 closed on the implementation Mac; this feature does not enable it or adapt this new
 policy family to legacy replay.
+
+## Usability validation (0.19.0)
+
+The four-step flow adds controller checks for blank defaults, focus/progress, value
+retention without requests, unit bounds, exact precision and coupled limits, saved
+value labels, correction feedback and lock clearing. Existing acknowledged save,
+unknown-outcome reconciliation, navigation guards and immutable persistence tests pass.
+Desktop Firefox on a disposable empty account verified the group transition, a
+100.0001% combined allocation error, corrected exact preview, deep-scroll native
+dialog and Escape without save. This run saved no policy and made no account changes.
+See [the current combined validation record](test-plan.md).

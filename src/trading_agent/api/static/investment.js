@@ -232,8 +232,8 @@
       for (const name of ['dashboard', 'discovery', 'holdings', 'backtesting', 'settings', 'learn']) el(name + '-view').hidden = name !== screen;
       ({dashboard: renderDashboard, discovery: renderDiscovery, holdings: renderPortfolio, backtesting: renderBacktesting, settings: renderSettings, learn: renderLessons}[screen])(data);
       if (screen === 'learn') el('checklist-status').textContent = 'At last refresh: feed ' + (data.settings.feed_connected ? 'connected' : 'disconnected') + '; saved research ' + friendly(data.discovery.state) + '; decision mode ' + friendly(data.settings.decision_mode) + '. Readiness remains a separate check in Paper Trading.';
-      el('main').hidden = false; el('state').textContent = 'Saved status · paper only'; el('observed').textContent = 'Observed ' + date(data.observed_at) + '. Values and readiness are a saved snapshot; refresh to check current state.';
-      el('message').className = ''; el('message').textContent = 'Saved data loaded. This screen only reads state; it does not download, subscribe, approve or submit orders.';
+      el('main').hidden = false; el('state').textContent = 'Saved status · paper only'; el('observed').textContent = 'Snapshot: ' + date(data.observed_at) + ' · Refresh to check current state.';
+      el('message').className = ''; el('message').textContent = '';
       if (win.AgenticNavigation?.updated) win.AgenticNavigation.updated();
     }
     async function refresh() {

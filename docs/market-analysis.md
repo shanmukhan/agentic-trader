@@ -1,5 +1,12 @@
 # Market & Analysis
 
+The **0.19.0** usability pass groups chart-selection help and the chart legend into
+expandable details and adds local decorative section/action icons beside text labels.
+Quote status, stale/missing evidence, source information and exact tables remain
+available. Expanding help or changing the display range does not request data, reset
+indicator seeds or approve a trade. Use keyboard Enter/Space on a summary to expand it;
+wide tables remain keyboard-focusable scroll regions. See [interface recovery and limits](ui-experience.md).
+
 Version **0.16.0** implements the Phase 4 price-research scope. **Stock Analysis**
 now reads a separate immutable research series for Daily, Weekly and Monthly candles,
 with 15 fixed-precision indicators, explicit warmup/gap states, share-action-adjusted
@@ -163,3 +170,8 @@ quality exclusions, integrity/malformed-data recovery, authorization/whitelistin
 and independent full SQLite dumps proving GETs preserve cash, orders, fills,
 holdings and pending approvals. UI checks cover safe text rendering, exact table
 values, real empty/stale/provenance states, search, timeout, lock and late responses.
+
+With no saved stocks, the selection help now points to Strategies or Broker & Data.
+An unmatched search instead offers clearing the search. **Open chart** stays disabled
+while there is no selectable result; clearing the search restores it when saved
+choices exist. Search remains local and sends no request.

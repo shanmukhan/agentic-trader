@@ -1,6 +1,6 @@
 # Risk Management: desktop and mobile browsers
 
-Version **0.15.0** labels `/console` **Risk Management** (`#risk`). It retains
+Version **0.15.0** introduced `/console` as **Risk Management** (`#risk`). It retains
 current-basis review, exposure, readiness and emergency/entry controls. **Broker &
 Data** contains credentials, calendar and connection administration; **Settings**
 is read-only configuration. **Paper Trading** contains modes and proposals, while
@@ -19,6 +19,16 @@ There is no native Android/iOS app, installable PWA, public hosting or real-mone
 order screen. Desktop browsers use account cards and two-column readiness/controls;
 CSS stacks cards and controls at viewport widths of 640 CSS pixels or less. Touch
 controls are at least 44 CSS pixels high. Intermediate widths wrap the access form.
+
+## Control groups (0.19.0)
+
+**Emergency actions** contains **Activate kill switch** and **Queue flatten** in a
+separate labelled fieldset. **Entry permissions** contains disarm, arm and reset.
+Icons supplement the visible action text. Grouping does not change eligibility or
+confirmation: queueing an exit still requires future usable quotes to fill, and
+resetting the kill switch never rearms entries. Read the confirmation before acting.
+Desktop Firefox checked the rendered groups on a disposable account without using
+any action. Existing control/confirmation tests remain the workflow evidence.
 
 ## Start and unlock
 

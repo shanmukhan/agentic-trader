@@ -238,6 +238,12 @@ def create_app(
             ASSETS.joinpath("dialogs.js").read_text(), media_type="application/javascript"
         )
 
+    @app.get("/icons.svg")
+    def ui_icons() -> HTMLResponse:
+        return HTMLResponse(
+            ASSETS.joinpath("icons.svg").read_text(encoding="utf-8"), media_type="image/svg+xml"
+        )
+
     @app.get("/paper", response_class=HTMLResponse)
     def paper_page() -> str:
         return ASSETS.joinpath("desk.html").read_text(encoding="utf-8")

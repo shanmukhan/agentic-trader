@@ -1,4 +1,4 @@
-# Registered browser backtesting — 0.17.0
+# Registered browser backtesting — 0.19.0
 
 This is the first Phase 5 implementation slice. **Backtesting** (`/workspace#backtesting`)
 now reads a local registry, admits explicitly confirmed isolated daily-replay jobs,
@@ -171,3 +171,19 @@ tab were closed. Populated report/mobile/keyboard/zoom acceptance, real OS denia
 enforcement,
 real broker/data entitlement, target-device performance and long-running operational
 acceptance remain separate gates. No user-account activation or real order is part of this slice.
+
+## Reading results in the updated interface (0.19.0)
+
+Saved job cards lead with the registered bundle label and actual lifecycle state.
+Expand **Job identity** for the full job ID. Comparison selectors retain full job IDs
+alongside bundle names, so two runs of the same inputs remain distinguishable.
+
+A recorded report keeps its summary, valuation limitations and provenance visible.
+Expand **Equity history and valuation coverage**, **Drawdown history and valuation
+coverage**, **Recorded simulated orders** or **Recorded simulated fills** for the
+exact tables. Each table scrolls in a labelled, keyboard-focusable region; expanded
+histories have a bounded height and sticky column headings. Closing a disclosure
+changes only the display. **Local registration and CLI help** is also expandable.
+No launch, cancellation, retry or comparison contract changed; unavailable worker
+isolation still blocks launch. Automated checks include safe bundle labels, complete
+identity and existing exact report/comparison behavior. See [validation](test-plan.md).

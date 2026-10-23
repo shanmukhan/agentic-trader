@@ -1,5 +1,15 @@
 # One workspace, one unlock, clear next steps
 
+Version **0.19.0** adds consistent local icons beside all twelve menu labels and
+selected actions/headings. Text labels and visible keyboard focus remain; color and
+icons do not carry action meaning alone. The compact header retains paper identity,
+current destination, lock state and **Lock workspace**. The setup note starts collapsed
+after unlock with its current next step visible; expand it for the reason and guidance.
+Shorter routine refresh feedback retains the actual observation timestamp/stale state.
+Portfolio valuation formulas and Stock Analysis help/legend use expandable details.
+Policy drafts use four explicit steps, with no autosave or preselected financial values.
+See [the full interface and recovery guide](ui-experience.md).
+
 Version **0.18.0** adds the Strategies subview
 `#strategies/investment-policy` for [investment policy drafts](investment-policy-drafts.md).
 The four parameter groups begin blank and can be saved incomplete after an exact preview
@@ -96,8 +106,9 @@ Prefix hashes above with `http://127.0.0.1:8004/workspace` (use the launcher's p
 **Portfolio → Purchases & SIP** opens `#portfolio/purchases`, preserving the existing
 preview/confirmation workflow. `#portfolio/holdings-heading` opens its aggregate
 holdings/exit review. The default Portfolio uses a separate read-only summary.
-The setup checklist is `#learn/setup-checklist`; the contextual onboarding banner
-only links to a needed step. At 767 CSS pixels and below, **Menu · current screen**
+The setup checklist is `#learn/setup-checklist`; the contextual setup note keeps the
+next needed step visible and expands for its explanation. It only links to a needed
+step. At 767 CSS pixels and below, **Menu · current screen**
 opens all twelve destinations and closes after navigation. Lock remains available.
 
 **Strategies → Create or inspect investment policy drafts** opens

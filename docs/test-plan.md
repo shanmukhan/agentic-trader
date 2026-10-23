@@ -1,5 +1,56 @@
 # Test and validation plan
 
+## Workspace usability validation scope (0.19.0, 23 October 2026)
+
+Check that the local SVG sprite is served with the expected static content type, and
+that every navigation destination retains visible text and active-page semantics.
+Decorative icons must be hidden from assistive technology and must not add duplicate
+accessible names. Refresh/access/section icons must retain their existing labels and
+handlers. Verify the mobile menu, visible focus, 44-pixel primary touch targets, exact
+numeric strings and scrollable labelled evidence regions without external icon/CDN calls.
+
+Setup disclosure must start collapsed after unlock, keep its current next step
+visible and preserve its reason when expanded. Routine feedback can shorten; actual
+observation timestamps, stale/error states, unavailable metrics and recovery must stay
+explicit. Portfolio state must remain visible when definitions are closed; Analysis
+must retain source/legend/help access without changing its history requests or seeds.
+
+Policy checks cover four-step progress and Previous group/Next group, blank/null defaults,
+conditional unit help, linked validation/focus, reviewing incomplete drafts, and no
+POST/save on step navigation. Existing Cancel/Escape, acknowledged save, copy/edit,
+uncertain-save reconciliation, unsaved navigation/unload guards and lock/pagehide/late
+response clearing remain required. Account and broker logic is outside this change.
+
+Record actual automated counts and any disposable Firefox check separately from these
+acceptance criteria. A DOM harness is not browser layout evidence. Rendered checks must
+exercise a disposable account and separately record desktop/mobile widths, focus and
+confirmation behavior; broader touch/zoom/second-engine/device and real-market acceptance
+remain open. See [the interface guide](ui-experience.md).
+
+
+Final automated checks: **1,216 Python tests passed**, **10,540 / 11,440 statements
+(92.13%)** covered; **193 Node UI tests passed**. Ruff lint, formatting of **201 source
+and test files**, mypy (**118 source files**) and whitespace checks pass. The coverage
+run emitted **55 warnings**, including test-workflow SQLite ResourceWarnings. A
+repository-wide formatting probe additionally flags pre-existing Python examples in
+`BACKEND_IMPROVEMENTS_AND_ROADMAP.md`; that unrelated document was not reformatted.
+
+Desktop Firefox at a 1920 × 1080 window was checked using localhost:8767 with a new
+disposable database and an invented operator token. Evidence covers rendered local
+icons, labelled navigation, collapsed setup, Dashboard, Portfolio valuation warnings
+with definitions closed, Risk fieldsets, empty Analysis and four-group policy
+progress/focus. The policy review rejected 80.0001% invested plus 20% reserve, then
+showed exact 80.0000% / 20.0000% in a visible deep-scroll native dialog after
+correction. Escape cancelled; edits were discarded, reload locked the view and
+private content cleared. An independent SQL read retained cash **25000**, fees **0**,
+zero orders/fills/positions/events/quotes/decisions/portfolio requests, and no saved
+policy files. No actual broker, feed, user account or financial action was used.
+
+The populated backtest report, phone/touch, narrow-browser/zoom, second-engine and
+assistive-device layouts were not rendered in this pass; their automated structural
+and controller checks do not establish device acceptance. Full Phase 5 and actual
+worker/broker acceptance remain open.
+
 ## V2 Phase 5 draft-policy validation scope (0.18.0, 23 October 2026)
 
 The pure contract suite has **132 passing cases**: no financial/schedule defaults,

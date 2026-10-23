@@ -1,5 +1,33 @@
 # Implementation plan, enhancements and status
 
+## Workspace usability pass (0.19.0, 23 October 2026)
+
+Reviewed the existing Dashboard, Portfolio, Analysis, Broker, Backtesting and Risk
+interfaces for repeated explanation, status hierarchy, icon consistency and narrow
+layouts. Added a local SVG sprite with text-labelled navigation/action/section icons,
+a compact header, a collapsible setup explanation with its current next step visible,
+shorter routine saved-view feedback, folded valuation definitions and grouped chart
+help/legend. Timestamp, stale/incomplete evidence, exact decimals, authorization and
+financial confirmation semantics remain unchanged.
+
+The policy-draft screen now presents its existing four parameter groups as explicit
+steps with progress, Previous group/Next group, contextual unit help and field-linked validation.
+Navigation does not save, preselect financial inputs or grant execution authority.
+Existing reviewed preview/save, immutable snapshots, unsaved-change/uncertain-outcome
+guards and lock privacy remain. See [the detailed interface guide](ui-experience.md)
+and [validation scope](test-plan.md). Automated/local rendered evidence must remain
+distinct from sustained broker, real-market and target-device acceptance.
+
+**Validation:** 1,216 Python / 193 UI tests passed, 92.13% statement coverage;
+Ruff lint, source/test format and mypy passed. A disposable desktop Firefox check
+covered icons, policy groups/validation/deep-scroll review/Escape, Portfolio warnings
+and Risk grouping. Independent SQL retained unchanged empty-account accounting.
+See [the full evidence and limits](test-plan.md).
+
+This is a usability refinement, not completion of Phase 5. Native-worker acceptance,
+new investment execution/backtest adapters, connected parity, OOS/walk-forward,
+portfolio benchmark and target/rebalance remain pending.
+
 ## V2 Phase 5 policy-draft planning slice (0.18.0, 23 October 2026)
 
 Implemented a separate schema-1 nullable policy specification with both months/years

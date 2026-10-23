@@ -1,5 +1,20 @@
 # V2 Phase 3 frontend implementation — 0.15.0
 
+Subsequent **0.19.0** adds a self-hosted SVG icon sprite and progressive information
+hierarchy. All twelve destinations retain visible text/active-page semantics beside
+decorative icons. The compact shell retains paper and lock state. The contextual setup
+note is collapsed after unlock while its current next step remains visible; stale/error
+states and timestamps stay explicit. Portfolio folds scope/formulas, Analysis groups
+help/legend, and routine success messages are shorter. Shared CSS retains exact-value
+table scrolling, keyboard focus, labelled controls and narrow-layout touch targets.
+
+The policy controller presents its existing four groups as steps, with progress,
+Previous group/Next group, conditional unit guidance and input-linked validation. Moving between
+steps neither validates a policy as executable nor saves anything. Blank/null defaults,
+explicit preview/acknowledgement, immutable saves, copy/edit, navigation guards and
+private-content clearing remain. No financial API or broker behavior changes.
+See [component usage and recovery](ui-experience.md) and [validation scope](test-plan.md).
+
 Subsequent **0.18.0** adds [Investment policy drafts](investment-policy-drafts.md) within
 Strategies at `#strategies/investment-policy`. Its metadata-driven four-group form has
 labelled blank/null choices and exact decimal text inputs. Incomplete drafts are allowed;

@@ -8,7 +8,7 @@
 <span id="state" class="badge">Locked</span></header>
 <section class="panel access"><h2>Local operator access</h2><p class="muted">Use TRADING_OPERATOR_TOKEN from your private local .env, not a Zerodha request/access token. It stays in this tab's memory. <a href="/setup">Broker and feed setup →</a></p>
 <form id="access" autocomplete="off"><label for="token" class="sr-only">Operator token</label><input id="token" type="password" autocomplete="off" placeholder="Operator token" required>
-<button id="unlock" type="submit">Unlock / refresh</button><button id="lock" type="button" disabled>Lock</button></form></section>
+<button id="unlock" type="submit"><svg class="icon" aria-hidden="true" focusable="false" width="20" height="20"><use href="/icons.svg#unlock"/></svg>Unlock / refresh</button><button id="lock" type="button" disabled><svg class="icon" aria-hidden="true" focusable="false" width="20" height="20"><use href="/icons.svg#lock"/></svg>Lock</button></form></section>
 <p id="message" role="status" aria-live="polite">Locked. No private account data loaded.</p>
 <main id="main"><nav class="subnav" aria-label="Paper trading views"><a href="/activity">Orders &amp; history</a><a href="#holdings-heading">Holdings</a><a href="/portfolio" aria-current="page">Purchases &amp; SIP</a><a href="/paper">Proposals &amp; modes</a></nav><section class="metrics" aria-label="Contribution capacity">
 <article class="panel metric"><h2>Available virtual cash</h2><p id="cash" class="amount">—</p><p class="muted">After reservations and delivery fee buffer</p></article>

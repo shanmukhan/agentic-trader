@@ -1,5 +1,15 @@
 # How to use Agentic Trader
 
+Version **0.19.0** improves the existing interface with labelled local SVG icons,
+a compact workspace header, a collapsible setup explanation and shorter repeated
+status messages. Portfolio keeps valuation state visible while folding formulas into
+details; Stock Analysis groups chart help and the legend. Investment-policy drafts now
+use four steps with progress, contextual unit help and field-linked validation. Moving
+between steps never saves or selects financial defaults. All existing exact values,
+stale/missing states, navigation guards and reviewed confirmations remain in force.
+Restart an older owning UI server, reload the workspace and unlock to load this version.
+See [the interface guide and recovery behavior](ui-experience.md).
+
 Version **0.18.0** adds **Strategies → Investment policy drafts**. Choose a months-based
 or multi-year holding horizon and monthly or quarterly reviews, with explicit screening,
 allocation and exit limits. All fields start blank; incomplete drafts can be reviewed

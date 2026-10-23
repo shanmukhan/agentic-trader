@@ -18,7 +18,7 @@ function createAnalysis(doc,win,fetcher){
  const clock=()=>win.Date?win.Date.now():Date.now();
  const date=value=>value?new Date(value).toLocaleString('en-IN',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}):'—';
  const friendly=value=>String(value||'').toLowerCase().replaceAll('_',' ');
- function controls(){for(const id of ['stock','timeframe','open-chart','refresh','stock-search'])el(id).disabled=!token||busy;el('chart-range').disabled=!token||busy||!latest;el('unlock').disabled=busy;}
+ function controls(){for(const id of ['stock','timeframe','open-chart','refresh','stock-search'])el(id).disabled=!token||busy;el('chart-range').disabled=!token||busy||!latest;el('unlock').disabled=busy;el('open-chart').disabled=!token||busy||!el('stock').children.length;}
  function lock(){
   if(win.AgenticNavigation)win.AgenticNavigation.locked();generation++;active?.abort();active=null;token='';busy=false;latest=null;options=[];lastReceipt=0;
   el('token').value='';el('token').required=true;el('lock').disabled=true;el('main').hidden=true;el('stock-search').value='';el('timeframe').value='1d';el('chart-range').value='all';
@@ -33,8 +33,8 @@ function createAnalysis(doc,win,fetcher){
   const filtered=options.filter(item=>item.symbol.toUpperCase().includes(query));
   for(const item of filtered){const option=node('option',item.symbol+(item.subscribed?' · subscribed':''));option.value=item.symbol;el('stock').append(option);}
   if(filtered.some(item=>item.symbol===selected))el('stock').value=selected;
-  else if(filtered.length)el('stock').value=filtered[0].symbol;
-  el('stock-help').textContent=filtered.length?filtered.length+' saved stocks match. Select Open chart to view a result. Charts never download data or change subscriptions.':'No saved stocks match this search. Clear the search to see all available stocks.';
+  else if(filtered.length)el('stock').value=filtered[0].symbol;else el('stock').value='';
+  el('stock-help').textContent=filtered.length?filtered.length+' saved stocks match. Select Open chart to view a result. Charts never download data or change subscriptions.':options.length?'No saved stocks match this search. Clear the search to see all available stocks.':'No saved stocks are available. Prepare reviewed history in Strategies or select stocks in Broker & Data, then refresh.';controls();
  }
  function chart(bars,symbol,timeframe){
   el('price-chart').replaceChildren();if(!bars.length){el('price-chart').append(node('p','No chart is drawn until real completed candles are available.'));return;}
