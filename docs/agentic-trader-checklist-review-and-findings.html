@@ -1,0 +1,622 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agentic Trader — Checklist Review & Findings</title>
+<style>
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body { max-width: 980px; margin: 0 auto; padding: 34px 44px; color: #171717; background: #fff; font: 10.5pt/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif; }
+h1 { font-size: 25pt; line-height: 1.2; margin: 0 0 18pt; }
+h2 { font-size: 17pt; margin: 28pt 0 10pt; padding-bottom: 5pt; border-bottom: 1px solid #aaa; break-after: avoid; }
+h3 { font-size: 13pt; margin: 19pt 0 7pt; break-after: avoid; }
+p, ul, ol, table, pre, blockquote { margin: 8pt 0 12pt; }
+ul, ol { padding-left: 23pt; } li { margin: 3pt 0; }
+table { width: 100%; border-collapse: collapse; font-size: 9pt; }
+th, td { border: 1px solid #aaa; padding: 6pt 7pt; text-align: left; vertical-align: top; }
+th { background: #eee; }
+tr { break-inside: avoid; }
+code, pre { font-family: ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace; }
+code { font-size: .9em; overflow-wrap: anywhere; }
+pre { white-space: pre-wrap; overflow-wrap: anywhere; border: 1px solid #ccc; background: #f7f7f7; padding: 10pt; }
+blockquote { border-left: 3px solid #999; padding-left: 12pt; color: #333; }
+a { color: #111; overflow-wrap: anywhere; }
+hr { border: 0; border-top: 1px solid #aaa; margin: 18pt 0; }
+@page { size: auto; margin: 15mm; }
+@media print {
+ body { max-width: none; margin: 0; padding: 0; font-size: 9.5pt; }
+ h1,h2,h3 { break-after: avoid; }
+ thead { display: table-header-group; }
+ tr,pre,blockquote { break-inside: avoid; }
+ a { color: #000; }
+}
+</style>
+</head>
+<body>
+
+<header id="title-block-header">
+<h1 class="title">Agentic Trader Checklist Review &amp; Findings</h1>
+</header>
+<h1
+id="agentic-trader-daily-operator-checklist-review-automation-findings">Agentic
+Trader — Daily Operator Checklist Review &amp; Automation Findings</h1>
+<p><strong>Review basis:</strong>
+<code>daily-operator-checklist.md</code>, checked against the repository
+as described in that document on 23 October 2026. Times are IST.<br />
+<strong>Scope:</strong> This is a document-based operational review of
+the described local paper-trading application. It is not an independent
+code audit, broker certification, or evidence of strategy
+profitability.</p>
+<h2 id="executive-summary">Executive summary</h2>
+<p><strong>Main finding:</strong> Automate repetitive checks, data
+validation, monitoring, reporting, and recovery evidence collection.
+Preserve explicit human authorization at safety-critical boundaries
+until the implementation has been tested and a clear authorization
+policy exists.</p>
+<p>The checklist already describes meaningful safeguards: Manual mode
+during preparation, explicit setup acknowledgement, separate Approval
+and Automatic modes, quote-freshness checks, price-basis reviews,
+order/fill reconciliation, and database verification. It also documents
+important limitations: no full daily scheduler, no unattended refresh of
+installed strategy data, interrupted preparation is not resumed, setup
+phases can partially persist without automatic rollback, and the
+service/feed must remain available for protection and fills.</p>
+<h3 id="findings-at-a-glance">Findings at a glance</h3>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Area</th>
+<th>Assessment</th>
+<th>What to do</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Daily preparation</td>
+<td>Highly manual; same-day evidence required</td>
+<td>Add IST-aware orchestration and preflight validation</td>
+</tr>
+<tr class="even">
+<td>Strategy data</td>
+<td>Download does not install a strategy or refresh live
+subscriptions</td>
+<td>Validate dates, coverage, exclusions, provenance, and installation
+state separately</td>
+</tr>
+<tr class="odd">
+<td>Broker access</td>
+<td>Session expiry and interactive 2FA remain operator tasks</td>
+<td>Monitor validity and alert; retain normal login/2FA</td>
+</tr>
+<tr class="even">
+<td>Readiness and mode</td>
+<td>Setup, connection, and trading authority are separate</td>
+<td>Consolidate blockers; keep authorization explicit</td>
+</tr>
+<tr class="odd">
+<td>Orders and fills</td>
+<td>Accepted/queued does not mean filled; partial fills matter</td>
+<td>Reconcile intent, order state, fills, cash, and residual
+exposure</td>
+</tr>
+<tr class="even">
+<td>Monitoring</td>
+<td>Visible-page polling is not continuous server-side supervision</td>
+<td>Add independent watchdogs and alerts</td>
+</tr>
+<tr class="odd">
+<td>Recovery</td>
+<td>Setup can partially apply; restarts interrupt work</td>
+<td>Add durable checkpoints, idempotency, and state-aware recovery</td>
+</tr>
+<tr class="even">
+<td>End of day</td>
+<td>Exit requests may leave residual exposure</td>
+<td>Reconcile before shutdown; distinguish long-term and intraday
+behavior</td>
+</tr>
+<tr class="odd">
+<td>Backups</td>
+<td>Database backup alone is not a full installation backup</td>
+<td>Automate verified backups and separate-path restore drills</td>
+</tr>
+<tr class="even">
+<td>Auditability</td>
+<td>Reconstructing why the system acted should be straightforward</td>
+<td>Persist source timestamps, versions, decisions, approvals, and
+fills</td>
+</tr>
+</tbody>
+</table>
+<h2 id="what-the-source-checklist-says">1. What the source checklist
+says</h2>
+<p>The uploaded checklist says:</p>
+<ul>
+<li>It describes the existing local <strong>paper</strong> application,
+especially the long-term account opened by
+<code>./scripts/start_ui.sh</code>; intraday has different close and
+warmup rules.</li>
+<li>Fresh strategy data should be downloaded on each trading day the
+normal guided Strategies → reviewed strategy → Approval/Automatic
+workflow will be used.</li>
+<li>The download is a research-input bundle. It does not itself install
+the strategy, change trading mode, update live subscriptions, or place
+orders.</li>
+<li>Current-day source snapshots and explicit action/price-basis reviews
+matter even when the last completed candle has not changed.</li>
+<li>The application does not currently have an unattended daily refresh
+or incremental update of an installed download.</li>
+<li>The daily screen checks 20-session momentum, a 50-session trend,
+average daily turnover, and volatility. Thresholds stated in the
+checklist are positive momentum, at least ₹1 crore average daily
+turnover, and at most 5% daily volatility. Ranking by historical gross
+return is not a forecast.</li>
+<li>The shortlist is limited to ten symbols and must retain held
+symbols; risk limits may permit fewer positions.</li>
+<li>The built-in history bundle covers up to 60 completed sessions from
+at most 120 calendar days in the current year. It is insufficient for
+SMA200 and many longer weekly/monthly indicators; warmup states are
+expected.</li>
+<li>Rules-only is described as an experimental paper hypothesis. ML
+requires a separately validated compatible model and does not silently
+fall back to rules.</li>
+<li>Broker access token validity is separate from local dashboard
+unlock. The checklist describes next-day 6 AM token expiry as documented
+by Kite, with earlier invalidation possible.</li>
+<li>A connected socket is not proof of usable quotes. Freshness,
+exchange time, basis state, and usable bid/ask depth must be
+checked.</li>
+<li>Automatic mode may submit eligible paper orders without per-trade
+confirmation; Approval mode requires proposal review. Protective exits
+do not wait for Approval, but still depend on usable quotes and
+liquidity.</li>
+<li>On a safety pause, the desk returns to Manual and pending approval
+authority is cancelled; restored quotes do not automatically rearm
+trading.</li>
+<li>Long-term holdings intentionally persist overnight; the ordinary
+intraday 15:15 flatten is an exit request, not proof of a fill.</li>
+<li>Reports and backups should use the same account configuration. The
+checklist warns that owning recovery commands can cancel pending order
+residue, so report first if preserving that state matters.</li>
+<li>A database backup is not a full installation backup; configuration,
+calendar, strategy/data/model artifacts, and ledger need a deliberate
+backup policy.</li>
+<li>The checklist states that no automatic daily scheduler performs the
+full checklist. Authentication/2FA, source review, confirmation,
+exception handling, and deliberate mode activation remain operator
+responsibilities.</li>
+</ul>
+<h2 id="automation-matrix-by-checklist-step">2. Automation matrix by
+checklist step</h2>
+<table>
+<colgroup>
+<col style="width: 20%" />
+<col style="width: 20%" />
+<col style="width: 20%" />
+<col style="width: 20%" />
+<col style="width: 20%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Step</th>
+<th>Task</th>
+<th>Automation potential</th>
+<th>Proposed implementation</th>
+<th>Human boundary / caution</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>1</td>
+<td>Open intended account and keep service available</td>
+<td>High</td>
+<td>Service health check, ownership/duplicate-process check, uptime
+alert, clock/network checks</td>
+<td>Do not start duplicate owners or delete locks to force startup</td>
+</tr>
+<tr class="even">
+<td>2</td>
+<td>Unlock and inspect prior state</td>
+<td>High for reporting</td>
+<td>Read-only snapshot of holdings, pending/partial orders, cash, fees,
+faults, quarantine, protective exits</td>
+<td>Investigate unexplained mismatches; keep entries blocked</td>
+</tr>
+<tr class="odd">
+<td>3</td>
+<td>Exchange notices and date</td>
+<td>Partial</td>
+<td>Fetch official calendar/notices, compare dates, flag special
+sessions and corporate actions</td>
+<td>Human review for ambiguous/special notices</td>
+</tr>
+<tr class="even">
+<td>4</td>
+<td>Select Manual during setup</td>
+<td>High with guardrails</td>
+<td>Safe preparation-state workflow and verification</td>
+<td>Do not cancel/flatten blindly; preserve protective handling</td>
+</tr>
+<tr class="odd">
+<td>5</td>
+<td>Broker session</td>
+<td>Partial</td>
+<td>Read session status and alert before/after expiry</td>
+<td>Normal login/2FA remains interactive; never bypass
+authentication</td>
+</tr>
+<tr class="even">
+<td>6</td>
+<td>Catalog and subscriptions</td>
+<td>High for validation</td>
+<td>Detect missing mappings and verify held-symbol quote coverage</td>
+<td>Do not invent tokens or silently remove held symbols</td>
+</tr>
+<tr class="odd">
+<td>7</td>
+<td>Download strategy bundle</td>
+<td>High</td>
+<td>Schedule download; validate source date, latest completed session,
+coverage, hashes, exclusions, and run status</td>
+<td>Do not treat successful download as strategy authorization</td>
+</tr>
+<tr class="even">
+<td>8</td>
+<td>Preview policy/calendar/shortlist</td>
+<td>High for analysis</td>
+<td>Produce a consolidated review report and diff against installed
+state</td>
+<td>Human checks policy, sources, dates, hours, exact symbols, and
+manual reviews</td>
+</tr>
+<tr class="odd">
+<td>9</td>
+<td>Confirm and prepare</td>
+<td>Partial</td>
+<td>Validate preconditions and capture approval/audit event</td>
+<td>Keep explicit confirmation for installing reviewed state</td>
+</tr>
+<tr class="even">
+<td>10</td>
+<td>Calendar and price-basis reviews</td>
+<td>Partial</td>
+<td>Detect missing reviews and assemble supporting evidence</td>
+<td>Do not attest “no action” without adequate evidence; quarantine must
+persist when uncertain</td>
+</tr>
+<tr class="odd">
+<td>11</td>
+<td>Usable live quotes</td>
+<td>High</td>
+<td>Server-side quote-age, exchange-time, bid/ask-depth, rejection, and
+held-symbol coverage monitors</td>
+<td>After-hours or stale depth should remain blocked</td>
+</tr>
+<tr class="even">
+<td>12</td>
+<td>Activate intended mode</td>
+<td>Conditional</td>
+<td>Readiness gate with all blockers and notifications</td>
+<td>Explicit authorization; Automatic mode changes order authority</td>
+</tr>
+<tr class="odd">
+<td>13</td>
+<td>Proposals / purchases / SIP</td>
+<td>Partial</td>
+<td>Validate proposals, estimate costs, alert on expiry, reconcile
+results</td>
+<td>Manual purchase/SIP occurrences remain explicit unless separately
+authorized</td>
+</tr>
+<tr class="even">
+<td>14</td>
+<td>Session supervision</td>
+<td>High for monitoring</td>
+<td>Watchdog for stale feed, risk, exposure, pending exits, faults, and
+pauses</td>
+<td>A browser tab is not a background trading service</td>
+</tr>
+<tr class="odd">
+<td>15</td>
+<td>End-of-day reconciliation</td>
+<td>High</td>
+<td>Compare intents, orders, fills, residual quantities, fees, cash,
+positions, and exits</td>
+<td>Never treat queued sell as completed exit</td>
+</tr>
+<tr class="even">
+<td>16</td>
+<td>Report, verify, backup</td>
+<td>High with guardrails</td>
+<td>Daily evidence report, DB integrity check, unique verified backup,
+artifact manifest, restore drills</td>
+<td>Run correct account config and preserve state before recovery
+commands</td>
+</tr>
+</tbody>
+</table>
+<h2 id="highest-priority-automation-proposals">3. Highest-priority
+automation proposals</h2>
+<h3 id="p0-independent-safety-watchdog">P0 — Independent safety
+watchdog</h3>
+<p>Monitor service health, feed status, quote freshness, risk faults,
+pending protective exits, and account state independently of the browser
+UI. Send actionable alerts when protection is impaired.</p>
+<p><strong>Acceptance tests:</strong> kill the service; interrupt
+network; freeze quotes; provide stale timestamps; simulate empty bid/ask
+depth; create an unresolved exit. Confirm the system alerts, blocks new
+discretionary entries where appropriate, preserves state, and does not
+falsely report protection.</p>
+<h3 id="p0-daily-preflight-orchestrator">P0 — Daily preflight
+orchestrator</h3>
+<p>An IST-aware scheduler should identify supported exchange sessions
+and run read-only checks before any mutating setup phase. Validate
+broker session, source snapshots, latest completed candle, calendar,
+catalog mappings, held symbols, outstanding orders, and required
+reviews.</p>
+<p><strong>Output:</strong> a single report where every prerequisite is
+<code>PASS</code>, <code>BLOCKED</code>, or <code>NEEDS REVIEW</code>,
+with evidence timestamps and reason codes. A completed preflight must
+not automatically imply trading permission.</p>
+<h3 id="p0-order-and-position-reconciliation">P0 — Order and position
+reconciliation</h3>
+<p>Reconcile order intent IDs, submission status, order IDs, fills,
+remaining quantities, fees, cash reservations, holdings, and exits.
+Treat timeouts as ambiguous until a status read resolves them.</p>
+<p><strong>Acceptance tests:</strong> full fill, partial fill, reject,
+cancel, delayed status, duplicate request, timeout after server
+acceptance, and restart during order handling. Never retry an uncertain
+submission without checking current state and idempotency.</p>
+<h3 id="p1-crash-safe-setup-and-recovery">P1 — Crash-safe setup and
+recovery</h3>
+<p>Persist every setup phase and its inputs/outputs under a unique run
+ID. On restart, inspect actual account state and the last committed
+phase. Resume only if the operation is safe and the state is verified;
+otherwise stop for review.</p>
+<p><strong>Acceptance tests:</strong> restart after each setup phase;
+timeout after each mutation; repeated confirmation; source data changes
+during review; expired two-minute confirmation window. Verify no
+duplicate side effects and no false “complete” status.</p>
+<h3 id="p1-evidence-reporting-and-backup-pipeline">P1 — Evidence,
+reporting, and backup pipeline</h3>
+<p>Generate the source-preserving daily report, check database
+integrity, create a unique backup, verify it, and preserve configuration
+plus referenced calendar/strategy/data/model artifacts. Keep backups
+private and encrypted off-device according to the operator’s policy.</p>
+<p><strong>Acceptance tests:</strong> destination already exists, disk
+full, corrupted backup, missing artifact, wrong config, and restore to a
+separate path. A backup is only trustworthy after verification and
+periodic restore tests.</p>
+<h2 id="important-gaps-and-risks-to-verify-in-code">4. Important gaps
+and risks to verify in code</h2>
+<p>These are not all proven defects. They are risks suggested by the
+checklist that should be verified against the repository and tests.</p>
+<h3
+id="critical-no-independent-protection-during-servicefeed-failure">Critical
+— No independent protection during service/feed failure</h3>
+<p>The checklist says the running server and usable quotes are needed
+for protection and fills. Confirm what actually happens during process
+crash, internet outage, broker disconnect, stale quotes, or
+illiquid/empty depth. Define alerting and escalation. Paper protection
+is not equivalent to broker-side protection in a live account.</p>
+<h3 id="critical-partial-setup-and-ambiguous-outcomes">Critical —
+Partial setup and ambiguous outcomes</h3>
+<p>The documented setup can partially persist and has no automatic
+rollback. Confirm operations are idempotent, run IDs are durable, state
+changes are auditable, and retries first inspect current state. Do not
+assume an error response means no mutation occurred.</p>
+<h3 id="high-freshness-and-completeness-are-not-a-single-invariant">High
+— Freshness and completeness are not a single invariant</h3>
+<p>The workflow depends on current-day source snapshots, the latest
+completed session, history coverage, calendar correctness, and
+per-symbol price-basis review. Create explicit validators for each. Keep
+source timestamp, market session date, download date, and review date
+distinct.</p>
+<h3 id="high-authentication-is-not-unattended">High — Authentication is
+not unattended</h3>
+<p>An expired token should block the relevant workflow and notify the
+operator. Retain normal broker login and 2FA. Avoid insecure token
+persistence, logging secrets, or retry loops that can cause
+account/session issues.</p>
+<h3 id="high-exit-request-vs.-actual-exit">High — Exit request
+vs. actual exit</h3>
+<p>Confirm the ledger distinguishes requested, accepted, partially
+filled, filled, rejected, cancelled, and unresolved orders. Keep
+residual exposure visible at shutdown and across restart. Long-term and
+intraday accounts must use different closing policies.</p>
+<h3 id="medium-restore-and-disaster-recovery-proof">Medium — Restore and
+disaster-recovery proof</h3>
+<p>The checklist describes backup verification but does not establish
+that a full restore is routinely tested. Add scheduled restore drills
+into a separate location and validate accounting, configuration,
+strategy artifacts, and report reproducibility.</p>
+<h3 id="medium-auditability">Medium — Auditability</h3>
+<p>Each decision should be reconstructable from: account/config version,
+strategy profile, data-run ID and hashes, source timestamps, calendar
+version, readiness reasons, operator approval, order intent, order/fill
+identifiers, and actual fees/results.</p>
+<h3 id="medium-monitoring-coverage">Medium — Monitoring coverage</h3>
+<p>The checklist notes that UI polling occurs about every three seconds
+while visible and hidden tabs stop polling. Do not depend on browser
+polling as the sole monitor. Monitoring and alerts should run
+server-side or in a separate supervisor.</p>
+<h2 id="suggested-target-architecture">5. Suggested target
+architecture</h2>
+<ol type="1">
+<li><strong>IST-aware scheduler:</strong> exchange calendar, run ID,
+deduplication, deadlines, and missed-run handling.</li>
+<li><strong>Read-only preflight:</strong> service/account identity,
+broker status, calendar/notices, source freshness, history coverage,
+catalog, held-symbol coverage, outstanding orders and reviews.</li>
+<li><strong>Preparation worker:</strong> download and validate data,
+produce exclusions/provenance, prepare review summary.</li>
+<li><strong>Authorization gate:</strong> show exact policy, dates/hours,
+shortlist, retained holdings, basis reviews, and changes; require
+explicit approval according to a documented policy.</li>
+<li><strong>Execution supervisor:</strong> mode/readiness checks, quote
+freshness, exposure/risk checks, order lifecycle reconciliation,
+protective-exit monitoring, pause handling.</li>
+<li><strong>Evidence pipeline:</strong> daily report, integrity
+verification, backup, artifact manifest, notifications, and restore
+drills.</li>
+</ol>
+<p>All phases should have durable statuses, timestamps, bounded retries,
+idempotency, and structured error codes. If a safety condition is
+uncertain, block new discretionary entries and ask for review rather
+than inventing evidence or changing state blindly. Do not use a generic
+kill/flatten action as a routine recovery mechanism.</p>
+<h2 id="recommended-implementation-sequence">6. Recommended
+implementation sequence</h2>
+<ol type="1">
+<li><strong>Observe before acting:</strong> structured health/readiness
+endpoint, status report, logs, and alerts. No change to trading
+behavior.</li>
+<li><strong>Automate read-only checks:</strong> source/date validation,
+quote freshness, order reconciliation reports, daily summary.</li>
+<li><strong>Automate repeatable preparation:</strong> scheduled download
+and review-package generation, but stop at the authorization gate.</li>
+<li><strong>Make recovery reliable:</strong> durable orchestration,
+idempotent mutations, interrupted-run detection, state-aware retries,
+and restore drills.</li>
+<li><strong>Evaluate narrowly scoped automation:</strong> only after
+fault-injection tests, explicit operator authorization policy, and a
+tested rollback/recovery plan.</li>
+<li><strong>Before live trading:</strong> independently validate broker
+semantics, real execution behavior, risk controls, outage handling, and
+accounting. Paper tests do not prove profitability or live-market
+safety.</li>
+</ol>
+<h2 id="questions-for-a-repository-level-audit">7. Questions for a
+repository-level audit</h2>
+<ul>
+<li>Is there a supported health/readiness API or CLI that avoids
+scraping UI state?</li>
+<li>Are all state-changing operations idempotent or protected by
+idempotency keys?</li>
+<li>Can an order submission time out after the server has accepted it?
+How is that reconciled?</li>
+<li>Are mode changes, setup confirmation, and protective exits durably
+audited?</li>
+<li>Does a feed disconnect or stale quote block new entries
+independently of the browser?</li>
+<li>Are quote freshness and price-basis rules enforced server-side at
+order submission time?</li>
+<li>Can a scheduler safely run twice or resume after restart without
+duplicating work?</li>
+<li>Do backup commands have side effects on pending orders or recovery
+state?</li>
+<li>Is the full installation recoverable from a tested backup set, not
+just the database?</li>
+<li>Are there fault-injection tests for process crash, clock skew,
+missing calendar data, corporate actions, partial fills, and broker
+timeouts?</li>
+</ul>
+<h2 id="daily-readiness-report-proposed-format">8. Daily readiness
+report — proposed format</h2>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Check</th>
+<th>Status</th>
+<th>Evidence required</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Correct account and configuration</td>
+<td>PASS / BLOCKED</td>
+<td>Account ID/name, config fingerprint, horizon</td>
+</tr>
+<tr class="even">
+<td>Service ownership and health</td>
+<td>PASS / BLOCKED</td>
+<td>Process/health status, version, uptime</td>
+</tr>
+<tr class="odd">
+<td>Exchange session and notices</td>
+<td>PASS / NEEDS REVIEW</td>
+<td>Official source, session date/hours, notice status</td>
+</tr>
+<tr class="even">
+<td>Broker session</td>
+<td>PASS / BLOCKED</td>
+<td>Validity status, last checked time; never expose token</td>
+</tr>
+<tr class="odd">
+<td>Strategy data</td>
+<td>PASS / BLOCKED</td>
+<td>Run ID, snapshot date, last completed candle, coverage</td>
+</tr>
+<tr class="even">
+<td>Catalog and held-symbol coverage</td>
+<td>PASS / BLOCKED</td>
+<td>Missing mappings and quote subscriptions</td>
+</tr>
+<tr class="odd">
+<td>Corporate-action / price-basis reviews</td>
+<td>PASS / NEEDS REVIEW</td>
+<td>Per-symbol review status and evidence</td>
+</tr>
+<tr class="even">
+<td>Policy, calendar, shortlist</td>
+<td>NEEDS REVIEW until approved</td>
+<td>Version/diff, proposed symbols, retained holdings</td>
+</tr>
+<tr class="odd">
+<td>Pending orders and exposure</td>
+<td>PASS / BLOCKED</td>
+<td>Reconciled orders, fills, residual quantities</td>
+</tr>
+<tr class="even">
+<td>Live quotes</td>
+<td>PASS / BLOCKED</td>
+<td>Quote age, exchange time, bid/ask depth</td>
+</tr>
+<tr class="odd">
+<td>Trading authorization</td>
+<td>NOT AUTHORIZED / AUTHORIZED</td>
+<td>Explicit approval record and mode</td>
+</tr>
+<tr class="even">
+<td>Backup and evidence</td>
+<td>PASS / BLOCKED</td>
+<td>Report path, backup verification, artifact manifest</td>
+</tr>
+</tbody>
+</table>
+<h2 id="scope-and-confidence">9. Scope and confidence</h2>
+<p><strong>Directly supported by the uploaded checklist:</strong>
+current manual workflow, daily strategy-data requirements, documented
+session/authentication behavior, setup confirmation boundary, feed/quote
+checks, order/fill distinctions, intraday versus long-term close
+behavior, and report/backup instructions.</p>
+<p><strong>Recommendations/inferences from this review:</strong>
+prioritization of automation, watchdog architecture, idempotency
+requirements, acceptance tests, target readiness report, and the
+repository audit questions.</p>
+<p><strong>Not established by the document:</strong> that the code
+contains a specific bug, that any suggested API exists, that the broker
+feed is entitled/healthy on a given day, that a strategy is profitable,
+or that the system is safe for real-money trading. Those require
+repository inspection, tests, and independent validation.</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>The best next step is to turn the checklist into a machine-readable
+daily runbook with durable statuses and evidence, automate read-only
+validation and reporting first, and preserve human approval for setup
+and trading authority. The most important engineering work is robust
+monitoring and state-aware recovery—not merely scripting the UI
+clicks.</p>
+
+</body>
+</html>

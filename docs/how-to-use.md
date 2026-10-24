@@ -1,5 +1,21 @@
 # How to use Agentic Trader
 
+Daily operations now have a [read-only report, independent monitor, opt-in IST data
+acquisition and verified backup/restore drill](operations-automation.md). Run
+`./scripts/start_operations.sh` beside the owning UI server for local monitoring;
+add `--download-universe nifty100 --after 08:30` only to opt into scheduled acquisition.
+It stops at downloaded evidence: review/install, current-day basis attestations and
+Approval/Automatic activation remain explicit. No service-manager template is enabled
+automatically. The guide covers commands, output, uncertain outcomes and deployment limits.
+
+For the complete daily routine, read [Daily operator checklist and strategy-data
+explanation](daily-operator-checklist.md). It covers every manual step from opening
+the account through reviews, activation, supervision, reconciliation and backups,
+with reasons, expected results and recovery. The normal guided strategy workflow
+needs a current-IST-day download and explicit review; saved bundles do not refresh
+automatically. Reuse valid same-day work. Catalog imports and app registration are
+conditional/initial tasks, while long-term price-basis reviews are session-specific.
+
 Version **0.19.0** improves the existing interface with labelled local SVG icons,
 a compact workspace header, a collapsible setup explanation and shorter repeated
 status messages. Portfolio keeps valuation state visible while folding formulas into
@@ -497,6 +513,11 @@ wall-clock time and no network. Preserve the fixture, config, calendar, charge
 version, code revision and report for comparison.
 
 ## 12. Daily operation and recovery
+
+Use the [full daily checklist](daily-operator-checklist.md) for the current browser
+workflow and the long-term/intraday distinction. The flatness instruction below
+applies to intraday operation; intentionally retained long-term holdings persist
+overnight and must be inspected rather than treated as automatically sold.
 
 Before the session: verify clock synchronization, free disk, reviewed calendar,
 private credentials, previous-session flatness, and database verification. Start

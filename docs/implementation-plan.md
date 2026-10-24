@@ -1,5 +1,55 @@
 # Implementation plan, enhancements and status
 
+## Daily operations automation (23 October 2026)
+
+Reviewed the supplied [findings](agentic-trader-checklist-review-and-findings.html)
+against code. Existing server watchdog, exact ledger/authorization reconciliation,
+guided setup checkpoints, two-minute binding and restart-to-Manual remain in use.
+Added `operations/` for consolidated read-only evidence, independent loopback monitoring,
+opt-in IST acquisition and source-preserving backup/drills. See [the component guide](operations-automation.md).
+
+`/api/operations` separates service/account/broker observation times, calendar,
+mappings/held subscriptions, current reviews, quote quality, order/exit residue and
+current authority. Audits check source hashes/date/per-symbol session coverage and a
+separate read-only accounting snapshot. The external supervisor records local alert
+and recovery transitions, five-minute audits and observed daily reports. Acquisition
+requires explicit opt-in, a reviewed current session, Manual, account/order/catalog
+and broker preflight. Supervisor/server checkpoints precede ambiguous I/O; repeats
+reconcile known attempts or stop for review. No setup confirmation, review attestation,
+feed connection, order or mode activation is automated.
+
+Stopped-owner packages use the advisory lock and SQLite backup API without constructing
+Database/PaperBroker. They preserve pending state and verify the copied ledger plus
+referenced config/calendar/installed data/source/model files before manifest publication.
+An isolated drill verifies hashes/accounting without rebinding paths or starting a service.
+Private CLI commands, launcher and inactive launchd/systemd templates are supplied.
+
+Validation: **1,248 Python / 193 UI tests**, Ruff lint/format, mypy, shell syntax and
+plist validation passed. Unit/functional evidence includes source corruption/freshness,
+auth/origin, repeated/unknown attempts, monitoring faults, exact partial/full/rejected/
+cancelled-order backups, installed artifacts, disk failure and isolated restoration.
+See [test-plan.md](test-plan.md). Real broker/market/device/power-loss/service-manager
+acceptance, remote alerts, encrypted off-device replication and full relocated startup
+remain separate. Interrupted setup still stops for explicit review; no automatic
+rollback/resumption or broader trading authority is claimed. Phase 5 remains unchanged.
+
+## Daily operator documentation (23 October 2026)
+
+Added [a complete daily operator checklist](daily-operator-checklist.md) explaining
+the strategy-data bundle, current-IST-day guided setup requirement, immutable saved
+history, valid same-day reuse and new-completed-session refresh. Separates initial,
+daily and conditional work; covers broker renewal, Manual preparation, source/calendar
+and shortlist review, held-symbol basis exceptions, feed/quote readiness, independent
+mode activation, proposals/SIP, supervision, horizon-specific closing and account-bound
+reports/verification/backups. Linked the checklist from usage, preparation and runbook.
+
+Validation: documentation/source consistency review and **128 local Markdown links
+checked across six files**, including launcher/config selection, preparation/guided freshness checks,
+desk mode/readiness and CLI report/backup ordering. Official Kite authentication and
+historical-candle references were checked. No runtime, financial policy or workflow
+implementation changed; no broker/account actions or real-market/device acceptance
+were performed. Existing implementation milestones remain unchanged.
+
 ## Workspace usability pass (0.19.0, 23 October 2026)
 
 Reviewed the existing Dashboard, Portfolio, Analysis, Broker, Backtesting and Risk

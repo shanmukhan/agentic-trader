@@ -28,7 +28,7 @@ from trading_agent.execution.paper_broker import PaperBroker
 from trading_agent.market_data.calendar import IST, SessionCalendar
 from trading_agent.market_data.candles import CandleBuilder
 from trading_agent.market_data.repository import store_candles
-from trading_agent.models import Instrument, Quote
+from trading_agent.models import Instrument, Quote, stamp
 
 
 class SetupError(ValueError):
@@ -65,6 +65,7 @@ class SetupService:
         self.started = False
         self.connection_observer: Callable[[bool], None] | None = None
         self.verified = False
+        self.verified_at: datetime | None = None
         self.nonce: tuple[str, float] | None = None
         self.values = {
             "api_key": os.environ.get("KITE_API_KEY", ""),
@@ -151,6 +152,7 @@ class SetupService:
                 ),
                 "access_token_available": bool(self.values["access_token"]),
                 "profile_verified_this_run": self.verified,
+                "profile_checked_at": stamp(self.verified_at) if self.verified_at else None,
                 "feed_connected": self.engine.connected,
                 "stream_requested": self.stream is not None,
                 "feed_diagnostics": self.stream.diagnostics() if self.stream else None,
@@ -184,6 +186,7 @@ class SetupService:
                 raise SetupError("Disconnect the feed before replacing app credentials.")
             self._save_values({**body, "access_token": ""})
             self.verified = False
+            self.verified_at = None
             self.nonce = None
 
     def begin_login(self) -> dict[str, str]:
@@ -235,6 +238,7 @@ class SetupService:
                 ) from None
             self._save_values({**self.values, "access_token": token})
             self.verified = True
+            self.verified_at = self.clock()
 
     def broker(self) -> ReadOnlyKite:
         return ReadOnlyKite(self.values["api_key"], self.values["access_token"])
@@ -245,11 +249,13 @@ class SetupService:
                 self.broker().get_profile()
             except Exception:
                 self.verified = False
+                self.verified_at = None
                 raise SetupError(
                     "Kite profile check failed. Complete a fresh login; profile success "
                     "alone does not verify data entitlement."
                 ) from None
             self.verified = True
+            self.verified_at = self.clock()
 
     def import_catalog(self) -> int:
         with self.lock:

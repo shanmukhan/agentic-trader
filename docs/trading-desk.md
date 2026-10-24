@@ -141,7 +141,8 @@ held unsupported classes prevent activation until that accounting/review gap is 
 The daily rank measures completed momentum/trend/liquidity/volatility screen strength,
 not calibrated expected profit. A matching validated ML model filters individual entry
 proposals at trade time. No stock, ranking, high score or historical result guarantees
-profit. Unattended daily refresh, current-market net-expectancy validation
+profit. [Opt-in scheduled acquisition](operations-automation.md) is available, but
+unattended strategy installation/review, current-market net-expectancy validation
 and unattended corporate-action source integration remain separate work.
 
 ## Start and navigate

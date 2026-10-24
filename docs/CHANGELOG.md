@@ -1,5 +1,47 @@
 # Change log
 
+## 2026-10-23 — Daily reports, independent supervision and guarded acquisition
+
+Implemented observation/acquisition/evidence recommendations from the
+[checklist review](agentic-trader-checklist-review-and-findings.html). Added authenticated
+`/api/operations` and `daily-report` with reason-coded prerequisites, source-date/hash/
+session coverage, independent exact accounting verification, bounded order lifecycle
+details, pending exits and actual current authority. Broker profile success now has
+a separate timestamp without asserting continuing token validity.
+
+Added `operations-watch` and `scripts/start_operations.sh` for independent local alert/
+recovery transitions, five-minute audits and observed daily snapshots. Explicit opt-in
+schedules one current-IST-date acquisition attempt through existing preparation with
+session/account/order/catalog/broker gates and durable receipts. Unknown outcomes are
+inspected rather than replayed. No source/basis attestation, installation, connection
+or mode change is performed. Added inactive launchd/systemd templates.
+
+`operations-backup` / `operations-restore-drill` privately preserve and verify the
+stopped ledger/config/calendar/installed strategy/data/model set without order recovery.
+Drill success verifies isolated artifacts/accounting, not path rebinding/service startup.
+See [usage, limits and recovery](operations-automation.md). **1,248 Python / 193 UI
+tests passed**, with Ruff lint/format, mypy, shell/plist checks. External broker/market/
+device acceptance, remote alerts, encrypted off-device retention and full deployment
+restoration remain separate work; explicit trading authority is preserved.
+
+## 2026-10-23 — Daily manual-operation and strategy-data guide
+
+Added [daily-operator-checklist.md](daily-operator-checklist.md) with the contents and
+purpose of strategy downloads, per-trading-day guided refresh, current IST source-date
+checks, same-day reuse and after-close refresh behavior. Documents each manual step,
+why it is required, expected results and recovery, from startup/broker access through
+source/basis review, activation, order supervision and end-of-day reports/backups.
+Distinguishes initial setup, conditional tasks, long-term holdings and intraday exits;
+clarifies that downloads do not update themselves, train ML or authorize trades.
+Linked from how-to-use, strategy preparation and runbook; clarified the usage guide's
+intraday flatness instruction for long-term operators.
+
+Validation: reviewed against current launcher/controllers/CLI and existing component
+guides; **128 local Markdown links across six files passed**, and official Kite
+authentication/candle references were checked. `git diff --check` passed.
+Documentation only; no new runtime tests or financial changes. No broker downloads,
+operator attestations, order activity or external acceptance performed.
+
 ## 2026-10-23 — Workspace usability and local icons (0.19.0)
 
 Added a same-origin SVG icon sprite for all twelve labelled navigation destinations

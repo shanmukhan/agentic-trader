@@ -1,5 +1,31 @@
 # Operator API and command contracts
 
+## Daily operations evidence and acquisition
+
+`GET /api/operations` requires the existing operator bearer token and returns schema-1
+read-only account/policy identity, reviewed session/hours, dated broker check, account
+values, desk blockers/current authority, selected/held quote diagnostics, pending counts/
+exits, latest 200 orders with remaining quantities, preparation and guided state. It does
+not tick/expire the desk or recover orders. Check rows contain `id`, `status`
+(PASS/BLOCKED/NEEDS REVIEW), `reason_code`, `detail` and `observed_at`.
+`orders_truncated` discloses the display bound.
+
+`?audit=true` adds source/draft hashes, current IST source date, per-symbol completed
+session coverage and a separate five-second-budget read-only SQLite integrity/accounting
+snapshot (`ledger_audit`, with its own journal sequence). These can observe different
+moments while the account runs. A passing report does not grant trading authority.
+
+`POST /api/operations/download` accepts only current IST `session_date` (YYYY-MM-DD),
+`universe` (`nifty100`/`nifty500`) and strict `acknowledged: true`. Existing bearer/origin
+checks apply. It reuses valid data or starts existing preparation after reviewed-session,
+Manual, pending-order/fault/kill, policy, catalog/held-coverage and broker-profile gates.
+The response has `state`, `session_date`, `job_id` when known and `request_id` for claimed
+attempts. Durable date/universe receipts reconcile repeats; conflicts fail and ambiguous
+claims return `outcome_unknown`. 409 requires inspecting/fixing evidence, not blind retry.
+No install/review/connection/mode/order operation is invoked. No client-selected paths,
+models, URLs or credentials are accepted/returned. See [operations automation](operations-automation.md)
+for CLI contracts, outputs, security boundaries and recovery.
+
 ## Investment policy drafts and schedule inspection (0.18.0)
 
 All `/api/investment-policies*` routes use existing local Bearer/Host/Origin access

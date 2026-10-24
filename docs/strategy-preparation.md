@@ -1,5 +1,19 @@
 # Prepare a genuine-data paper strategy in the UI
 
+The [operations supervisor](operations-automation.md) can now acquire this bundle
+once per reviewed IST session date with explicit scheduling opt-in. It checks Manual,
+account/order/catalog/held-symbol and broker preconditions, deduplicates attempts and
+stops at downloaded evidence. It does not install, attest basis/source reviews, connect
+the feed or activate a mode. Failed or ambiguous attempts need inspection and an
+explicit manual recovery; ordinary preparation controls below remain available.
+
+See the [daily operator checklist](daily-operator-checklist.md) for what strategy
+data contains and the complete daily sequence. In the normal guided workflow,
+download on the current IST date: yesterday evening's run cannot authorize today's
+combined setup, even if no new price session has completed. Reuse valid same-day
+data until a newly completed session or changed evidence requires another run.
+An installed snapshot remains saved but is not incrementally updated by live quotes.
+
 Version 0.16.0's [research engine](investment-research.md) is separate from this
 installation/authority workflow. Preparation still takes the latest **60** completed
 sessions from its supported current-year source; it does not acquire 200-session or

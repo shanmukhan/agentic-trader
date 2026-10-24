@@ -53,6 +53,38 @@ def parser() -> argparse.ArgumentParser:
     commands.add_parser("init-db")
     commands.add_parser("status")
     commands.add_parser("verify-db")
+    daily_report = commands.add_parser(
+        "daily-report", help="read-only running-service daily operations audit"
+    )
+    daily_report.add_argument(
+        "--output", type=Path, required=True, help="new private report directory"
+    )
+    monitor = commands.add_parser(
+        "operations-watch", help="independent loopback supervisor; local alerts"
+    )
+    monitor.add_argument(
+        "--output", type=Path, required=True, help="private durable supervisor directory"
+    )
+    monitor.add_argument("--interval", type=int, default=10)
+    monitor.add_argument("--once", action="store_true")
+    monitor.add_argument(
+        "--download-universe",
+        choices=("nifty100", "nifty500"),
+        help="explicit opt-in to one current-day scheduled download attempt; no installation",
+    )
+    monitor.add_argument(
+        "--after", default="08:30", help="IST acquisition start, HH:MM; default 08:30"
+    )
+    bundle = commands.add_parser(
+        "operations-backup", help="stopped-account verified ledger and referenced artifact package"
+    )
+    bundle.add_argument("--output", type=Path, required=True)
+    drill = commands.add_parser(
+        "operations-restore-drill",
+        help="verify and copy a package to a NEW isolated directory; no service start",
+    )
+    drill.add_argument("package", type=Path)
+    drill.add_argument("--output", type=Path, required=True)
     preflight = commands.add_parser(
         "preflight", help="read-only local acceptance diagnostics; no account recovery/network"
     )
@@ -404,6 +436,35 @@ def execute(args: argparse.Namespace) -> Any:
             return long_term_report(source, args.output)
         finally:
             source.close()
+    if args.command == "daily-report":
+        from trading_agent.operations.supervisor import collect, write_report
+
+        report = collect(settings)
+        write_report(report, args.output)
+        return {"output": str(args.output), "checks": report["checks"], "ready_for_live": False}
+    if args.command == "operations-watch":
+        from datetime import time
+
+        from trading_agent.operations.supervisor import supervise
+
+        return supervise(
+            settings,
+            args.output,
+            clock,
+            interval=args.interval,
+            after=time.fromisoformat(args.after),
+            download_universe=args.download_universe,
+            once=args.once,
+        )
+    if args.command == "operations-backup":
+        from trading_agent.operations.backup import create_package
+
+        config = Path(args.config or os.environ.get("TRADING_CONFIG", "config/paper.toml"))
+        return create_package(settings, config, args.output, clock())
+    if args.command == "operations-restore-drill":
+        from trading_agent.operations.backup import restore_drill
+
+        return restore_drill(settings, args.package, args.output)
     if args.command == "preflight":
         from trading_agent.observability.preflight import preflight, write_preflight
 

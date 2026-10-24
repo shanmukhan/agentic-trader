@@ -1,5 +1,18 @@
 # Operator runbook
 
+Use [operations automation](operations-automation.md) for the independent local
+monitor (`./scripts/start_operations.sh`), audited `daily-report`, optional scheduled
+acquisition and `operations-backup` / `operations-restore-drill`. The new stopped-owner
+package commands do **not** run engine recovery or cancel pending orders; the older
+owning `verify-db`/`backup` commands below retain their documented side effects. The
+drill verifies copies and accounting without rebinding paths or starting a service.
+
+For routine daily operation, use the [daily operator checklist](daily-operator-checklist.md).
+It separates initial setup from daily and conditional actions, explains strategy-data
+freshness and current-session reviews, and gives the ordered long-term report,
+verification and backup sequence. The incident and restore procedures below remain
+the detailed recovery reference; always use the owning account's actual config.
+
 ## Start and stop
 
 Use the separate [research guide](backtesting.md) for Phase 2 commands. Backtests and

@@ -1,5 +1,27 @@
 # Architecture and invariants
 
+## Daily operations boundary
+
+`operations/report.py` assembles authenticated read-only daily evidence from account,
+desk and preparation/guided state. Full audits use separate read-only SQLite snapshots
+and existing exact ledger/authorization reconstruction; no owner/recovery object is
+created. `operations/supervisor.py` runs independently so it can alert on an unreachable
+server, unlike the existing in-process risk watchdog. Its only mutation endpoint is
+explicitly opted-in scheduled **data acquisition**.
+
+`operations/schedule.py` persists current IST date/universe/request identity before
+starting the existing preparation worker. Repeated/ambiguous outcomes are reconciled
+or left for review, never silently replayed. `operations/storage.py` flushes atomic
+checkpoints and directory entries. Existing guided setup retains its confirmed input
+binding and manual interrupted-state recovery; acquisition adds no trading authority.
+
+`operations/backup.py` holds the stopped account's advisory lock without engine recovery,
+copies the ledger through SQLite's backup API and verifies hashes/exact accounting.
+The drill writes only a new isolated destination; original reference paths are never
+write targets. It verifies artifact/accounting recovery without claiming automatic
+service relocation/startup. See [the component guide](operations-automation.md) for
+actual limits and external acceptance gates.
+
 ## V2 Phase 5 investment-policy planning boundary (0.18.0)
 
 `investment_research/policy.py` adds an independent schema-1 draft family

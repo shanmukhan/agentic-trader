@@ -1,5 +1,35 @@
 # Test and validation plan
 
+## Daily operations automation (23 October 2026)
+
+**Integrated validation: 1,248 Python and 193 JavaScript tests passed.** Ruff lint,
+source/test format checks and mypy passed; `sh -n scripts/start_operations.sh` and
+`plutil -lint deployment/launchd/com.example.trading-operations.plist` passed.
+The new 32 unit/functional cases in `tests/test_operations_unit.py` and
+`tests/functional/test_operations.py` use invented local accounts/provider responses.
+
+Covered authenticated/origin-protected operations, strict acknowledgement and forbidden
+authority inputs; read-only account/decision rows; distinct broker/source/session clocks;
+source/draft tampering, duplicate/missing/future candles and symlink rejection; same-day
+repeated downloads and interrupted/unknown claims without replay; pending-order refusal
+without cancellation; unavailable/stale service, feed/quote/basis/fault/ledger/exit alerts,
+closed-market versus intraday residual exposure, recovery transition and deduplication.
+Before-open reports are separately identified so they cannot suppress after-close evidence.
+
+Backup checks independently reconstruct exact fill debit/fees with Decimal, compare
+original/restored SQLite rows for accepted/partial/full/cancelled/rejected orders,
+preserve pending reservations/holdings, check installed source/data inclusion and all
+manifest hashes/permissions, refuse running ownership/existing destinations, and reject
+corruption/disk-write failure without a success marker. Isolated restore verifies copied
+ledger/accounting without financial recovery, path rebinding or service startup.
+
+The complete suite also retains existing guided confirmation/expiry/restart, model,
+order, corporate-action and risk checks. These are engineering/simulated evidence;
+no user broker login/download/attestation/mode/order action was performed. Actual
+launchd/systemd operation, host crash/power failure, handset notification visibility,
+real feed/entitlement, remote delivery and complete relocated service restoration are
+unverified. See [the implementation review and usage limits](operations-automation.md).
+
 ## Workspace usability validation scope (0.19.0, 23 October 2026)
 
 Check that the local SVG sprite is served with the expected static content type, and

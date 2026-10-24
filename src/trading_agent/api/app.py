@@ -184,6 +184,28 @@ def create_app(
 
     mount_setup(app, setup, authorized)
     mount_desk(app, desk, setup, authorized, ASSETS, clock, preparation)
+    from trading_agent.operations.report import operations_report
+    from trading_agent.operations.schedule import ScheduledDownload, scheduled_download
+
+    @app.get("/api/operations", dependencies=[Depends(authorized)])
+    def operations_status(audit: bool = False) -> dict[str, Any]:
+        return operations_report(
+            desk, setup, preparation, app.state.guided_setup, clock(), audit=audit
+        )
+
+    @app.post("/api/operations/download", dependencies=[Depends(authorized)])
+    def operations_download(body: ScheduledDownload) -> dict[str, Any]:
+        from trading_agent.api.setup import SetupError
+
+        try:
+            return scheduled_download(preparation, body, clock())
+        except SetupError:
+            raise
+        except Exception:
+            raise SetupError(
+                "Scheduled preparation preflight failed; inspect saved evidence."
+            ) from None
+
     from trading_agent.api.analysis import mount_analysis
 
     mount_analysis(app, desk, authorized, ASSETS, clock)
