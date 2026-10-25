@@ -105,3 +105,30 @@ recorded in [the validation plan](test-plan.md). Simulated DOM evidence does not
 browser layout, mobile/touch, zoom, broker or device acceptance. No test of this change
 should operate the user's actual account or convert synthetic evidence into a
 real-market claim.
+
+
+## Workspace proposal visibility (24 October 2026)
+
+The unlocked workspace now retains a proposal monitor across section navigation.
+Within the five-second best-effort check interval, the accessible banner and title show
+pending proposals and the earliest review deadline. The initial unlocked state says
+**Checking for paper proposals** until the first result. The visible countdown has
+`aria-live="off"`; polite live announcements update only when count or status changes,
+so one-second ticks do not repeatedly interrupt a screen reader. **Review paper proposals** opens
+the existing Paper Trading flow. **Enable desktop alerts** requests browser permission
+only after that button is selected; denying it retains the banner and title. Alerts
+contain no financial/account values and never approve a trade. There is no audio
+permission prompt or automatic trading action from this monitor.
+
+Deadline passage directs the operator to inspect Trade History; failed or aging reads
+explicitly become stale. Browser sleep/throttling, closed or locked workspaces and
+network failure can prevent delivery. The monitor is polling, not real-time push.
+Lock clears alerts and notifications; confirmation dialogs make the banner controls
+inert with the rest of the workspace. Plain-language price-gap, calendar, restart and
+late-authorization guidance preserves the underlying risk gates. See
+[the operational steps and recovery limits](trading-desk.md#proposal-alerts-across-workspace-sections).
+
+Node DOM checks cover navigation, hidden-tab monitoring, opt-in/blocked notifications,
+identity deduplication, expiration guidance, stale reads, confirmation guards and
+late-response cleanup. These checks do not establish browser rendering, screen-reader,
+mobile/touch or desktop notification delivery acceptance on an actual device.

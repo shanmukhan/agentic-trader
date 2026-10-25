@@ -34,6 +34,7 @@ class Settings(BaseModel):
     entry_end: time = time(14, 30)
     flatten_at: time = time(15, 15)
     calendar: Path = Path("config/sessions.csv")
+    stream_limit: int = Field(default=10, ge=1, le=3000, strict=True)
     stream_tokens: tuple[int, ...] = ()
     operator_token: SecretStr = SecretStr("")
 
@@ -65,10 +66,12 @@ class Settings(BaseModel):
             raise ValueError("order TTL must exceed latency")
         if (
             any(token <= 0 for token in self.stream_tokens)
-            or len(self.stream_tokens) > 10
+            or len(self.stream_tokens) > self.stream_limit
             or len(set(self.stream_tokens)) != len(self.stream_tokens)
         ):
-            raise ValueError("provide up to ten distinct positive instrument tokens")
+            raise ValueError(
+                f"provide up to {self.stream_limit} distinct positive instrument tokens"
+            )
         token = self.operator_token.get_secret_value()
         if token and len(token) < 32:
             raise ValueError("operator token requires at least 32 characters")

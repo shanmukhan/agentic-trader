@@ -2,7 +2,8 @@ import csv
 import json
 import sqlite3
 import struct
-from contextlib import nullcontext
+import tomllib
+from contextlib import closing, nullcontext
 from decimal import Decimal
 from unittest.mock import Mock
 
@@ -94,6 +95,73 @@ def test_full_browser_setup_flow_is_readonly_for_finances(setup_client, monkeypa
         assert after[key] == before[key]
     assert client.get("/api/paper/orders", headers=AUTH).json() == []
     assert not service.engine.faulted
+
+
+def test_symbol_selection_roundtrips_toml_and_preserves_persisted_ledger(setup_client):
+    client, service = setup_client
+    content = service.config.read_text().replace(
+        "stream_tokens = []",
+        '"stream_tokens" = [\n] # reviewed feed selection',
+    )
+    service.config.write_text("# private account settings\n" + content)
+
+    def persisted_finances():
+        with closing(sqlite3.connect(service.engine.settings.database)) as connection:
+            return {
+                table: connection.execute(f"SELECT * FROM {table}").fetchall()
+                for table in ("meta", "orders", "fills", "positions")
+            }
+
+    before = persisted_finances()
+    response = client.post("/api/setup/symbols", headers=AUTH, json={"symbols": ["DEMO", "SECOND"]})
+    assert response.status_code == 200, response.text
+    saved = service.config.read_text()
+    assert saved.startswith("# private account settings\n")
+    assert "# reviewed feed selection" in saved
+    assert tomllib.loads(saved)["stream_tokens"] == [1, 2]
+    assert service.engine.settings.stream_tokens == (1, 2)
+    assert persisted_finances() == before
+
+
+def test_configured_maximum_selection_exceeds_old_body_limit_without_relaxing_secrets(setup_client):
+    client, service = setup_client
+    service.engine.settings = service.engine.settings.model_copy(update={"stream_limit": 3000})
+    service.config.write_text(
+        service.config.read_text().replace("stream_limit = 10", "stream_limit = 3000")
+    )
+    catalog = [(f"NSE:CAPACITY{index:022d}", 513 + 256 * index, ".05") for index in range(3000)]
+    with service.engine.db.transaction() as tx:
+        tx.executemany("INSERT INTO instruments VALUES (?,?,?)", catalog)
+
+    def persisted_finances():
+        with closing(sqlite3.connect(service.engine.settings.database)) as connection:
+            return {
+                table: connection.execute(f"SELECT * FROM {table}").fetchall()
+                for table in ("meta", "orders", "fills", "positions", "events")
+            }
+
+    before = persisted_finances()
+    symbols = [symbol for symbol, _, _ in catalog]
+    content = json.dumps({"symbols": symbols}).encode()
+    assert 8192 < len(content) < 128 * 1024
+    response = client.post("/api/setup/symbols", headers=AUTH, content=content)
+    assert response.status_code == 200, response.text
+    assert response.json()["stream_limit"] == 3000 and len(response.json()["selected"]) == 3000
+    saved = service.config.read_bytes()
+    assert tomllib.loads(saved.decode())["stream_tokens"] == [token for _, token, _ in catalog]
+    assert service.engine.settings.stream_tokens == tuple(token for _, token, _ in catalog)
+    assert persisted_finances() == before
+
+    for operation, body in (
+        ("symbols", json.dumps({"symbols": symbols + ["NSE:EXTRA"]})),
+        ("symbols", json.dumps({"symbols": ["SENSITIVE" * 17000]})),
+        ("credentials", json.dumps({"api_secret": "SENSITIVE" * 1100})),
+        ("exchange", json.dumps({"request_token": "SENSITIVE" * 1100})),
+    ):
+        rejected = client.post("/api/setup/" + operation, headers=AUTH, content=body)
+        assert rejected.status_code == 409 and "SENSITIVE" not in rejected.text
+        assert service.config.read_bytes() == saved
+        assert persisted_finances() == before
 
 
 def test_empty_depth_keeps_feed_online_without_filling_pending_order(setup_client, monkeypatch):

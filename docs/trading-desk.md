@@ -343,3 +343,47 @@ proposals, shared unlock, confirmations and activity. They are engineering accep
 not profitable-stock evidence, real-feed/fill acceptance or physical-phone testing.
 Current-market data acquisition and prospective net-of-cost strategy/model evaluation
 remain required before claiming a qualified profit-seeking operating shortlist.
+
+
+## Proposal alerts across workspace sections
+
+After running `./scripts/start_ui.sh`, reload `/workspace` and unlock with the local
+operator token. The workspace checks authenticated persisted proposal metadata every
+five seconds, including while you use Stock Analysis, Strategies or another browser
+tab. It shows a proposal banner, a browser-title count and the earliest deadline in
+seconds. Before the first response, the banner says **Checking for paper proposals**.
+The changing countdown sits outside the polite live-status announcement; assistive
+technology receives count/state changes without a repeated announcement each second.
+The read is bounded to 100 records, prioritizing awaiting proposals; it does
+not evaluate strategies, expire records, reserve cash, approve or submit an order.
+Open **Review paper proposals** to use the existing review and confirmation flow.
+
+For desktop notifications, select **Enable desktop alerts** in the banner and choose
+the browser permission explicitly. No permission is requested merely by opening or
+unlocking the workspace. New pending proposal identities notify once per workspace
+unlock; refreshes do not repeat the same alert. Notification text contains no symbol,
+price, token or account balance. Selecting an alert opens Paper Trading; it never
+approves a trade. Use **Disable desktop alerts** to stop notifications. Lock or page
+close clears the alert display, notification handles and in-memory preference.
+
+If permission is blocked or unsupported, the banner and browser-title count remain
+available. If a proposal's deadline passes locally or its saved outcome becomes
+expired, the banner directs you to Trade History; a local countdown does not claim
+that the server has changed its record. Failed checks or more than 15 seconds without
+a successful response show stale/unavailable guidance. Open Paper Trading and refresh
+before acting. Authorization rejection locks the workspace. Late responses after
+Lock cannot restore proposal details.
+
+This is best-effort polling while the workspace remains open and unlocked. Browser
+sleep, background throttling, network outages and a closed/locked workspace can delay
+or prevent alerts. It is not server push, a background service or a guarantee that a
+120-second approval deadline will be seen. Expired/cancelled signals still require
+inspection; the alert does not retry them. Automated DOM tests cover alert permission,
+route and hidden-tab checks, deduplication, stale reads, expiry, guards and Lock cleanup.
+The functional endpoint test independently inspects SQLite to verify unchanged exact
+cash and absent orders/fills; it does not prove desktop/mobile notification delivery.
+
+Price-gap blockers now explain that the quote lies outside the policy's entry bound
+and require a usable in-bound quote or new reviewed signal. Calendar blockers direct
+you to Strategies for fresh data and a reviewed exchange calendar. Startup and delayed
+authorization outcomes explain the next action without changing any safeguard.

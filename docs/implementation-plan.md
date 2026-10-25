@@ -1,5 +1,45 @@
 # Implementation plan, enhancements and status
 
+## 24 October 2026 — issue-report reliability fixes
+
+Revalidated `PROJECT_ISSUES_GAPS_AND_IMPROVEMENTS.md` against 0.19.0 rather than its
+historical 0.14.0 references. Its current-code matrix covers every numbered finding
+and corrects obsolete absence claims without promoting draft/planning features into
+execution capabilities.
+
+Implemented configured 1–3,000 full-depth stream capacity (default ten), bounded
+subscription/frame handling, expanded feed initialization/history bounds and unchanged
+economic policy identities. Manual setup consumes decoded frame batches: all accepted
+quote/audit events and every per-quote risk/fill check remain, with one transaction per
+frame, per-quote live clock sampling and rollback revoking frame trust. Complete quote evidence remains required for
+corporate-action reconciliation and causal exports. The automated controller retains
+its per-quote callback cadence. Query-only independent WAL readers remove writer
+reservation from account/console/order/readiness/proposal metadata reads; combined
+memory/ledger views still serialize on the engine lock.
+
+Replaced regex configuration mutation with round-trip `tomlkit`, retaining complete
+schema/economic-policy checks and private atomic file replacement. Shared lazy
+POSIX/Windows advisory locking covers account/auxiliary stores without asserting
+native Windows app acceptance. Added a bounded authenticated read-only proposal-alert
+resource, workspace-wide count/title/deadline, opt-in desktop notifications and clear
+expiry/stale/error/lock behavior, plus actionable cited blocker guidance. Countdown
+updates do not continuously announce through the live status region.
+
+See [persistence and recovery](quote-persistence.md), [capacity](paper-feed.md),
+[configuration](ui-setup.md) and [alerts](trading-desk.md) for commands/inputs/results.
+Validation: **1,292 Python / 202 Node UI tests passed**, with **91.98% statement
+coverage**, Ruff lint/format, mypy and offline dependency-lock checks passing. Details
+and resource-warning/platform limitations are in [test-plan.md](test-plan.md).
+Synthetic unit/functional tests independently inspect persisted monetary state;
+rendered Firefox desktop/narrow checks use a disposable invented account.
+
+Remaining work is explicit: single-writer/engine contention and journal growth;
+sustained large-universe real feeds; executable months/years/trailing/rebalance
+policies and integrated multi-year validation; licensed PIT fundamentals and portfolio
+concentration models; SPA/push/advanced charts; credential-store/session migration;
+reviewed circuit-band inputs; native OS/device/market acceptance. No live execution,
+headless login or automatic clearing of financial/runtime faults was added.
+
 ## Daily operations automation (23 October 2026)
 
 Reviewed the supplied [findings](agentic-trader-checklist-review-and-findings.html)

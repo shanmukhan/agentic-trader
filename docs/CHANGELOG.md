@@ -1,5 +1,50 @@
 # Change log
 
+## 2026-10-24 — Issue-report corrections and reliability fixes
+
+Re-audited the 0.14.0 report against current 0.19.0 code and added a
+[finding-by-finding disposition matrix](../PROJECT_ISSUES_GAPS_AND_IMPROVEMENTS.md).
+Corrected obsolete claims about daily delivery replay, adjusted daily/weekly/monthly
+research, investment-policy drafts and manual SIP templates. Genuine product gaps
+remain labelled rather than reported complete.
+
+Manual broker-feed frames now share one financial commit without dropping accepted
+quote events or per-quote risk/fill checks. Live processing time is sampled per quote;
+failed frames roll back financial changes and revoke symbol trust. Independent
+query-only WAL snapshots remove writer reservation from selected operator reads.
+Candle commits and the automated controller retain their documented separate behavior;
+engine serialization and journal growth remain limitations.
+
+Added `stream_limit` (default ten, range 1–3,000), bounded full-mode frames/subscription
+batches and expanded feed/history bounds while preserving financial fingerprints.
+Setup API/status, accessible labels/input capacity and confirmation now reflect the
+configured ceiling; only symbol-selection requests get the bounded larger body budget.
+Replaced regex TOML rewriting with `tomlkit` while retaining schema/policy validation
+and private atomic replacement. A shared nonblocking lock helper selects POSIX or
+Windows APIs across account/auxiliary stores.
+
+An indexed read-only proposal-alert endpoint supports a cross-section workspace banner,
+count/deadline/title and opt-in desktop notifications. Expiry/stale/failure/Lock states
+stay explicit, countdowns avoid repeated live-region announcements and known price-gap/
+calendar/review errors give actionable guidance. Alerts do not approve trades or extend
+deadlines. See [usage/recovery](how-to-use.md) and [persistence limits](quote-persistence.md).
+
+Validation: **1,292 Python tests and 202 Node UI tests passed**; **91.98% statement
+coverage** (11,106/12,075), Ruff lint/format, mypy on 125 source files, offline dependency
+lock validation and whitespace checks passed. New tests independently check exact cash,
+fees/delivery-DP, persisted sequential/batch equivalence, protective exits/partial fills,
+rollback/freshness, committed reads, configuration/ownership failures, expanded selection
+and alert authority. The suite emitted 63 SQLite ResourceWarnings in existing test paths;
+these were not treated as evidence of fault-free resource lifecycle.
+
+Disposable Firefox desktop/320×480 checks verified proposal visibility across sections,
+readable controls and Lock cleanup; independent SQLite reads showed ₹25,000 cash,
+zero orders/fills/positions and the unchanged awaiting proposal. These were invented
+local fixtures, not operator/broker acceptance. No user account or broker action was
+performed. Native Windows operation, real-feed scale, physical-device notification
+visibility and full multi-year investment/rebalance/fundamental/security migrations
+remain open. See [validation scope](test-plan.md).
+
 ## 2026-10-23 — Daily reports, independent supervision and guarded acquisition
 
 Implemented observation/acquisition/evidence recommendations from the

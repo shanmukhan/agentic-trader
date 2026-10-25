@@ -1,5 +1,6 @@
 import json
 import sqlite3
+from contextlib import contextmanager
 from datetime import timedelta
 from decimal import Decimal as D
 
@@ -459,15 +460,23 @@ def test_fully_withheld_dividend_can_be_reconciled_with_explicit_zero_receipt(co
     assert engine.snapshot(WHEN + timedelta(days=1))["cash"] == before
 
 
-def test_hot_snapshot_uses_constant_size_claim_caches(corporate_account):
+def test_hot_snapshot_uses_constant_size_claim_caches(corporate_account, monkeypatch):
     engine = corporate_account
     apply(engine, batch_for(engine, [dividend()]))
     queries = []
-    engine.db.connection.set_trace_callback(queries.append)
-    try:
-        engine.snapshot(WHEN)
-    finally:
-        engine.db.connection.set_trace_callback(None)
+    read_snapshot = engine.db.read_snapshot
+
+    @contextmanager
+    def traced_snapshot():
+        with read_snapshot() as connection:
+            connection.set_trace_callback(queries.append)
+            try:
+                yield connection
+            finally:
+                connection.set_trace_callback(None)
+
+    monkeypatch.setattr(engine.db, "read_snapshot", traced_snapshot)
+    engine.snapshot(WHEN)
     assert not any(
         "FROM events" in sql or "FROM fills" in sql or "FROM corporate_" in sql for sql in queries
     )

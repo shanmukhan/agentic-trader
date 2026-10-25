@@ -1,5 +1,23 @@
 # Architecture and invariants
 
+## Frame persistence and operator reads (24 October 2026)
+
+`QuoteStream` can deliver a bounded decoded frame to `PaperBroker.ingest_batch`.
+Manual Setup uses this path, retaining quote order, complete events, risk/protective
+checks and exact fill writes in one commit. The live callback resamples processing
+time per quote so frame processing cannot freeze freshness. Failure rolls back all frame writes and
+revokes trust for its symbols. Candle building follows accepted quotes with separate
+completed-candle persistence; the automated controller keeps its original callback
+cadence. No accepted history is coalesced away because accounting/action validation
+and causal exports depend on it.
+
+`Database.read_snapshot` creates a short-lived independent mode=ro/query-only WAL
+transaction. Account/console/readiness retain engine memory serialization while
+orders/proposal metadata need only the committed database snapshot. An expression
+index serves pending-first bounded alert reads without sorting the decision history. These changes
+reduce commit/writer contention without introducing a second engine writer or
+recovering faults automatically. See [persistence limits and tests](quote-persistence.md).
+
 ## Daily operations boundary
 
 `operations/report.py` assembles authenticated read-only daily evidence from account,
@@ -259,7 +277,15 @@ heuristic exists; a reviewed date allowlist is required. Replay injects every cl
 
 ## Ownership, transactions and recovery
 
-A nonblocking `flock` locks the account for its owning process. One Uvicorn worker
+A shared nonblocking descriptor-lock helper locks the account for its owning process:
+POSIX uses `fcntl.flock`; Windows uses `msvcrt.locking` on the first byte, including
+empty ownership files. Closing the descriptor releases ownership. Account engines,
+stopped-account backups, supervisors, research jobs and investment-draft saves use
+the same helper and report contention without waiting. Unit tests simulate the
+Windows adapter and verify real child-process contention/release on the test host;
+this does not establish native Windows application support. Other filesystem,
+private-permission, process-isolation and deployment assumptions still need platform
+acceptance. One Uvicorn worker
 is supported. Inside that process an `RLock` serializes feed, watchdog and API access,
 and SQLite uses `BEGIN IMMEDIATE`, WAL, foreign keys and `synchronous=FULL`. A paper
 fill, position/cash update, fees, order state and audit events share one transaction.

@@ -22,18 +22,18 @@ class Element {
 const flush=()=>new Promise(r=>setImmediate(r));
 const info=()=>({mode:'paper',investment_horizon:'long_term',observed_at:'2026-10-21T12:30:00+00:00',automation_enabled:false,automation_armed:false,feed_requested:false,feed_connected:false,entry_start:'09:30',entry_end:'14:30',flatten_at:'15:15',max_quote_age_seconds:5,calendar_open:false});
 const ok=data=>({ok:true,status:200,json:async()=>data});
-function setup(fetcher=async()=>ok(info())){
+function setup(fetcher=async()=>ok(info()),windowOptions={}){
  const nodes=Object.fromEntries([...readFileSync('src/trading_agent/api/static/workspace.html','utf8').matchAll(/\bid="([^"]+)"/g)].map(m=>[m[1],new Element()]));
- const events={},posts=[],calls=[];
+ const events={},posts=[],calls=[],intervals=[];
  const child={postMessage:(...a)=>posts.push(a),AgenticNavigation:{canNavigate:()=>true}};
  nodes['workspace-frame'].contentWindow=child;
- const win={location:{origin:'http://127.0.0.1:8004',hash:'#console'},history:{replaceState(...a){win.location.hash=a[2];}},addEventListener:(n,f)=>{events[n]=f;},setTimeout:()=>1,clearTimeout(){}};
+ const win={location:{origin:'http://127.0.0.1:8004',hash:'#console'},history:{replaceState(...a){win.location.hash=a[2];}},addEventListener:(n,f)=>{events[n]=f;},setTimeout:()=>1,clearTimeout(){},setInterval:(fn,ms)=>intervals.push({fn,ms}),...windowOptions};
  const doc={getElementById:id=>{assert.ok(nodes[id],id);return nodes[id];}};
  const instance=createWorkspace(doc,win,async(url,options)=>{calls.push({url,options});return fetcher(url,options);});
  async function unlock(){nodes['workspace-token'].value='valid-test-operator-token-1234567890';nodes['workspace-unlock'].fire('submit');await flush();}
  function ready(view='risk',extra={}){events.message({origin:win.location.origin,source:child,data:{type:'workspace-ready',view,path:nodes['workspace-frame'].src.split('#')[0]},...extra});}
  function navigate(view){win.location.hash='#'+view;events.hashchange();}
- return {nodes,events,win,child,posts,calls,instance,unlock,ready,navigate};
+ return {nodes,events,win,doc,child,posts,calls,intervals,instance,unlock,ready,navigate};
 }
 test('workspace loads no private API before unlocking and explains manual trading/feed startup',async()=>{
  const s=setup();assert.equal(s.calls.length,0);assert.ok(s.nodes['workspace-frame'].hidden);
@@ -220,4 +220,58 @@ test('investment-policy is a guarded Strategies subview with matching path hando
 
 test('menu and onboarding update their text spans, preserving decorative icons and collapsed guidance',async()=>{
  const s=setup();const menuIcon=new Element(),actionIcon=new Element();s.nodes['workspace-menu-toggle'].append(menuIcon);s.nodes['onboarding-action'].append(actionIcon);await s.unlock();s.navigate('analysis');assert.equal(s.nodes['workspace-menu-label'].textContent,'Menu · Stock Analysis');assert.equal(s.nodes['onboarding-action-label'].textContent,'Set up a strategy');assert.ok(s.nodes['workspace-menu-toggle'].children.includes(menuIcon));assert.ok(s.nodes['onboarding-action'].children.includes(actionIcon));assert.equal(s.nodes['workspace-onboarding'].open,false);assert.equal(s.nodes['workspace-section-note'].hidden,true);s.nodes['workspace-onboarding'].open=true;s.instance.lock();assert.equal(s.nodes['workspace-onboarding'].open,false);assert.equal(s.nodes['workspace-onboarding'].hidden,true);
+});
+
+const alertRecord=(extra={})=>({id:'proposal-one',state:'awaiting_approval',expires_at:'2026-10-21T12:32:00Z',...extra});
+const alertSnapshot=(decisions)=>({observed_at:'2026-10-21T12:30:00Z',decisions,limit:100});
+test('workspace checks proposals across routes and hidden tabs without approving or repeatedly notifying',async()=>{
+ const notices=[];let permissions=0;
+ class Notification{static permission='default';static async requestPermission(){permissions++;this.permission='granted';return 'granted';}constructor(title,options){this.title=title;this.options=options;this.closed=false;notices.push(this);}close(){this.closed=true;}}
+ let rows=[];const s=setup(async url=>ok(url==='/api/desk/alerts'?alertSnapshot(rows):info()),{Notification});
+ await s.unlock();assert.equal(permissions,0);s.doc.hidden=true;s.navigate('analysis');
+ s.nodes['workspace-alert-toggle'].fire('click');await flush();assert.equal(permissions,1);assert.equal(notices.length,0);
+ rows=[alertRecord()];await s.intervals.find(v=>v.ms===5000).fn();
+ assert.match(s.doc.title,/^\(1\) Proposals/);assert.equal(s.nodes['workspace-proposal-status'].textContent,'1 paper proposal awaiting review.');assert.match(s.nodes['workspace-proposal-deadline'].textContent,/Earliest deadline in 1[12][09] seconds/);
+ assert.equal(s.nodes['workspace-proposals'].hidden,false);assert.equal(notices.length,1);
+ assert.match(notices[0].options.body,/never approves/);await s.instance.refreshAlerts();assert.equal(notices.length,1);
+ assert.ok(s.calls.every(call=>!call.options.method||call.options.method==='GET'));
+ notices[0].onclick();assert.equal(s.win.location.hash,'#paper');assert.equal(notices[0].closed,true);
+ rows=[alertRecord({state:'expired'})];await s.instance.refreshAlerts();assert.equal(s.doc.title,'Paper trading workspace');assert.match(s.nodes['workspace-proposal-status'].textContent,/deadline passed.*Trade History.*no approval/);
+ s.instance.lock();assert.equal(s.nodes['workspace-proposals'].hidden,true);assert.equal(s.nodes['workspace-proposal-status'].textContent,'');assert.equal(s.nodes['workspace-alert-toggle'].textContent,'Enable desktop alerts');
+});
+test('blocked desktop alerts retain the banner and pending confirmation makes alert controls inert',async()=>{
+ let permissions=0;class Notification{static permission='denied';static async requestPermission(){permissions++;return 'denied';}}
+ const s=setup(async url=>ok(url==='/api/desk/alerts'?alertSnapshot([alertRecord()]):info()),{Notification});await s.unlock();s.nodes['workspace-alert-toggle'].fire('click');await flush();assert.equal(permissions,0);assert.match(s.nodes['workspace-alert-toggle'].textContent,/blocked.*banner/);
+ await s.instance.refreshAlerts();assert.match(s.nodes['workspace-proposal-status'].textContent,/awaiting review/);
+ s.events.message({origin:s.win.location.origin,source:s.child,data:{type:'workspace-dialog',open:true}});assert.equal(s.nodes['workspace-proposals'].inert,true);
+});
+test('failed proposal checks show stale guidance and late responses after Lock cannot restore details',async()=>{
+ let finish,late=false;const s=setup(async url=>{if(url!=='/api/desk/alerts')return ok(info());if(late)return new Promise(resolve=>{finish=resolve;});return {ok:false,status:500,json:async()=>({})};});await s.unlock();await s.instance.refreshAlerts();assert.match(s.nodes['workspace-proposal-status'].textContent,/unavailable or stale.*refresh/);
+ late=true;const pending=s.instance.refreshAlerts();s.instance.lock();finish(ok(alertSnapshot([alertRecord()])));await pending;assert.equal(s.nodes['workspace-proposals'].hidden,true);assert.equal(s.doc.title,'Paper trading workspace');
+});
+
+test('local countdown expires without a server write and a stale clock never looks current',async()=>{
+ const originalNow=Date.now;let tick=originalNow();Date.now=()=>tick;
+ try{
+  const row=alertRecord({expires_at:'2026-10-21T12:30:01Z'}),s=setup(async url=>ok(url==='/api/desk/alerts'?alertSnapshot([row]):info()));await s.unlock();await s.instance.refreshAlerts();assert.match(s.doc.title,/^\(1\)/);
+  tick+=2000;s.intervals.find(v=>v.ms===1000).fn();assert.equal(s.doc.title,'Paper trading workspace');assert.match(s.nodes['workspace-proposal-status'].textContent,/deadline passed/);
+  tick+=16000;s.intervals.find(v=>v.ms===1000).fn();assert.match(s.nodes['workspace-proposal-status'].textContent,/unavailable or stale/);assert.ok(s.calls.every(call=>!call.options.method||call.options.method==='GET'));
+ }finally{Date.now=originalNow;}
+});
+test('notification permission completed after Lock and proposal authorization rejection cannot restore access',async()=>{
+ let finish;class Notification{static permission='default';static requestPermission(){return new Promise(resolve=>{finish=resolve;});}}
+ const s=setup(async url=>url==='/api/desk/alerts'?{ok:false,status:401,json:async()=>({})}:ok(info()),{Notification});await s.unlock();s.nodes['workspace-alert-toggle'].fire('click');s.instance.lock();finish('granted');await flush();assert.equal(s.nodes['workspace-alert-toggle'].textContent,'Enable desktop alerts');assert.equal(s.nodes['workspace-proposals'].hidden,true);
+ await s.unlock();await s.instance.refreshAlerts();assert.equal(s.nodes['workspace-state'].textContent,'Locked');assert.equal(s.nodes['workspace-proposals'].hidden,true);
+});
+
+test('first unlocked alert state says checking and countdown updates leave the live announcement unchanged',async()=>{
+ const originalNow=Date.now;let tick=originalNow();Date.now=()=>tick;
+ try{
+  const s=setup(async url=>ok(url==='/api/desk/alerts'?alertSnapshot([alertRecord()]):info()));await s.unlock();assert.equal(s.nodes['workspace-proposal-status'].textContent,'Checking for paper proposals…');assert.equal(s.nodes['workspace-proposal-deadline'].textContent,'');
+  await s.instance.refreshAlerts();const status=s.nodes['workspace-proposal-status'],deadline=s.nodes['workspace-proposal-deadline'];let updates=0;
+  Object.defineProperty(status,'textContent',{get(){return this.text;},set(value){updates++;this.text=String(value);}});
+  const previous=deadline.textContent;tick+=1000;s.intervals.find(v=>v.ms===1000).fn();assert.notEqual(deadline.textContent,previous);assert.equal(updates,0);assert.equal(status.textContent,'1 paper proposal awaiting review.');
+  const html=readFileSync('src/trading_agent/api/static/workspace.html','utf8');assert.match(html,/id="workspace-proposal-status" role="status" aria-live="polite"/);assert.match(html,/id="workspace-proposal-deadline" aria-live="off"/);
+  s.instance.lock();assert.equal(deadline.textContent,'');
+ }finally{Date.now=originalNow;}
 });

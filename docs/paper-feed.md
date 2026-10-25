@@ -1,5 +1,10 @@
 # Phase 4: supervised live-feed paper trading
 
+Manual Broker & Data streams now commit complete decoded quote frames together.
+Every accepted quote/audit event and per-quote protection remains; read
+[transaction, read-snapshot and failure behavior](quote-persistence.md). The separate
+PaperService automated controller keeps its per-quote callback cadence.
+
 Version 0.12.0 optionally routes an explicitly selected bound intraday strategy mode
 through the [Trading desk](trading-desk.md): queue per-trade approval or submit eligible
 paper entries automatically. It preserves the existing strategy/model/feed fingerprint,
@@ -102,7 +107,8 @@ cp config/paper.toml config/paper-session.toml
 Edit `config/paper-session.toml` before initialization:
 
 - Choose a **new** `database` path, for example `data/paper-session.sqlite3`.
-- Set `stream_tokens` to one to ten current, reviewed NSE cash-equity tokens. Tokens
+- Set `stream_tokens` to current, reviewed NSE cash-equity tokens, within the explicit
+  `stream_limit` (default 10). Tokens
   must match the broker's equity catalog; no guessed symbol mapping is accepted.
 - Point `calendar` at your reviewed date/open/close/source CSV. Unknown dates remain closed.
 - Preserve the intended economic limits and simulator assumptions. A model must match
@@ -142,6 +148,40 @@ automated accounts cannot restart in manual mode or change automation/model iden
 Use a new account for strategy, model, universe, feed policy or simulation changes.
 Economic limits remain independent. Manual entry intents receive HTTP 409 on an
 automated service; protective kill/flatten/cancel/reset controls remain available.
+
+### Explicit stream capacity
+
+`stream_limit` in the account TOML accepts an integer from 1 to 3,000. Existing
+configurations default to 10. For example, set `stream_limit = 50` and supply fifty
+reviewed tokens in `stream_tokens` before creating a new account with `paper-init`.
+Then run the normal `serve --stream` command above. Existing dedicated accounts
+still bind the selected universe; use a new account to change that universe.
+Increasing capacity alone does not change cash, sizing, order limits or the
+economic-policy fingerprint. Setup's symbol selection uses the same configured
+capacity. The desk's ranked execution shortlist remains a separate ten-stock review.
+Setup shows that capacity in its saved count, guidance and accessible symbol label,
+and allows longer input for the configured selection. Only the symbol-selection
+request receives the proportional bounded JSON allowance (at most 128 KiB);
+credential/session mutations retain their 8 KiB ceiling. Over-capacity or oversized
+selections fail without changing the saved configuration or financial ledger.
+
+The read-only transport subscribes in batches of at most 500 and requests full
+184-byte equity packets for every selected token. The configured frame ceiling
+scales with capacity, including frames larger than the former 64 KiB limit.
+Binary decoding supports up to 3,000 packets and still rejects truncated frames,
+unknown/non-equity tokens, invalid packet sizes and trailing bytes before invoking
+any executable quote callback. Duplicate catalog token/symbol identities are refused.
+An oversized/malformed frame follows the existing bounded retry/disconnect path;
+review diagnostics and configuration, reconnect explicitly and reassess readiness.
+LTP-only observations cannot supply executable depth and remain unsupported.
+
+The ceiling follows the [official Kite WebSocket contract](https://kite.trade/docs/connect/v3/websocket/).
+It is a protocol allowance, not measured local processing capacity. History reads
+remain sequential and rate-limited; large universes can miss the unchanged freshness
+checks and remain disarmed. Measure the intended workload and reduce the selected
+universe when history or quotes are stale. No 3,000-stock throughput, real-feed or
+target-device acceptance is claimed. Synthetic tests cover 3,000-packet decoding,
+501-token subscription/frame handling and a persisted fifty-symbol paper lifecycle.
 
 ## Arm and supervise
 

@@ -1,6 +1,5 @@
 """Private immutable investment policy drafts, separate from operator account authority."""
 
-import fcntl
 import hashlib
 import json
 import math
@@ -16,6 +15,7 @@ from pathlib import Path
 from typing import Any
 
 from trading_agent.investment_research.policy import POLICY_FIELDS, inspect_draft
+from trading_agent.persistence.locking import lock_exclusive
 
 MAX_DRAFTS = 100
 MAX_RECORD_BYTES = 32 * 1024
@@ -240,7 +240,7 @@ class InvestmentPolicyStore:
             try:
                 _private(os.fstat(lock), directory=False)
                 try:
-                    fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    lock_exclusive(lock)
                 except BlockingIOError:
                     raise PolicyStoreError(
                         "DRAFT_STORAGE_BUSY",

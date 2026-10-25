@@ -21,6 +21,11 @@ from trading_agent.settings import Settings
         {"latency_ms": 30000},
         {"starting_cash": "-1"},
         {"stream_tokens": [-1]},
+        {"stream_limit": 0},
+        {"stream_limit": 3001},
+        {"stream_limit": True},
+        {"stream_tokens": list(range(1, 12))},
+        {"stream_limit": 50, "stream_tokens": [1, 1]},
         {"unexpected": True},
     ],
 )
@@ -65,3 +70,18 @@ def test_naive_decision_rejected():
 def test_decimal_exactness():
     assert quote().bid == Decimal("499.95")
     assert Settings().starting_cash == Decimal("25000")
+
+
+def test_configured_stream_capacity_preserves_economic_identity(tmp_path, monkeypatch):
+    from trading_agent.risk.policy import policy_fingerprint
+
+    monkeypatch.delenv("TRADING_MODE", raising=False)
+    path = tmp_path / "paper.toml"
+    tokens = tuple(256 * index + 1 for index in range(50))
+    path.write_text(f"stream_limit=50\nstream_tokens={list(tokens)}\n")
+    settings = Settings.load(path)
+    assert settings.stream_limit == 50 and settings.stream_tokens == tokens
+    assert policy_fingerprint(settings) == policy_fingerprint(Settings())
+    assert (
+        len(Settings(stream_limit=3000, stream_tokens=tuple(range(1, 3001))).stream_tokens) == 3000
+    )

@@ -1,4 +1,6 @@
+import json
 import sqlite3
+from contextlib import contextmanager
 from datetime import timedelta
 from decimal import Decimal as D
 
@@ -57,7 +59,7 @@ def test_new_tabs_are_public_shells_but_controls_are_authenticated(desk_factory)
         for path in ["/desk", "/activity", "/desk.js"]:
             r = c.get(path)
             assert r.status_code == 200 and TOKEN not in r.text
-        for path in ["/api/desk", "/api/activity"]:
+        for path in ["/api/desk", "/api/desk/alerts", "/api/activity"]:
             assert c.get(path).status_code == 401
         body = {"mode": "automatic", "revision": desk.revision, "acknowledged": True}
         assert c.post("/api/desk/mode", json=body).status_code == 401
@@ -248,3 +250,74 @@ def test_brief_feed_disconnect_revokes_mode_before_watchdog_poll(desk_factory, t
         e.set_connected(True)
         e.ingest(quote(1), NOW + timedelta(seconds=1))
         assert desk.mode == "manual"
+
+
+def test_proposal_alerts_are_authenticated_bounded_metadata_and_never_expire_or_trade(desk_factory):
+    desk, _, _ = desk_factory()
+    engine = desk.engine
+    desk.set_mode("approval", NOW, desk.revision)
+    record = desk.offer(candidate(), NOW, {"kind": "intraday", "candle": {"close": "500"}})
+    now = NOW + timedelta(minutes=3)
+
+    def persisted():
+        with sqlite3.connect(engine.settings.database) as db:
+            assert D(db.execute("SELECT value FROM meta WHERE key='cash'").fetchone()[0]) == D(
+                "25000"
+            )
+            assert db.execute("SELECT count(*) FROM orders").fetchone()[0] == 0
+            assert db.execute("SELECT count(*) FROM fills").fetchone()[0] == 0
+            return list(db.iterdump())
+
+    with TestClient(
+        create_app(engine, clock=lambda: now, background=False, desk=desk),
+        base_url="http://127.0.0.1",
+    ) as client:
+        before = persisted()
+        assert client.get("/api/desk/alerts").status_code == 401
+        response = client.get("/api/desk/alerts", headers=AUTH)
+        assert response.status_code == 200
+        data = response.json()
+        assert data["limit"] == 100
+        assert data["decisions"] == [
+            {"id": record["id"], "state": "awaiting_approval", "expires_at": record["expires_at"]}
+        ]
+        assert data["observed_at"] > record["expires_at"]
+        assert persisted() == before
+
+
+def test_proposal_alert_metadata_prioritizes_pending_and_caps_large_history(
+    desk_factory, monkeypatch
+):
+    desk, _, _ = desk_factory()
+    desk.set_mode("approval", NOW, desk.revision)
+    pending = desk.offer(candidate(), NOW, {"kind": "intraday", "candle": {"close": "500"}})
+    with desk.engine.db.transaction() as tx:
+        for index in range(105):
+            record = {**pending, "id": f"history-{index}", "state": "expired"}
+            tx.execute(
+                "INSERT INTO desk_decisions VALUES (?,?,?,?)",
+                (record["id"], pending["created_at"], "expired", json.dumps(record)),
+            )
+    queries = []
+    snapshot = desk.engine.db.read_snapshot
+
+    @contextmanager
+    def traced_snapshot():
+        with snapshot() as tx:
+            tx.set_trace_callback(queries.append)
+            yield tx
+
+    monkeypatch.setattr(desk.engine.db, "read_snapshot", traced_snapshot)
+    with TestClient(
+        create_app(desk.engine, clock=lambda: NOW, background=False, desk=desk),
+        base_url="http://127.0.0.1",
+    ) as client:
+        records = client.get("/api/desk/alerts", headers=AUTH).json()["decisions"]
+        assert len(records) == 100
+        assert records[0]["id"] == pending["id"]
+        assert records[1]["id"] == "history-104"
+        assert all(set(row) == {"id", "state", "expires_at"} for row in records)
+        query = next(q for q in queries if q.startswith("SELECT payload FROM desk_decisions"))
+        with snapshot() as tx:
+            plan = " ".join(row[3] for row in tx.execute("EXPLAIN QUERY PLAN " + query))
+        assert "desk_alert_priority" in plan and "TEMP B-TREE" not in plan

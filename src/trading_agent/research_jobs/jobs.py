@@ -1,7 +1,6 @@
 """One isolated running job, one queued job, and durable cancellation/publication."""
 
 import copy
-import fcntl
 import os
 import re
 import signal
@@ -16,6 +15,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from trading_agent.persistence.locking import lock_exclusive
 from trading_agent.research_jobs import isolation
 from trading_agent.research_jobs.registry import (
     LIMITATIONS,
@@ -110,7 +110,7 @@ class BacktestJobs:
             owner_stat = os.fstat(self._owner)
             if not stat.S_ISREG(owner_stat.st_mode) or owner_stat.st_mode & 0o077:
                 raise ValueError("research ownership file requires private regular permissions")
-            fcntl.flock(self._owner, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            lock_exclusive(self._owner)
         except (OSError, ValueError):
             os.close(self._owner)
             raise RuntimeError("research job directory is already owned") from None

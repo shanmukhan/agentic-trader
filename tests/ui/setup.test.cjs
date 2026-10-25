@@ -18,7 +18,7 @@ class Element {
   focus(){this.focused=true;}
 }
 const flush=()=>new Promise(r=>setImmediate(r));
-const status=(extra={})=>({manual:true,credentials_configured:true,access_token_available:true,profile_verified_this_run:false,stream_requested:false,feed_connected:false,catalog_count:3,selected:[{symbol:'NSE:DEMO',token:1,tick:'0.05'}],sessions:[],today:'2026-10-21',calendar_today:false,...extra});
+const status=(extra={})=>({manual:true,credentials_configured:true,access_token_available:true,profile_verified_this_run:false,stream_requested:false,feed_connected:false,catalog_count:3,stream_limit:10,selected:[{symbol:'NSE:DEMO',token:1,tick:'0.05'}],sessions:[],today:'2026-10-21',calendar_today:false,...extra});
 const ok=data=>({ok:true,status:200,json:async()=>data});
 function setup(fetcher=async()=>ok(status())){
   const nodes=Object.fromEntries([...readFileSync('src/trading_agent/api/static/setup.html','utf8').matchAll(/\bid="([^"]+)"/g)].map(m=>[m[1],new Element()]));
@@ -149,6 +149,37 @@ test('saved feed list stays distinct from unsaved edits and explains catalog ver
   assert.match(html,/aria-describedby="selection-help selection-save-help"/);
   assert.match(html,/catalog is a symbol\/token lookup/);assert.match(html,/Editing the field does not change subscriptions/);
   assert.match(html,/defaults do not approve a trading date/);
+});
+test('configured stream capacity updates accessible selection guidance and supports reviewed larger lists',async()=>{
+  const symbols=Array.from({length:50},(_,i)=>'NSE:SYMBOL'+i);
+  const s=setup(async(url,options)=>ok(status({stream_limit:50,profile_verified_this_run:true,selected:url.endsWith('/symbols')?JSON.parse(options.body).symbols.map((symbol,i)=>({symbol,token:i+1,tick:'0.05'})):[]})));
+  await s.unlock();
+  assert.equal(s.nodes['overview-symbols'].textContent,'0 of 50 stocks');
+  assert.equal(s.nodes['selected-title'].textContent,'Saved feed subscriptions (0 of 50)');
+  assert.equal(s.nodes['symbol-list-label'].textContent,'One to 50 symbols, comma separated');
+  assert.equal(s.nodes['symbol-list'].maxLength,1800);
+  assert.match(s.nodes['selection-help'].textContent,/up to 50 saved symbols/);
+  assert.match(s.nodes['connection-next'].textContent,/up to 50 saved stock subscriptions/);
+  s.nodes['symbol-list'].value=symbols.join(', ');assert.ok(s.nodes['symbol-list'].value.length>400);
+  s.nodes.symbols.fire('submit');assert.equal(s.calls.length,1);assert.ok(s.nodes.confirm.open);
+  s.nodes['cancel-confirm'].fire('click');assert.equal(s.calls.length,1);
+  s.nodes.symbols.fire('submit');s.nodes['confirm-action'].fire('click');await flush();
+  assert.deepEqual(JSON.parse(s.calls.at(-1).options.body),{symbols});
+  assert.equal(s.nodes['selected-title'].textContent,'Saved feed subscriptions (50 of 50)');
+  assert.equal(s.nodes['overview-symbols'].textContent,'50 of 50 stocks');
+  s.nodes['symbol-list'].value=symbols.concat('NSE:EXTRA').join(', ');s.nodes.symbols.fire('submit');
+  assert.match(s.nodes.message.textContent,/one to 50 catalog symbols/);assert.equal(s.nodes.confirm.open,false);assert.equal(s.calls.length,2);
+  s.nodes.lock.fire('click');assert.equal(s.nodes['symbol-list-label'].textContent,'One to 10 symbols, comma separated');assert.equal(s.nodes['symbol-list'].maxLength,360);
+  const html=readFileSync('src/trading_agent/api/static/setup.html','utf8');
+  assert.match(html,/<label><span id="symbol-list-label">[^<]+<\/span><input id="symbol-list"/);
+});
+test('stream capacity display has bounded defaults for older or malformed status payloads',async()=>{
+  for(const stream_limit of [undefined,0,3001,50.5,'50',true]){
+    const s=setup(async()=>ok(status({stream_limit})));await s.unlock();
+    assert.equal(s.nodes['symbol-list'].maxLength,360);assert.equal(s.nodes['overview-symbols'].textContent,'1 of 10 stocks');
+  }
+  const s=setup(async()=>ok(status({stream_limit:3000})));await s.unlock();
+  assert.equal(s.nodes['symbol-list'].maxLength,108000);assert.match(s.nodes['symbol-list-label'].textContent,/3000/);
 });
 test('auth failure distinguishes local operator token from Zerodha and clears private state',async()=>{
   const s=setup(async()=>({ok:false,status:401,json:async()=>({detail:'Unauthorized'})}));

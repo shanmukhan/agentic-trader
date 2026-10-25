@@ -10,6 +10,13 @@
     const actionIds = ['save-credentials', 'login', 'profile', 'exchange-button', 'catalog', 'save-symbols', 'save-session', 'connect', 'disconnect', 'refresh-status'];
     const stepIds = ['setup-step-1', 'setup-step-2', 'setup-step-3', 'setup-step-4', 'setup-step-5', 'feed-connection'];
     const stepTitles = ['Register your Kite app', 'Save app credentials', 'Sign in to Zerodha', 'Choose stock subscriptions', 'Review an exchange session', 'Connect market data'];
+    const streamLimit = data => Number.isInteger(data?.stream_limit) && data.stream_limit >= 1 && data.stream_limit <= 3000 ? data.stream_limit : 10;
+    function selectionCapacity(data) {
+      const limit = streamLimit(data);
+      el('symbol-list-label').textContent = 'One to ' + limit + ' symbols, comma separated';
+      el('symbol-list').maxLength = limit * 36;
+      el('selection-help').textContent = 'The catalog is a symbol/token lookup. This account can stream up to ' + limit + ' saved symbols for paper fills and holdings monitoring. Review the actual workload and quote freshness before connecting a large selection. To change capacity, review stream_limit in the account config and restart. For broader stock screening, prepare strategy data and separately review the ranked execution shortlist.';
+    }
     function message(text, error = false) { el('message').textContent = text; el('message').className = error ? 'error' : ''; }
     function sessionMessage(text, error = false) { el('session-feedback').textContent = text; el('session-feedback').className = error ? 'error' : ''; }
     function sessionStatus(data) {
@@ -28,7 +35,7 @@
       el('connection-status').textContent = connected ? 'Data connected' : requested ? diagnostic?.state === 'failed' ? 'Connection needs attention' : 'Connecting / reconnecting' : 'Data disconnected';
       el('connection-description').textContent = connected ? 'Zerodha market data is connected. Quote freshness, liquidity and today’s price-basis reviews determine whether a quote can be used for paper execution.' : requested ? 'A connection has been requested. The streaming status below explains progress and recovery; fresh usable quotes are still required.' : 'Your paper account is not receiving new market data. Review the next step below to prepare the connection.';
       el('overview-session').textContent = data.profile_verified_this_run ? 'Verified this run' : data.access_token_available ? 'Saved · not checked this run' : 'Sign-in needed';
-      el('overview-symbols').textContent = data.selected.length + ' of 10 stocks';
+      el('overview-symbols').textContent = data.selected.length + ' of ' + streamLimit(data) + ' stocks';
       el('overview-calendar').textContent = data.calendar_today ? 'Today reviewed' : 'Today needs review';
       let label, guidance;
       if (!data.manual) {
@@ -45,7 +52,7 @@
         guidance = data.access_token_available ? 'A saved token can expire. Open step 3 and explicitly check the saved session before connecting.' : 'Open Zerodha login, complete 2FA and exchange the one-time request token in step 3.';
       } else if (!data.catalog_count || !data.selected.length) {
         recommendedStep = 4; label = 'Choose stock subscriptions';
-        guidance = 'Download the NSE catalog and review up to ten saved stock subscriptions. Navigation alone does not save a selection.';
+        guidance = 'Download the NSE catalog and review up to ' + streamLimit(data) + ' saved stock subscriptions. Navigation alone does not save a selection.';
       } else if (!data.calendar_today) {
         recommendedStep = 5; label = 'Review today’s exchange session';
         guidance = 'Today’s session needs an explicit review against exchange notices. The default hours do not approve the date.';
@@ -81,6 +88,7 @@
       el('setup-next-action').textContent = 'Review connection setup'; recommendedStep = 1;
       el('selected').replaceChildren(); el('sessions').replaceChildren();
       el('selected-title').textContent = 'Saved feed subscriptions';
+      selectionCapacity(null);
       dialogs.cancel(el('confirm'));
       sessionMessage(''); el('profile').textContent = 'Check saved broker session';
       el('state').textContent = 'Locked'; buttons(); message('Locked. Broker credentials and setup status are hidden.');
@@ -94,6 +102,7 @@
         el('session-close').value = '15:30';
       }
       latest = data;
+      selectionCapacity(data);
       el('private').hidden = false; el('lock').disabled = false; el('state').textContent = 'Local setup unlocked';
       el('token').required = false;
       el('redirect').textContent = 'Register this redirect URL: ' + win.location.origin + '/';
@@ -101,7 +110,7 @@
       sessionStatus(data);
       sessionMessage('');
       el('catalog-state').textContent = data.catalog_count + ' catalog instruments stored. Selected tokens and tick sizes below are server-validated.';
-      el('selected-title').textContent = 'Saved feed subscriptions (' + data.selected.length + ' of 10)';
+      el('selected-title').textContent = 'Saved feed subscriptions (' + data.selected.length + ' of ' + streamLimit(data) + ')';
       el('calendar-state').textContent = data.calendar_today ? 'Today has a reviewed session definition.' : 'Today is not in the reviewed calendar; entries remain blocked.';
       const diagnostic = data.feed_diagnostics;
       const failures = {
@@ -209,6 +218,7 @@
     el('connect').addEventListener('click', () => confirm('Connect market data for ' + (latest ? latest.selected.map(s => s.symbol).join(', ') : 'the selected symbols') + '? Fresh quotes can resume pending fills and protective exits. This does not submit a new intent or arm automation.', () => call('/connect', {})));
     el('disconnect').addEventListener('click', () => confirm('Disconnect market data? Holdings stay open, and pending fills or exits must wait for quotes after reconnection.', () => call('/disconnect', {})));
     el('symbols').addEventListener('submit', event => { event.preventDefault(); const symbols = el('symbol-list').value.split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
+      if (!symbols.length || symbols.length > streamLimit(latest)) { message('Select one to ' + streamLimit(latest) + ' catalog symbols, then review the selection.', true); return; }
       confirm('Save feed selection: ' + symbols.join(', ') + '? It must include all held symbols. This does not approve ETF costs or submit any order.', () => call('/symbols', { symbols })); });
     el('calendar').addEventListener('submit', event => { event.preventDefault(); const body = { date: el('session-date').value, open: el('session-open').value, close: el('session-close').value, source: el('session-source').value.trim(), reviewed: el('session-reviewed').checked };
       confirm('Add ' + body.date + ', ' + body.open + '–' + body.close + ' IST? Source: ' + body.source + '. Confirm against NSE notices. Existing session history cannot be overwritten.', async () => { const result = await call('/session', body); if (result) el('session-reviewed').checked = false; }); });

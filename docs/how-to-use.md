@@ -1,5 +1,34 @@
 # How to use Agentic Trader
 
+The [24 October issue review](../PROJECT_ISSUES_GAPS_AND_IMPROVEMENTS.md) now distinguishes
+implemented fixes, existing features and remaining product gaps. After updating the
+prepared environment (`uv sync --extra broker --extra dev`), stop and restart the
+owning UI server with `./scripts/start_ui.sh`, reload and unlock the workspace.
+
+- Manual broker-feed frames now share one financial commit while retaining every
+  accepted quote, per-quote risk checks and exact fill/audit evidence. Status/order
+  reads use committed read-only snapshots. Read [persistence, failure and recovery
+  behavior](quote-persistence.md) before diagnosing a failed callback.
+- To expand a reviewed feed, set `stream_limit = 50` (or another integer from 1 to
+  3,000) in your account TOML while stopped, restart that same config, then explicitly
+  select catalog symbols while disconnected. Default capacity stays ten; this does
+  not change the separate ten-stock ranked execution shortlist. Larger universes
+  need their own freshness/load validation; see [feed limits](paper-feed.md).
+- Broker & Data configuration saves preserve structured TOML/comments and refuse
+  malformed or externally changed financial settings before replacing the file.
+  See [setup failure/retry guidance](ui-setup.md).
+- An unlocked workspace now checks proposals across sections, showing a pending-count
+  title, review deadline and expired/stale guidance. **Enable desktop alerts** is an
+  optional permission request; browser sleep can delay delivery. Lock clears proposal
+  details. Review/confirmation remains required; alerts never approve or extend a
+  proposal. See [Trading desk alerts](trading-desk.md).
+
+Process ownership now selects POSIX or Windows lock APIs without unconditional Unix
+imports. Native Windows deployment and physical-device notifications remain unverified.
+The app remains paper-only. Executable multi-year policies, target rebalancing,
+licensed fundamentals, encrypted credential storage and circuit-band gating remain
+open in the issue matrix.
+
 Daily operations now have a [read-only report, independent monitor, opt-in IST data
 acquisition and verified backup/restore drill](operations-automation.md). Run
 `./scripts/start_operations.sh` beside the owning UI server for local monitoring;
@@ -89,7 +118,7 @@ ML or open a market session. The cards now explain every prerequisite, current I
 time, next reviewed opening, entry hours and each selected stock's quote age/basis.
 
 In **Broker & Data**, step 4 separates the complete catalog lookup from the account's
-saved live-feed watchlist (at most ten symbols under the app's current limit). The
+saved live-feed watchlist (default capacity ten; configurable with `stream_limit`). The
 displayed names are editable saved subscriptions; broader Nifty 100/500 research is
 available in **Strategies**. The connection overview recommends a numbered setup
 step. Open any step or use Back/Continue; navigation never saves or connects.
@@ -419,7 +448,8 @@ omitted because its pinned transport failed the dependency scan; see
    the launchd wrapper, which sources `.env` only. For systemd, update the private
    `EnvironmentFile` and restart. Never print the file in logs.
 5. With the service stopped, run `trading-agent instruments` to import the NSE cash
-   catalog. Select one to ten reviewed tokens in `stream_tokens` in TOML. Inspect the
+   catalog. Select reviewed tokens in `stream_tokens`, within `stream_limit` (default ten;
+   configurable up to 3,000). Inspect the
    catalog locally using `sqlite3 data/paper.sqlite3 'select symbol,token,tick from instruments;'`.
    The numeric token is checked against the symbol and tick size. Instrument changes
    require review; conflicting remappings are rejected.

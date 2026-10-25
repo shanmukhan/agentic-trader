@@ -152,3 +152,10 @@ test('Paper Trading exposes modes and proposals and pagehide discards a late pri
  await s.unlock();const signal=s.calls[0].opts.signal;events.pagehide();assert.equal(signal.aborted,true);finish(ok(status({blockers:[]})));await flush();
  assert.equal(s.nodes.main.hidden,true);assert.equal(s.nodes.token.value,'');assert.equal(s.nodes['mode-automatic'].disabled,true);assert.equal(s.calls.length,1);
 });
+
+test('price-gap and calendar blockers give actions without hiding their safety meaning',async()=>{
+ const s=setup(async()=>ok(status({blockers:['QUOTE_CANDLE_PRICE_GAP','RESEARCH_CALENDAR_NOT_CURRENT']})));await s.unlock();
+ assert.match(s.nodes.blockers.textContent,/differs too far.*Wait for a quote within.*entry limit/);
+ assert.match(s.nodes.blockers.textContent,/Open Strategies, download current data and review the exchange calendar/);
+ assert.doesNotMatch(s.nodes.blockers.textContent,/QUOTE_CANDLE_PRICE_GAP|RESEARCH_CALENDAR_NOT_CURRENT/);
+});

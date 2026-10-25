@@ -23,6 +23,9 @@ from trading_agent.models import Candle, Instrument, Quote, utc
 
 _history_lock = threading.Lock()
 _history_next = 0.0
+MAX_STREAM_INSTRUMENTS = 3000
+SUBSCRIPTION_BATCH_SIZE = 500
+FULL_QUOTE_BYTES = 184
 
 
 def history_slot() -> None:
@@ -326,7 +329,11 @@ def exchange_token(api_key: str, api_secret: str, request_token: str) -> str:
 
 
 def _parse_binary(
-    message: bytes, instruments: dict[int, Instrument], received: datetime
+    message: bytes,
+    instruments: dict[int, Instrument],
+    received: datetime,
+    *,
+    packet_limit: int = MAX_STREAM_INSTRUMENTS,
 ) -> tuple[list[Quote], list[str]]:
     """Strict full packets; empty-sided books are observations, not executable quotes.
 
@@ -340,14 +347,14 @@ def _parse_binary(
     count = struct.unpack_from(">H", message, 0)[0]
     offset, result = 2, []
     unusable = []
-    if count > 10:
+    if not 1 <= packet_limit <= MAX_STREAM_INSTRUMENTS or count > packet_limit:
         raise ValueError("unexpected packet count")
     for _ in range(count):
         if offset + 2 > len(message):
             raise ValueError("truncated packet length")
         length = struct.unpack_from(">H", message, offset)[0]
         offset += 2
-        if length != 184 or offset + length > len(message):
+        if length != FULL_QUOTE_BYTES or offset + length > len(message):
             raise ValueError("full-mode 184-byte equity quote required")
         packet = message[offset : offset + length]
         offset += length
@@ -380,7 +387,8 @@ def _parse_binary(
     if offset != len(message):
         raise ValueError("unexpected trailing quote bytes")
     # A conflicting batch cannot restore freshness for an empty-sided symbol.
-    return [quote for quote in result if quote.symbol not in unusable], unusable
+    unusable_symbols = set(unusable)
+    return [quote for quote in result if quote.symbol not in unusable_symbols], unusable
 
 
 def parse_binary(
@@ -400,10 +408,22 @@ class QuoteStream:
         *,
         credentials: tuple[str, str] | None = None,
         on_unusable: Callable[[str], None] | None = None,
+        stream_limit: int = 10,
+        on_quotes: Callable[[list[Quote]], None] | None = None,
     ):
         self.instruments = {item.token: item for item in instruments}
-        if not 1 <= len(self.instruments) <= 10:
-            raise ValueError("stream requires one to ten reviewed instruments")
+        if type(stream_limit) is not int or not 1 <= stream_limit <= MAX_STREAM_INSTRUMENTS:
+            raise ValueError("stream limit must be an integer between 1 and 3000")
+        if (
+            not 1 <= len(self.instruments) <= stream_limit
+            or len(self.instruments) != len(instruments)
+            or len({item.symbol for item in instruments}) != len(instruments)
+            or any(item.token & 255 != 1 for item in instruments)
+        ):
+            raise ValueError(
+                f"stream requires one to {stream_limit} distinct reviewed NSE equity instruments"
+            )
+        self.stream_limit = stream_limit
         key, token = (
             credentials
             if credentials is not None
@@ -414,6 +434,7 @@ class QuoteStream:
         self._url = "wss://ws.kite.trade/?" + urlencode({"api_key": key, "access_token": token})
         self._on_quote, self._on_connection, self._clock = on_quote, on_connection, clock
         self._on_unusable = on_unusable
+        self._on_quotes = on_quotes
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
         self._socket: Any = None
@@ -447,7 +468,7 @@ class QuoteStream:
                     self._url,
                     open_timeout=5,
                     close_timeout=2,
-                    max_size=65536,
+                    max_size=max(65536, 2 + self.stream_limit * (2 + FULL_QUOTE_BYTES)),
                     max_queue=16,
                     proxy=None,
                     compression=None,
@@ -455,8 +476,10 @@ class QuoteStream:
                     self._socket = socket
                     phase = "subscribe"
                     tokens = list(self.instruments)
-                    socket.send(json.dumps({"a": "subscribe", "v": tokens}))
-                    socket.send(json.dumps({"a": "mode", "v": ["full", tokens]}))
+                    for start in range(0, len(tokens), SUBSCRIPTION_BATCH_SIZE):
+                        batch = tokens[start : start + SUBSCRIPTION_BATCH_SIZE]
+                        socket.send(json.dumps({"a": "subscribe", "v": batch}))
+                        socket.send(json.dumps({"a": "mode", "v": ["full", batch]}))
                     self._on_connection(True)
                     self._status(state="connected")
                     while not self._stop.is_set():
@@ -470,15 +493,23 @@ class QuoteStream:
                                 raise BrokerUnavailable("broker streaming session failed")
                             continue
                         phase = "parse"
-                        quotes, unusable = _parse_binary(message, self.instruments, self._clock())
+                        quotes, unusable = _parse_binary(
+                            message,
+                            self.instruments,
+                            self._clock(),
+                            packet_limit=self.stream_limit,
+                        )
                         with self._status_lock:
                             self._diagnostics["unusable_quotes"] += len(unusable)
                         phase = "process"
                         if self._on_unusable:
                             for symbol in unusable:
                                 self._on_unusable(symbol)
-                        for quote in quotes:
-                            self._on_quote(quote)
+                        if self._on_quotes is not None and quotes:
+                            self._on_quotes(quotes)
+                        else:
+                            for quote in quotes:
+                                self._on_quote(quote)
                         attempts = 0
                         self._status(failures=0)
             except Exception as error:

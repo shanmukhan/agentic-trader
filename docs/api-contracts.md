@@ -672,3 +672,16 @@ No automatic execution or cash deposit occurs. Original `/api/paper/intents` sti
 rejects adding to an open holding. `portfolio-demo --directory NEW` creates separate
 invented evidence and a UI working copy. Full schemas/examples and limits:
 [portfolio-contributions.md](portfolio-contributions.md).
+
+
+## Read-only proposal alerts
+
+`GET /api/desk/alerts` requires the same local Bearer/Host/Origin controls as the desk
+and inherits no-store response headers. It returns `observed_at`, `limit: 100` and a
+bounded `decisions` array containing only `id`, `state` and `expires_at`. Awaiting
+proposals are prioritized, then records are newest first within that priority. It
+opens an independent SQLite read snapshot and never expires proposals, evaluates a
+strategy, changes authority or submits orders. A saved awaiting state can be past its
+deadline; clients may display deadline passage while the server remains authoritative
+for approval and persisted outcomes. The browser monitor uses five-second best-effort
+checks; delivery is not guaranteed while the browser is sleeping or throttled.

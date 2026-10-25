@@ -12,6 +12,7 @@ from trading_agent.market_data.calendar import IST
 from trading_agent.models import stamp
 from trading_agent.operations.report import account_id
 from trading_agent.operations.storage import durable_write as private_write
+from trading_agent.persistence.locking import lock_exclusive
 from trading_agent.risk.policy import policy_fingerprint
 from trading_agent.settings import Settings
 
@@ -134,7 +135,6 @@ def supervise(
     stop: threading.Event | None = None,
 ) -> dict[str, Any]:
     """Deduplicated transition alerts and durable acquisition intent. One owner per state folder."""
-    import fcntl
 
     if (
         not 5 <= interval <= 300
@@ -151,7 +151,7 @@ def supervise(
         raise ValueError("supervisor directory must be private")
     fd = os.open(output / "owner.lock", os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600)
     try:
-        fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        lock_exclusive(fd)
         state_path = output / "state.json"
         from trading_agent.desk.preparation import bounded
 

@@ -1,5 +1,6 @@
 """Authenticated decision controls; all proposals originate in the server strategy pipeline."""
 
+import json
 from typing import Any
 
 from fastapi import Depends, HTTPException, Query
@@ -38,6 +39,27 @@ def mount_desk(
             **desk.view(clock()),
             "preparation": preparation.view(),
             "guided_setup": guided.view(),
+        }
+
+    @app.get("/api/desk/alerts", dependencies=[Depends(authorized)])
+    def alerts() -> dict:
+        """Bounded persisted proposal metadata; reading never expires or approves a trade."""
+        from trading_agent.models import stamp
+
+        with desk.engine.db.read_snapshot() as tx:
+            records = [
+                json.loads(row[0])
+                for row in tx.execute(
+                    "SELECT payload FROM desk_decisions "
+                    "ORDER BY (state='awaiting_approval') DESC,rowid DESC LIMIT 100"
+                )
+            ]
+        return {
+            "observed_at": stamp(clock()),
+            "decisions": [
+                {key: record[key] for key in ("id", "state", "expires_at")} for record in records
+            ],
+            "limit": 100,
         }
 
     @app.get("/preparation.js")

@@ -4,6 +4,7 @@ import hashlib
 import json
 import sqlite3
 import threading
+from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from typing import TYPE_CHECKING, Any
@@ -268,7 +269,7 @@ class PaperBroker:
         return self.charges.fee("SELL", turnover)
 
     def snapshot(self, now: datetime) -> dict[str, Any]:
-        with self.lock, self.db.transaction() as tx:
+        with self.lock, self.db.read_snapshot() as tx:
             return self._snapshot(tx, utc(now))
 
     def _roll_day(self, tx: sqlite3.Connection, now: datetime) -> None:
@@ -691,102 +692,127 @@ class PaperBroker:
             raise
 
     def ingest(self, quote: Quote, now: datetime) -> bool:
+        return self.ingest_batch([quote], now)[0]
+
+    def ingest_batch(
+        self, quotes: list[Quote], now: datetime, *, clock: Callable[[], datetime] | None = None
+    ) -> list[bool]:
+        """Commit one bounded decoded frame without dropping quote/audit evidence.
+
+        Risk and fill checks still run for every quote, in received order. A failed
+        frame rolls back its financial writes and invalidates all affected symbols.
+        """
         now = utc(now)
-        try:
-            with self.lock, self.db.transaction() as tx:
-                catalog = tx.execute(
-                    "SELECT token FROM instruments WHERE symbol=?", (quote.symbol,)
-                ).fetchone()
-                if not catalog or catalog[0] != quote.token:
+        if not quotes or len(quotes) > self.settings.stream_limit:
+            raise ValueError("quote batch must fit the configured stream limit")
+        with self.lock:
+            seen, bad = self.seen_symbols.copy(), self.bad_symbols.copy()
+            try:
+                with self.db.transaction() as tx:
+                    accepted = []
+                    for quote in quotes:
+                        observed = utc(clock()) if clock else now
+                        if observed < now:
+                            raise ValueError("quote batch clock moved backward")
+                        now = observed
+                        accepted.append(self._ingest(tx, quote, now))
+                    return accepted
+            except BaseException as exc:
+                self.seen_symbols, self.bad_symbols = seen, bad
+                for quote in quotes:
+                    self.seen_symbols.discard(quote.symbol)
                     self.bad_symbols.add(quote.symbol)
-                    raise ValueError("instrument mapping mismatch")
-                tick = self._tick(tx, quote.symbol)
-                if any(price % tick for price in (quote.last, quote.bid, quote.ask)):
-                    self.bad_symbols.add(quote.symbol)
-                    raise ValueError("quote price violates instrument tick size")
-                previous = self._quote(tx, quote.symbol)
-                same_second_update = False
-                if previous and quote.exchange_time <= previous.exchange_time:
-                    if quote.model_dump(exclude={"received_time"}) == previous.model_dump(
-                        exclude={"received_time"}
-                    ):
-                        # An unchanged broker repeat is not fresh data and must never
-                        # replenish depth, renew receipt time or clear a previous fault.
-                        return False
-                    same_second_update = quote.ordered_kite_second_update(previous)
-                    if not same_second_update:
-                        self.bad_symbols.add(quote.symbol)
-                        self.db.event(
-                            tx,
-                            stamp(now),
-                            "data_quality",
-                            quote.symbol,
-                            {"reason": "DUPLICATE_OR_OUT_OF_ORDER"},
-                        )
-                        return False
-                same_day = (
-                    previous
-                    and previous.exchange_time.astimezone(IST).date()
-                    == quote.exchange_time.astimezone(IST).date()
+                if isinstance(exc, (sqlite3.Error, RuntimeError)):
+                    self.faulted = True
+                    self.connected = False
+                raise
+
+    def _ingest(self, tx: sqlite3.Connection, quote: Quote, now: datetime) -> bool:
+        catalog = tx.execute(
+            "SELECT token FROM instruments WHERE symbol=?", (quote.symbol,)
+        ).fetchone()
+        if not catalog or catalog[0] != quote.token:
+            self.bad_symbols.add(quote.symbol)
+            raise ValueError("instrument mapping mismatch")
+        tick = self._tick(tx, quote.symbol)
+        if any(price % tick for price in (quote.last, quote.bid, quote.ask)):
+            self.bad_symbols.add(quote.symbol)
+            raise ValueError("quote price violates instrument tick size")
+        previous = self._quote(tx, quote.symbol)
+        same_second_update = False
+        if previous and quote.exchange_time <= previous.exchange_time:
+            if quote.model_dump(exclude={"received_time"}) == previous.model_dump(
+                exclude={"received_time"}
+            ):
+                # An unchanged broker repeat is not fresh data and must never
+                # replenish depth, renew receipt time or clear a previous fault.
+                return False
+            same_second_update = quote.ordered_kite_second_update(previous)
+            if not same_second_update:
+                self.bad_symbols.add(quote.symbol)
+                self.db.event(
+                    tx,
+                    stamp(now),
+                    "data_quality",
+                    quote.symbol,
+                    {"reason": "DUPLICATE_OR_OUT_OF_ORDER"},
                 )
-                if same_day and previous and quote.volume < previous.volume:
-                    self.bad_symbols.add(quote.symbol)
-                    self.db.event(
-                        tx,
-                        stamp(now),
-                        "data_quality",
-                        quote.symbol,
-                        {"reason": "VOLUME_REGRESSION"},
-                    )
-                    return False
-                if (
-                    not 0
-                    <= (now - quote.received_time).total_seconds()
-                    <= self.settings.max_quote_age_seconds
-                ):
-                    self.bad_symbols.add(quote.symbol)
-                    return False
-                if self.long_term and not self.long_term.before_quote(tx, quote, now):
-                    return False
-                self.bad_symbols.discard(quote.symbol)
-                self.seen_symbols.add(quote.symbol)
-                tx.execute(
-                    "INSERT INTO quotes VALUES (?,?,?) ON CONFLICT(symbol) DO UPDATE SET "
-                    "time=excluded.time,payload=excluded.payload",
-                    (quote.symbol, stamp(quote.exchange_time), quote.model_dump_json()),
-                )
-                self.db.event(tx, stamp(now), "quote", quote.symbol, quote.model_dump(mode="json"))
-                self._watch(tx, now)
-                position = tx.execute(
-                    "SELECT * FROM positions WHERE symbol=?", (quote.symbol,)
-                ).fetchone()
-                if position and (
-                    quote.bid <= D(position["stop"]) or quote.bid >= D(position["target"])
-                ):
-                    self._exit(
-                        tx,
-                        quote.symbol,
-                        now,
-                        "STOP" if quote.bid <= D(position["stop"]) else "TARGET",
-                    )
-                # Stop cancellation also covers a not-yet-filled entry.
-                for order in tx.execute(
-                    f"SELECT * FROM orders WHERE {PENDING} AND side='BUY' AND symbol=?",
-                    (quote.symbol,),
-                ).fetchall():
-                    if quote.bid <= D(order["stop"]) or quote.bid >= D(order["target"]):
-                        self._cancel(tx, order, stamp(now), "STOP_OR_TARGET_BEFORE_FILL")
-                if not same_second_update:
-                    # Preserve one displayed-depth fill budget per exchange second.
-                    # Tied updates can refresh the book/marks and latch protection,
-                    # but cannot execute against that second's liquidity again.
-                    self._process(tx, quote, now)
-                self._watch(tx, now)
-                return True
-        except (sqlite3.Error, RuntimeError):
-            self.faulted = True
-            self.connected = False
-            raise
+                return False
+        same_day = (
+            previous
+            and previous.exchange_time.astimezone(IST).date()
+            == quote.exchange_time.astimezone(IST).date()
+        )
+        if same_day and previous and quote.volume < previous.volume:
+            self.bad_symbols.add(quote.symbol)
+            self.db.event(
+                tx,
+                stamp(now),
+                "data_quality",
+                quote.symbol,
+                {"reason": "VOLUME_REGRESSION"},
+            )
+            return False
+        if (
+            not 0
+            <= (now - quote.received_time).total_seconds()
+            <= self.settings.max_quote_age_seconds
+        ):
+            self.bad_symbols.add(quote.symbol)
+            return False
+        if self.long_term and not self.long_term.before_quote(tx, quote, now):
+            return False
+        self.bad_symbols.discard(quote.symbol)
+        self.seen_symbols.add(quote.symbol)
+        tx.execute(
+            "INSERT INTO quotes VALUES (?,?,?) ON CONFLICT(symbol) DO UPDATE SET "
+            "time=excluded.time,payload=excluded.payload",
+            (quote.symbol, stamp(quote.exchange_time), quote.model_dump_json()),
+        )
+        self.db.event(tx, stamp(now), "quote", quote.symbol, quote.model_dump(mode="json"))
+        self._watch(tx, now)
+        position = tx.execute("SELECT * FROM positions WHERE symbol=?", (quote.symbol,)).fetchone()
+        if position and (quote.bid <= D(position["stop"]) or quote.bid >= D(position["target"])):
+            self._exit(
+                tx,
+                quote.symbol,
+                now,
+                "STOP" if quote.bid <= D(position["stop"]) else "TARGET",
+            )
+        # Stop cancellation also covers a not-yet-filled entry.
+        for order in tx.execute(
+            f"SELECT * FROM orders WHERE {PENDING} AND side='BUY' AND symbol=?",
+            (quote.symbol,),
+        ).fetchall():
+            if quote.bid <= D(order["stop"]) or quote.bid >= D(order["target"]):
+                self._cancel(tx, order, stamp(now), "STOP_OR_TARGET_BEFORE_FILL")
+        if not same_second_update:
+            # Preserve one displayed-depth fill budget per exchange second.
+            # Tied updates can refresh the book/marks and latch protection,
+            # but cannot execute against that second's liquidity again.
+            self._process(tx, quote, now)
+        self._watch(tx, now)
+        return True
 
     def _process(self, tx: sqlite3.Connection, quote: Quote, now: datetime) -> None:
         if not self._fresh(quote, now) or not self.connected or not self.calendar.is_open(now):
@@ -941,5 +967,5 @@ class PaperBroker:
         self.db.event(tx, stamp(now), "order_state", order["id"], {"state": state})
 
     def orders(self) -> list[dict[str, Any]]:
-        with self.lock, self.db.transaction() as tx:
+        with self.db.read_snapshot() as tx:
             return [dict(row) for row in tx.execute("SELECT * FROM orders ORDER BY created,id")]

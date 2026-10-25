@@ -17,6 +17,8 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlencode
 
+import tomlkit
+
 from trading_agent import __version__
 from trading_agent.broker.readonly_kite import (
     QuoteStream,
@@ -101,18 +103,17 @@ class SetupService:
         # The path is server-selected, never supplied by a browser. Preserve comments.
         if self.config.is_symlink():
             raise SetupError("Refusing a symbolic-link account config.")
-        text = self.config.read_text()
+        if not updates or set(updates) - {"stream_tokens", "calendar"}:
+            raise SetupError("Setup can only change the reviewed calendar and feed selection.")
+        try:
+            document = tomlkit.parse(self.config.read_text())
+        except tomlkit.exceptions.ParseError:
+            raise SetupError(
+                "Account config is invalid TOML; review it locally before retrying."
+            ) from None
         for key, value in updates.items():
-            line = key + " = " + json.dumps(value)
-
-            def replacement(match: re.Match[str], value: str = line) -> str:
-                return value
-
-            text, count = re.subn(rf"(?m)^{key}\s*=.*$", replacement, text)
-            if count > 1:
-                raise SetupError("Duplicate config field; review the account config locally.")
-            if not count:
-                text = text.rstrip() + "\n" + line + "\n"
+            document[key] = value
+        text = tomlkit.dumps(document)
         from trading_agent.settings import Settings
 
         proposed = tomllib.loads(text)
@@ -157,6 +158,7 @@ class SetupService:
                 "stream_requested": self.stream is not None,
                 "feed_diagnostics": self.stream.diagnostics() if self.stream else None,
                 "catalog_count": tx.execute("SELECT count(*) FROM instruments").fetchone()[0],
+                "stream_limit": self.engine.settings.stream_limit,
                 "selected": selected,
                 "today": day.isoformat(),
                 "sessions": [
@@ -276,8 +278,9 @@ class SetupService:
         with self.lock, self.engine.lock:
             self._manual()
             raw = body.get("symbols")
-            if set(body) != {"symbols"} or not isinstance(raw, list) or not 1 <= len(raw) <= 10:
-                raise SetupError("Select one to ten distinct catalog symbols.")
+            limit = self.engine.settings.stream_limit
+            if set(body) != {"symbols"} or not isinstance(raw, list) or not 1 <= len(raw) <= limit:
+                raise SetupError(f"Select one to {limit} distinct catalog symbols.")
             if any(not isinstance(s, str) or len(s) > 34 for s in raw):
                 raise SetupError("Use NSE symbols from the catalog.")
             symbols = [s if s.startswith("NSE:") else "NSE:" + s for s in raw]
@@ -403,17 +406,26 @@ class SetupService:
             builders = (CandleBuilder(1), CandleBuilder(5))
 
             def ingest(quote: Quote) -> None:
+                ingest_batch([quote])
+
+            def ingest_batch(quotes: list[Quote]) -> None:
                 with self.engine.lock:
                     # Include callback lock wait in quote freshness, never freeze an earlier clock.
                     now = self.clock()
-                    if self.engine.ingest(quote, now):
-                        try:
+                    try:
+                        accepted = self.engine.ingest_batch(quotes, now, clock=self.clock)
+                        candles = []
+                        for quote, valid in zip(quotes, accepted, strict=True):
+                            if not valid:
+                                continue
                             for builder in builders:
-                                store_candles(self.engine.db, builder.update(quote), now)
-                        except Exception:
-                            self.engine.faulted = True
-                            self.engine.set_connected(False)
-                            raise
+                                candles.extend(builder.update(quote))
+                        if candles:
+                            store_candles(self.engine.db, candles, now)
+                    except Exception:
+                        self.engine.faulted = True
+                        self.engine.set_connected(False)
+                        raise
 
             def connected(value: bool) -> None:
                 with self.engine.lock:
@@ -439,6 +451,8 @@ class SetupService:
                 self.clock,
                 credentials=(self.values["api_key"], self.values["access_token"]),
                 on_unusable=unusable,
+                stream_limit=self.engine.settings.stream_limit,
+                on_quotes=ingest_batch,
             )
 
     def connect(self) -> None:
@@ -517,10 +531,18 @@ def mount_setup(app: Any, service: SetupService | None, authorized: Callable[...
     @app.post("/api/setup/{operation}", dependencies=[Depends(authorized)])
     async def operate(operation: str, request: Request) -> dict[str, Any]:
         # Custom parsing prevents framework validation errors from echoing submitted secrets.
+        current = available()
+        # Canonical JSON for 3,000 maximum-length NSE symbols fits below 128 KiB.
+        # Credential/session and all other mutations retain the original 8 KiB ceiling.
+        request_limit = (
+            max(8192, min(128 * 1024, 64 + current.engine.settings.stream_limit * 40))
+            if operation == "symbols"
+            else 8192
+        )
         content = bytearray()
         async for part in request.stream():
             content.extend(part)
-            if len(content) > 8192:
+            if len(content) > request_limit:
                 raise SetupError("Setup request is too large.")
         try:
             body = json.loads(content or b"{}")
@@ -528,7 +550,6 @@ def mount_setup(app: Any, service: SetupService | None, authorized: Callable[...
                 raise ValueError
         except Exception:
             raise SetupError("Invalid setup request; no submitted values are echoed.") from None
-        current = available()
 
         def perform() -> dict[str, Any]:
             try:

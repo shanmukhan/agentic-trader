@@ -418,7 +418,7 @@ def create_app(
     def ready() -> JSONResponse:
         now = clock()
         with engine.lock:
-            with engine.db.transaction() as tx:
+            with engine.db.read_snapshot() as tx:
                 snapshot = engine._snapshot(tx, now)
                 quotes = [
                     engine._quote(tx, row[0]) for row in tx.execute("SELECT symbol FROM quotes")

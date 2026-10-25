@@ -1,3 +1,4 @@
+import json
 import struct
 from datetime import timedelta
 from decimal import Decimal as D
@@ -109,6 +110,82 @@ def test_full_tick_normalization_and_invalid_depth():
     for message in (b"", b"\x00\x01", packet()[:-1], packet() + b"bad", packet(2)):
         with pytest.raises(ValueError):
             parse_binary(message, {1: instrument}, NOW)
+
+
+def stream_catalog(count):
+    return [
+        Instrument(symbol=f"NSE:DEMO{index}", token=256 * index + 1, tick_size=D(".05"))
+        for index in range(count)
+    ]
+
+
+@pytest.mark.parametrize("count", [11, 50, 3000])
+def test_expanded_binary_batches_validate_every_packet(count):
+    catalog = {item.token: item for item in stream_catalog(count)}
+    message = struct.pack(">H", count) + b"".join(packet(token)[2:] for token in catalog)
+    quotes = parse_binary(message, catalog, NOW)
+    assert len(quotes) == count and [quote.token for quote in quotes] == list(catalog)
+    assert all(quote.bid == D("499.95") and quote.source == "kite" for quote in quotes)
+    for malformed in (message[:-1], message + b"bad", struct.pack(">H", count + 1) + message[2:]):
+        with pytest.raises(ValueError):
+            parse_binary(malformed, catalog, NOW)
+    with pytest.raises(ValueError, match="unknown"):
+        parse_binary(message, {token: item for token, item in catalog.items() if token != 1}, NOW)
+
+
+@pytest.mark.parametrize("limit", [0, 3001, True, 10.0])
+def test_stream_rejects_unbounded_or_noninteger_capacity(limit):
+    with pytest.raises(ValueError, match="stream limit"):
+        QuoteStream(stream_catalog(1), Mock(), Mock(), lambda: NOW, stream_limit=limit)
+
+
+def test_stream_rejects_oversized_duplicate_or_non_equity_catalog():
+    for catalog, limit in (
+        (stream_catalog(11), 10),
+        ([*stream_catalog(1), *stream_catalog(1)], 10),
+        ([Instrument(symbol="NSE:DEMO", token=2, tick_size=D(".05"))], 10),
+    ):
+        with pytest.raises(ValueError, match="distinct reviewed"):
+            QuoteStream(catalog, Mock(), Mock(), lambda: NOW, stream_limit=limit)
+
+
+def test_expanded_stream_subscribes_in_batches_and_accepts_large_frame(monkeypatch):
+    from contextlib import nullcontext
+
+    import websockets.sync.client
+
+    catalog = stream_catalog(501)
+    message = struct.pack(">H", len(catalog)) + b"".join(packet(item.token)[2:] for item in catalog)
+    socket, received, states = Mock(), [], []
+    socket.recv.return_value = message
+    connect = Mock(return_value=nullcontext(socket))
+    monkeypatch.setattr(websockets.sync.client, "connect", connect)
+
+    def receive(quotes):
+        received.extend(quotes)
+        stream._stop.set()
+
+    stream = QuoteStream(
+        catalog,
+        Mock(side_effect=AssertionError("batch callback must own delivery")),
+        states.append,
+        lambda: NOW,
+        credentials=("key", "session"),
+        stream_limit=501,
+        on_quotes=receive,
+    )
+    stream._run()
+    assert len(received) == 501 and states == [True, False]
+    assert connect.call_args.kwargs["max_size"] == 2 + 501 * 186
+    requests = [json.loads(call.args[0]) for call in socket.send.call_args_list]
+    tokens = [item.token for item in catalog]
+    assert requests == [
+        {"a": "subscribe", "v": tokens[:500]},
+        {"a": "mode", "v": ["full", tokens[:500]]},
+        {"a": "subscribe", "v": tokens[500:]},
+        {"a": "mode", "v": ["full", tokens[500:]]},
+    ]
+    stream.close()
 
 
 def test_stream_disconnect_and_bad_packet_fail_closed(monkeypatch):

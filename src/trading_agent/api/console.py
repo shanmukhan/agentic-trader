@@ -18,13 +18,13 @@ def console_snapshot(
 ) -> dict[str, Any]:
     now = utc(now)
     with engine.lock:
-        with engine.db.transaction() as tx:
+        with engine.db.read_snapshot() as tx:
             account = engine._snapshot(tx, now)
             rows = tx.execute(
                 "SELECT * FROM orders ORDER BY rowid DESC LIMIT ?", (ORDER_LIMIT + 1,)
             ).fetchall()
             orders = [dict(row) for row in rows[:ORDER_LIMIT]]
-            # The configured streaming universe is bounded at ten. Manual services
+            # Selected feeds honor the configured transport capacity. Manual services
             # show the ten most recently observed symbols, rather than the whole catalog.
             if engine.settings.stream_tokens:
                 placeholders = ",".join("?" for _ in engine.settings.stream_tokens)

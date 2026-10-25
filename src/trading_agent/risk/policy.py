@@ -10,7 +10,15 @@ from trading_agent.settings import Settings
 def policy_values(settings: Settings) -> dict[str, Any]:
     values = settings.model_dump(
         mode="json",
-        exclude={"operator_token", "host", "port", "database", "calendar", "stream_tokens"},
+        exclude={
+            "operator_token",
+            "host",
+            "port",
+            "database",
+            "calendar",
+            "stream_tokens",
+            "stream_limit",
+        },
     )
     # Preserve every existing intraday account/model identity byte for byte.
     if settings.investment_horizon == "intraday":

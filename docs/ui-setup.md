@@ -1,5 +1,22 @@
 # Start, unlock and configure the paper app in your browser
 
+## Safe account configuration updates
+
+Saving the reviewed feed selection or session calendar updates only `stream_tokens`
+or `calendar` in the server-selected account TOML file. The round-trip TOML parser
+handles quoted keys and multiline values, retaining unrelated settings and comments.
+The proposed complete config is validated against the settings schema and the running
+account's financial policy before any write. Setup cannot change financial limits.
+
+After selecting symbols in **Broker & Data**, the saved config and setup status show
+the same catalog-backed instrument tokens. With the feed disconnected, restart using
+the same `--config` path to load that selection. A malformed TOML file, unexpected
+table, external financial-policy edit or failed atomic replacement leaves both the
+previous config and running selection unchanged. Preserve the file, correct/review it
+locally, and refresh setup status before retrying. A partial temporary file never
+replaces the account config. This validation is local simulated evidence; it does not
+verify broker credentials, market entitlements or native Windows operation.
+
 In 0.15.0, this section is **Broker & Data** (`#broker`). Step 6 confirmations use the shared native dialog positioned before autofocus in the currently visible parent viewport. Scroll/resize/visual viewport changes keep it bounded; Escape/Cancel clears the pending action and restores focus, with no POST. If it cannot be revealed, return to the section and review again. Current position tests are simulated geometry; live broker acceptance is separate. See [shared dialog behavior](frontend-modernization.md).
 
 The light workspace now has twelve grouped destinations. **Dashboard** shows saved
@@ -290,11 +307,15 @@ explicit, not automatic background login or credential probing.
    daily; there is no refresh or 2FA bypass. Disconnect before a replacement login.
    Starting a new login supersedes an earlier pending attempt. An uncertain/failed
    exchange consumes that attempt locally; start a new login, not a replay.
-5. **Download / validate catalog**, then enter one to ten comma-separated symbols.
+5. **Download / validate catalog**, then enter comma-separated symbols within the
+   configured capacity shown beside the field (10 by default).
    The catalog is a lookup of supported names/tokens; it does not stream all catalog
    instruments. The current saved watchlist receives live quotes for paper fills and
-   holdings monitoring. Names are not hardcoded, and ten is an application limit.
-   **Saved feed subscriptions (N of 10)** shows the committed selection separately
+   holdings monitoring. Names are not hardcoded. Set `stream_limit` to an integer
+   from 1 through 3,000 in the account TOML and restart the owning service before
+   reviewing a larger selection. The UI reads this configured limit from authenticated
+   setup status; guidance, counts, the accessible field label and text capacity all
+   use it. **Saved feed subscriptions (N of capacity)** shows the committed selection separately
    from unsaved input edits. The count/list changes only after validation and explicit
    confirmation succeed. Tokens identify instruments to the broker; tick is the
    permitted rupee price increment. For wider discovery, use Strategies' Nifty
@@ -305,6 +326,13 @@ explicit, not automatic background login or credential probing.
    and tick sizes; missing/duplicate symbols and held-symbol omissions are refused.
    Disconnect first and resolve pending orders before selection changes. Conflicting
    imported mappings roll back rather than silently changing ticks/tokens.
+   Large symbol-selection requests have a bounded size budget proportional to capacity,
+   never above 128 KiB; other setup requests, including credentials/session exchange,
+   retain the 8 KiB maximum. An oversized, over-count or invalid request changes no
+   saved selection or account balances. Trim extra JSON padding/escaped spellings,
+   correct the symbol list and review again. Increasing transport capacity does not
+   expand the desk's separate ten-stock ranked execution shortlist or validate
+   throughput. See [feed workload limits](paper-feed.md#explicit-stream-capacity).
 6. **Add a reviewed session.** Enter a current/future IST date, supported opening
    and closing times, and a source reference. Review NSE notices yourself and check
    the attestation; the UI never assumes weekdays or prechecks the box. Confirm the

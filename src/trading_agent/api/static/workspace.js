@@ -8,12 +8,52 @@
     const purchaseAnchors=new Set(['purchases','purchase','holdings-heading','buy-heading','preview-heading','plans-heading','purchase-orders-heading','lots-heading']);
     const cleanAnchor=value=>typeof value==='string'&&/^[A-Za-z][A-Za-z0-9_-]{0,99}$/.test(value)?value:'';
     let token='',generation=0,busy=false,controller=null,current='',currentAnchor='',loaded='',surface='',dialogOpen=false;
+    const baseTitle=doc.title||'Paper trading workspace';
+    let alertBusy=false,alertController=null,alertRows=new Map(),alertExpired=false,desktopAlerts=false,alertFresh=false,alertChecked=false,alertAt=0,alertClock=0;
+    const notifications=new Set();
+    function closeNotifications(){for(const notice of notifications)notice.close?.();notifications.clear();}
+    function renderAlerts(){
+      if(!token)return;
+      const now=alertAt+Math.max(0,Date.now()-alertClock),pending=[...alertRows.values()].filter(row=>row.state==='awaiting_approval'&&Date.parse(row.expires_at)>=now);
+      for(const row of alertRows.values())if(row.state==='awaiting_approval'&&Date.parse(row.expires_at)<now)alertExpired=true;
+      doc.title=pending.length?'('+pending.length+') Proposals · '+baseTitle:baseTitle;
+      el('workspace-proposals').hidden=false;
+      const status=!alertFresh?(alertChecked?'Proposal checks unavailable or stale. Open Paper Trading and refresh before acting.':'Checking for paper proposals…'):pending.length?pending.length+' paper proposal'+(pending.length===1?'':'s')+' awaiting review.':alertExpired?'A proposal’s review deadline passed. Open Trade History to inspect its recorded outcome; no approval was sent by this alert.':'No pending proposal in the latest 100 decision records.';
+      if(el('workspace-proposal-status').textContent!==status)el('workspace-proposal-status').textContent=status;
+      el('workspace-proposal-deadline').textContent=alertFresh&&pending.length?'Earliest deadline in '+Math.max(0,Math.ceil((Math.min(...pending.map(row=>Date.parse(row.expires_at)))-now)/1000))+' seconds.':'';
+    }
+    function notifyProposals(count){
+      if(!desktopAlerts||win.Notification?.permission!=='granted'||(!doc.hidden&&current==='paper'))return;
+      try{const notice=new win.Notification('Paper proposal awaiting review',{body:count+' new proposal'+(count===1?'':'s')+'. Open Paper Trading and review before the deadline. An alert never approves a trade.',tag:'agentic-paper-proposals'});notifications.add(notice);notice.onclose=()=>notifications.delete(notice);notice.onclick=()=>{if(token){win.focus?.();win.location.hash='#paper';}notice.close?.();};}catch(_){el('workspace-alert-toggle').textContent='Desktop alerts unavailable';desktopAlerts=false;}
+    }
+    async function refreshAlerts(){
+      if(!token||alertBusy)return;alertBusy=true;alertChecked=true;const version=generation,active=new AbortController();alertController=active;const timeout=win.setTimeout(()=>active.abort(),10000);
+      try{const response=await request('/api/desk/alerts',{cache:'no-store',credentials:'omit',redirect:'error',signal:active.signal,headers:{Authorization:'Bearer '+token}});const data=await response.json();if(version!==generation)return;
+        if(response.status===401||response.status===403){lock('Local authorization changed. Unlock the workspace again.');return;}
+        if(!response.ok||!Array.isArray(data.decisions)||!Number.isFinite(Date.parse(data.observed_at)))throw Error();
+        const rows=new Map(data.decisions.filter(row=>typeof row.id==='string'&&typeof row.state==='string'&&Number.isFinite(Date.parse(row.expires_at))).map(row=>[row.id,row]));
+        const pending=[...rows.values()].filter(row=>row.state==='awaiting_approval'&&Date.parse(row.expires_at)>=Date.parse(data.observed_at));
+        const added=pending.filter(row=>!alertRows.has(row.id));
+        for(const [id,row] of alertRows)if(row.state==='awaiting_approval'&&rows.get(id)?.state==='expired')alertExpired=true;
+        alertRows=rows;alertAt=Date.parse(data.observed_at);alertClock=Date.now();alertFresh=true;renderAlerts();if(added.length)notifyProposals(added.length);
+      }catch(_){if(version===generation){alertFresh=false;renderAlerts();}}
+      finally{win.clearTimeout(timeout);if(version===generation){alertBusy=false;alertController=null;}}
+    }
+    async function toggleAlerts(){
+      if(!token)return;
+      if(desktopAlerts){desktopAlerts=false;closeNotifications();el('workspace-alert-toggle').textContent='Enable desktop alerts';return;}
+      if(!win.Notification){el('workspace-alert-toggle').textContent='Desktop alerts unavailable in this browser';return;}
+      const version=generation;el('workspace-alert-toggle').disabled=true;
+      try{const permission=win.Notification.permission==='default'?await win.Notification.requestPermission():win.Notification.permission;if(version!==generation)return;desktopAlerts=permission==='granted';el('workspace-alert-toggle').textContent=desktopAlerts?'Disable desktop alerts':'Desktop alerts blocked · use the proposal banner';if(desktopAlerts)await refreshAlerts();}
+      catch(_){if(version===generation)el('workspace-alert-toggle').textContent='Desktop alerts unavailable · use the proposal banner';}
+      finally{if(version===generation)el('workspace-alert-toggle').disabled=false;}
+    }
     function message(text,error=false){el('workspace-message').textContent=text;el('workspace-message').className=error?'error':'';}
     function setMenu(open){el('workspace-nav').hidden=!open&&!!win.matchMedia?.('(max-width: 767px)').matches;el('workspace-menu-toggle').setAttribute('aria-expanded',String(open));el('workspace-sidebar').classList?.toggle('menu-open',open);}
-    function setDialog(open){dialogOpen=open;el('workspace-sidebar').inert=open;el('workspace-footer').inert=open;el('workspace-nav').inert=open;el('workspace-menu-toggle').disabled=open;el('workspace-onboarding').inert=open;}
+    function setDialog(open){dialogOpen=open;el('workspace-sidebar').inert=open;el('workspace-footer').inert=open;el('workspace-nav').inert=open;el('workspace-menu-toggle').disabled=open;el('workspace-onboarding').inert=open;el('workspace-proposals').inert=open;}
     function send(type,value){if(frame.contentWindow)frame.contentWindow.postMessage({type,...(value?{token:value}:{})},win.location.origin);}
     function lock(text='Locked. Unlock again to access all workspace sections.'){
-      generation++;token='';busy=false;if(controller)controller.abort();controller=null;setDialog(false);
+      generation++;token='';busy=false;if(controller)controller.abort();controller=null;if(alertController)alertController.abort();alertController=null;alertBusy=false;alertRows=new Map();alertExpired=false;desktopAlerts=false;alertFresh=false;alertChecked=false;closeNotifications();doc.title=baseTitle;el('workspace-proposals').hidden=true;el('workspace-proposal-status').textContent='';el('workspace-proposal-deadline').textContent='';el('workspace-alert-toggle').textContent='Enable desktop alerts';el('workspace-alert-toggle').disabled=false;setDialog(false);
       send('workspace-lock');frame.src='about:blank';loaded='';surface='';frame.hidden=true;
       el('workspace-token').value='';el('workspace-access').hidden=false;el('workspace-lock').disabled=true;el('workspace-submit').disabled=false;el('workspace-refresh').disabled=true;
       el('workspace-state').textContent='Locked';el('workspace-onboarding').hidden=true;el('workspace-onboarding').open=false;
@@ -66,7 +106,7 @@
       const version=generation,active=new AbortController();controller=active;const timeout=win.setTimeout(()=>active.abort(),10000);
       try{const r=await request('/api/workspace',{cache:'no-store',credentials:'omit',redirect:'error',signal:active.signal,headers:{Authorization:'Bearer '+supplied}});const data=await r.json();if(version!==generation)return;
         if(!r.ok||data.mode!=='paper')throw Error(r.status===401||r.status===403?'Use TRADING_OPERATOR_TOKEN from your local .env. Zerodha tokens do not unlock this workspace.':'Workspace access unavailable. Check the server and local operator configuration.');
-        token=supplied;render(data);el('workspace-access').hidden=true;el('workspace-lock').disabled=false;el('workspace-state').textContent='Unlocked';message('');navigate();
+        token=supplied;render(data);el('workspace-access').hidden=true;el('workspace-lock').disabled=false;el('workspace-state').textContent='Unlocked';message('');navigate();renderAlerts();
       }catch(error){if(version===generation){lock();message(error.name==='AbortError'?'Access check timed out. Try again; no trading action was submitted.':String(error.message),true);}}
       finally{win.clearTimeout(timeout);if(version===generation){busy=false;controller=null;el('workspace-submit').disabled=false;el('workspace-refresh').disabled=!token;}}
     }
@@ -81,10 +121,13 @@
       if(data.type==='workspace-height'&&Number.isFinite(data.height))frame.style.height=Math.max(450,Math.min(12000,data.height))+'px';
     });
     el('workspace-unlock').addEventListener('submit',event=>{event.preventDefault();unlock();});el('workspace-lock').addEventListener('click',()=>lock());el('workspace-refresh').addEventListener('click',refreshInfo);
+    el('workspace-alert-toggle').addEventListener('click',toggleAlerts);
     el('workspace-menu-toggle').addEventListener('click',()=>{setMenu(el('workspace-menu-toggle').getAttribute('aria-expanded')!=='true');});
     win.addEventListener('hashchange',navigate);win.addEventListener('pagehide',()=>lock());win.addEventListener('resize',()=>setMenu(false));
-    if(doc.addEventListener)doc.addEventListener('visibilitychange',()=>{if(!doc.hidden&&current==='dashboard')refreshInfo();});
-    lock();navigate();return{lock,navigate};
+    if(doc.addEventListener)doc.addEventListener('visibilitychange',()=>{if(!doc.hidden){refreshAlerts();if(current==='dashboard')refreshInfo();}});
+    win.setInterval?.(refreshAlerts,5000);
+    win.setInterval?.(()=>{if(token){if(alertFresh&&Date.now()-alertClock>15000)alertFresh=false;renderAlerts();}},1000);
+    lock();navigate();return{lock,navigate,refreshAlerts};
   }
   if(typeof module!=='undefined'&&module.exports)module.exports={createWorkspace};
   else createWorkspace(document,window,window.fetch.bind(window));

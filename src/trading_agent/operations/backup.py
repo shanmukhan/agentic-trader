@@ -1,6 +1,5 @@
 """Stopped-owner, source-preserving backups and isolated verification. Never recover orders."""
 
-import fcntl
 import hashlib
 import json
 import os
@@ -19,6 +18,7 @@ from trading_agent.desk.preparation import saved_profile
 from trading_agent.models import stamp
 from trading_agent.observability.preflight import _account
 from trading_agent.operations.report import account_id
+from trading_agent.persistence.locking import lock_exclusive
 from trading_agent.settings import Settings
 
 MAX_FILE = 128 * 1024**2
@@ -63,7 +63,7 @@ def create_package(settings: Settings, config: Path, output: Path, now: datetime
     # Same advisory owner lock, without constructing Database or PaperBroker.
     fd = os.open(str(settings.database) + ".lock", os.O_RDWR | os.O_NOFOLLOW)
     try:
-        fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        lock_exclusive(fd)
         original = _account(settings)
         identity_keys = (
             "horizon_matches",

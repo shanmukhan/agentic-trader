@@ -1,6 +1,5 @@
 """SQLite single-writer transactions, durable WAL and consistent online backups."""
 
-import fcntl
 import json
 import os
 import sqlite3
@@ -10,6 +9,8 @@ from contextlib import closing, contextmanager
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
+
+from trading_agent.persistence.locking import lock_exclusive
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
@@ -82,6 +83,7 @@ CREATE TABLE IF NOT EXISTS desk_decisions (
     id TEXT PRIMARY KEY, time TEXT NOT NULL, state TEXT NOT NULL, payload TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS desk_pending ON desk_decisions(state,time);
+CREATE INDEX IF NOT EXISTS desk_alert_priority ON desk_decisions((state='awaiting_approval'));
 CREATE INDEX IF NOT EXISTS desk_order ON desk_decisions(json_extract(payload,'$.order_id'));
 CREATE INDEX IF NOT EXISTS events_entity_kind ON events(entity,kind,seq);
 CREATE INDEX IF NOT EXISTS fills_order ON fills(order_id,seq);
@@ -95,7 +97,7 @@ class Database:
         self.lock = threading.RLock()
         self._owner: int | None = os.open(str(path) + ".lock", os.O_CREAT | os.O_RDWR, 0o600)
         try:
-            fcntl.flock(self._owner, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            lock_exclusive(self._owner)
         except OSError:
             os.close(self._owner)
             raise RuntimeError("account database already owned by another process") from None
@@ -161,6 +163,23 @@ class Database:
             except BaseException:
                 self.connection.rollback()
                 raise
+
+    @contextmanager
+    def read_snapshot(self) -> Iterator[sqlite3.Connection]:
+        """Read a committed WAL snapshot without reserving the writer connection.
+
+        Engine callers must separately serialize any in-memory authority they read.
+        An accidental mutation fails at SQLite's read-only boundary.
+        """
+        uri = self.path.resolve().as_uri() + "?mode=ro"
+        with closing(sqlite3.connect(uri, uri=True, timeout=3, isolation_level=None)) as tx:
+            tx.row_factory = sqlite3.Row
+            tx.execute("PRAGMA query_only=ON")
+            tx.execute("BEGIN")
+            try:
+                yield tx
+            finally:
+                tx.rollback()
 
     @staticmethod
     def get(tx: sqlite3.Connection, key: str) -> str:

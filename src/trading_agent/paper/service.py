@@ -26,6 +26,7 @@ class PaperService:
             self.connection,
             clock,
             on_unusable=self.unusable,
+            stream_limit=runtime.engine.settings.stream_limit,
         )
 
     def unusable(self, symbol: str) -> None:
@@ -147,7 +148,7 @@ class PaperService:
         self.stop.set()
         self.stream.close()
         if self.thread:
-            # Ten reviewed instruments, each bounded by the read-only HTTP timeout.
+            # Each history request is bounded by the read-only HTTP timeout.
             # The worker checks stop between requests; at most one request remains.
             self.thread.join(timeout=12)
             if self.thread.is_alive():

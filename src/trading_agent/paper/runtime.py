@@ -28,10 +28,15 @@ class PaperFeed:
         now: datetime,
         synthetic: bool = False,
     ):
-        if not 1 <= len(instruments) <= 10 or len({i.symbol for i in instruments}) != len(
-            instruments
+        if (
+            not 1 <= len(instruments) <= engine.settings.stream_limit
+            or len({i.symbol for i in instruments}) != len(instruments)
+            or len({i.token for i in instruments}) != len(instruments)
         ):
-            raise ValueError("automation requires one to ten unique reviewed instruments")
+            raise ValueError(
+                "automation requires one to "
+                f"{engine.settings.stream_limit} unique reviewed instruments"
+            )
         if engine.model and engine.model.artifact.synthetic and not synthetic:
             raise ValueError("synthetic models cannot be attached to a connected feed")
         self.engine, self.settings, self.strategy = engine, settings, strategy
@@ -317,7 +322,9 @@ class PaperFeed:
                     return
                 self._calendar_identity(now)
                 self._guard(now)
-                if len(candles) > 1000 or any(
+                # A regular NSE cash session has at most 75 five-minute bars per symbol.
+                # Keep the legacy floor while allowing the explicitly reviewed larger universe.
+                if len(candles) > max(1000, 75 * len(self.catalog)) or any(
                     c.symbol not in self.catalog
                     or c.minutes != 5
                     or c.start.astimezone(IST).date() != now.astimezone(IST).date()

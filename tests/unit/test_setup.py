@@ -1,5 +1,6 @@
 import json
 import os
+import tomllib
 from datetime import timedelta
 from decimal import Decimal
 from unittest.mock import Mock
@@ -271,11 +272,13 @@ def test_manual_feed_callbacks_preserve_risk_and_latch_candle_failures(setup_ser
     assert not s.engine.connected
     connected(True)
     s.clock = lambda: NOW + timedelta(seconds=2)
+    ingest(quote(2))
+    s.clock = lambda: NOW + timedelta(seconds=62)
     monkeypatch.setattr(
         "trading_agent.api.setup.store_candles", Mock(side_effect=RuntimeError("storage fault"))
     )
     with pytest.raises(RuntimeError, match="storage fault"):
-        ingest(quote(2))
+        ingest(quote(62))
     assert s.engine.faulted and not s.engine.connected
     assert accounting(s) == before
 
@@ -289,6 +292,57 @@ def test_setup_refuses_to_overwrite_external_economic_policy_changes(setup_servi
         s.select_symbols({"symbols": ["DEMO"]})
     assert s.config.read_text() == changed
     assert s.engine.settings.stream_tokens == ()
+
+
+def test_config_updates_preserve_quoted_keys_comments_and_multiline_values(setup_service):
+    s = setup_service
+    original = (
+        s.config.read_text()
+        .replace(
+            "stream_tokens = []",
+            '"stream_tokens" = [\n    # reviewed subscription\n] # keep selection explanation',
+        )
+        .replace(
+            'mode = "paper"',
+            '# account comment\nmode = """paper""" # preserve unrelated string',
+        )
+    )
+    s.config.write_text(original)
+    before = accounting(s)
+    s.select_symbols({"symbols": ["DEMO", "SECOND"]})
+    saved = s.config.read_text()
+    assert '# account comment\nmode = """paper""" # preserve unrelated string' in saved
+    assert "# keep selection explanation" in saved
+    assert tomllib.loads(saved)["stream_tokens"] == [1, 2]
+    assert Settings.load(s.config).stream_tokens == (1, 2)
+    assert accounting(s) == before
+
+
+@pytest.mark.parametrize(
+    "suffix", ['\n[extra]\ncalendar = "private"\n', '\ncalendar = "duplicate"\n']
+)
+def test_invalid_or_nested_configuration_is_never_rewritten(setup_service, suffix):
+    s = setup_service
+    original = s.config.read_text() + suffix
+    s.config.write_text(original)
+    before = accounting(s)
+    with pytest.raises(ValueError):
+        s.select_symbols({"symbols": ["DEMO"]})
+    assert s.config.read_text() == original
+    assert s.engine.settings.stream_tokens == ()
+    assert accounting(s) == before
+
+
+def test_atomic_config_failure_preserves_saved_and_live_selection(setup_service, monkeypatch):
+    s = setup_service
+    original, before = s.config.read_bytes(), accounting(s)
+    monkeypatch.setattr(os, "replace", Mock(side_effect=OSError("disk failure")))
+    with pytest.raises(OSError, match="disk failure"):
+        s.select_symbols({"symbols": ["DEMO"]})
+    assert s.config.read_bytes() == original
+    assert s.engine.settings.stream_tokens == ()
+    assert not list(s.config.parent.glob(".setup-*"))
+    assert accounting(s) == before
 
 
 def test_manual_callback_counts_lock_wait_in_freshness_before_any_fill(setup_service, monkeypatch):

@@ -1,5 +1,65 @@
 # Test and validation plan
 
+## Issue-report remediation (24 October 2026)
+
+Integrated commands executed after the final code changes:
+
+```sh
+.venv/bin/pytest --cov=trading_agent --cov-report=json:/private/tmp/agentic-issues-coverage.json --cov-report=term:skip-covered -q
+node --test tests/ui/*.test.cjs
+.venv/bin/ruff check src tests
+.venv/bin/ruff format --check src tests
+.venv/bin/mypy src/trading_agent
+.venv/bin/uv lock --check --offline --cache-dir /private/tmp/agentic-trader-uv-cache
+git diff --check
+```
+
+**1,292 Python / 202 JavaScript tests passed.** Python completed in 54.95 seconds;
+statement coverage was **91.98%** (11,106/12,075). Ruff lint/format and mypy on
+125 source files passed, as did offline lock validation. The Python suite emitted
+63 SQLite connection ResourceWarnings in existing test paths. Newly added independent
+accounting readers use explicit connection closure; broader fixture cleanup remains
+separate from this validation result.
+
+New `test_quote_batches`, `test_database_snapshots`, `test_delivery_quote_batches` and
+`test_quote_frame_persistence` suites compare durable sequential/frame state, count
+actual commits, independently reconstruct exact virtual cash/fees/DP charges, exercise
+partial fills/protective exits and rollback including trusted long-term equity clocks.
+They also cover same-second depth, processing delays/backwards clocks, mapping/SQL
+failure, completed candle preservation, read-only SQL rejection and consistent committed
+WAL reads during an active writer. Updated corporate-action query instrumentation
+traces the real independent snapshot connection and retains its no-history-scan check.
+
+Capacity/settings/broker tests cover configured/default bounds, strict malformed and
+large frames, subscription batches and financial-policy identity stability. A fake-socket
+50-symbol lifecycle independently verifies 1,500 saved candles. Setup functional tests
+save 3,000 maximum-length catalog symbols beyond the old request budget, preserving
+financial/event state; oversized/over-count/secret-bearing requests fail without echo,
+configuration replacement or authority change. TOML and lock suites cover structured
+comments/values, invalid/external policy edits, replacement failures, process contention
+and a simulated Windows adapter.
+
+Proposal tests verify authenticated bounded pending-priority metadata without expiry,
+orders, fills or cash changes; query-plan checks rule out sorting the full history.
+DOM checks cover route/hidden-tab monitoring, deduped opt-in notifications, stale/auth/
+lock/late-response cleanup, modal guards, expired guidance, dynamic feed capacity and
+accessible countdowns that do not continuously announce through a live region.
+
+Rendered Firefox validation used a separately created invented account on localhost
+port 8766, with no market-data connection or background watchdog. Desktop and 320×480
+responsive checks showed proposal count/banner/deadline, route persistence and readable
+controls; Lock removed details and restored the base title. Independent SQLite checks
+before shutdown confirmed exact ₹25,000 cash, no orders/fills/positions and the same
+awaiting proposal. The disposable server/tab were stopped/closed. Countdown live-region
+and dynamic-capacity follow-ups have automated DOM coverage; native desktop notification
+permission/delivery was not exercised.
+
+These checks establish local simulated engineering evidence. They do not establish
+3,000-symbol real-feed throughput, native Windows deployment, physical-device or OS
+notification delivery, power-failure durability, licensed source acceptance or new
+multi-year strategy profitability. The remaining capabilities are tracked in the
+[current-code issue matrix](../PROJECT_ISSUES_GAPS_AND_IMPROVEMENTS.md).
+
 ## Daily operations automation (23 October 2026)
 
 **Integrated validation: 1,248 Python and 193 JavaScript tests passed.** Ruff lint,
