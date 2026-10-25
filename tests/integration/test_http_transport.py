@@ -101,3 +101,98 @@ def test_read_request_requires_auth_before_network(monkeypatch):
     install_transport(monkeypatch, unexpected)
     with pytest.raises(BrokerUnavailable):
         RestrictedKiteHTTP("key").profile()
+
+
+def test_history_retries_transient_http_failures_with_pacing_and_same_request(monkeypatch):
+    from trading_agent.broker import readonly_kite
+
+    requests, waits, slots = [], [], []
+    statuses = iter([429, 503, 200])
+
+    def handler(request):
+        requests.append(request)
+        status = next(statuses)
+        return httpx.Response(
+            status,
+            json={"status": "success", "data": {"candles": []}},
+            headers={"Retry-After": "3"} if status == 429 else {},
+        )
+
+    install_transport(monkeypatch, handler)
+    monkeypatch.setattr(readonly_kite, "history_slot", lambda: slots.append(True))
+    monkeypatch.setattr(readonly_kite.time, "sleep", waits.append)
+    assert (
+        RestrictedKiteHTTP("key", "session").historical_data(
+            1, NOW, NOW + timedelta(minutes=5), "5minute", continuous=False, oi=False
+        )
+        == []
+    )
+    assert len(requests) == len(slots) == 3
+    assert waits == [3.0, 2.0]
+    assert all(request.url == requests[0].url for request in requests)
+    assert all(request.headers["Authorization"] == "token key:session" for request in requests)
+
+
+@pytest.mark.parametrize("status", [401, 403, 400, 500, 302])
+def test_history_does_not_retry_auth_permanent_errors_or_redirects(monkeypatch, status):
+    from trading_agent.broker import readonly_kite
+
+    requests = []
+
+    def handler(request):
+        requests.append(request)
+        return httpx.Response(status, json={"message": "private-broker-content"})
+
+    install_transport(monkeypatch, handler)
+    monkeypatch.setattr(readonly_kite, "history_slot", lambda: None)
+    monkeypatch.setattr(readonly_kite.time, "sleep", lambda delay: pytest.fail("unexpected retry"))
+    with pytest.raises(BrokerUnavailable) as error:
+        RestrictedKiteHTTP("key", "session").historical_data(
+            1, NOW, NOW + timedelta(minutes=5), "5minute", continuous=False, oi=False
+        )
+    assert len(requests) == 1 and "private-broker-content" not in str(error.value)
+
+
+@pytest.mark.parametrize(
+    "retry_after,attempts,waits", [(None, 3, [1.0, 2.0]), ("bad", 3, [1.0, 2.0]), ("120", 1, [])]
+)
+def test_history_retry_is_bounded_and_exhaustion_is_sanitized(
+    monkeypatch, retry_after, attempts, waits
+):
+    from trading_agent.broker import readonly_kite
+
+    requests, actual_waits = [], []
+
+    def handler(request):
+        requests.append(request)
+        return httpx.Response(
+            429,
+            json={"message": "secret-authenticated-url"},
+            headers={"Retry-After": retry_after} if retry_after else {},
+        )
+
+    install_transport(monkeypatch, handler)
+    monkeypatch.setattr(readonly_kite, "history_slot", lambda: None)
+    monkeypatch.setattr(readonly_kite.time, "sleep", actual_waits.append)
+    with pytest.raises(BrokerUnavailable) as error:
+        RestrictedKiteHTTP("key", "session").historical_data(
+            1, NOW, NOW + timedelta(minutes=5), "5minute", continuous=False, oi=False
+        )
+    assert len(requests) == attempts and actual_waits == waits
+    assert "secret-authenticated-url" not in str(error.value)
+
+
+def test_session_exchange_post_is_never_retried(monkeypatch):
+    from trading_agent.broker import readonly_kite
+
+    requests = []
+
+    def handler(request):
+        requests.append(request)
+        return httpx.Response(503, json={"message": "session unavailable"})
+
+    install_transport(monkeypatch, handler)
+    monkeypatch.setattr(readonly_kite.time, "sleep", lambda delay: pytest.fail("POST retry"))
+    with pytest.raises(BrokerUnavailable):
+        RestrictedKiteHTTP("key").generate_session("request", api_secret="secret")
+    assert len(requests) == 1 and requests[0].method == "POST"

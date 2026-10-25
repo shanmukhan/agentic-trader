@@ -51,6 +51,15 @@ test('Dashboard shows exact values, materialized cancellation and next action wi
  assert.match(s.nodes['dashboard-valuation'].textContent,/stale/);assert.equal(s.nodes['next-link'].attributes.href,'/holdings');
  assert.match(s.nodes['performance-coverage'].textContent,/unavailable/);assert.equal(s.calls.length,1);
 });
+test('Dashboard and Discovery order shuffled numeric server ranks before symbol order',async()=>{
+ const data=fixture();data.discovery.rows=[{...data.discovery.rows[1],symbol:'NSE:DECLINE',rank:2},{...data.discovery.rows[0],symbol:'NSE:TREND',rank:1}];
+ const s=setup('/dashboard',async()=>ok(data));await s.unlock();
+ assert.match(s.nodes['dashboard-candidates'].children[0].textContent,/NSE:TREND · rank 1/);
+ assert.match(s.nodes['dashboard-candidates'].children[1].textContent,/NSE:DECLINE · rank 2/);
+ const discovery=setup('/discovery',async()=>ok(data));await discovery.unlock();
+ assert.match(discovery.nodes['research-rows'].children[0].textContent,/NSE:TREND/);
+ assert.match(discovery.nodes['research-rows'].children[1].textContent,/NSE:DECLINE/);
+});
 test('Portfolio keeps accounting day, incomplete claims and saved quote coverage explicit without rounding',async()=>{
  const data=fixture();data.portfolio.valuation_state='incomplete';data.portfolio.long_term={unvalued_fractional_claims:1,receivable:'0.00',income_received:'9.001'};
  const s=setup('/holdings',async()=>ok(data));await s.unlock();assert.match(s.nodes['portfolio-metrics'].textContent,/₹999.995/);assert.match(s.nodes['holding-rows'].textContent,/₹5,087.7544/);
@@ -105,6 +114,8 @@ test('exact ordering handles negative, fractional and unsafe integer values with
  assert.ok(compareDecimal('9007199254740993.125','9007199254740993.124999999999')>0);
  assert.ok(compareDecimal('-0.0001','-0.00001')<0);assert.equal(compareDecimal('-000.000','0'),0);assert.equal(compareDecimal('01.20','1.2'),0);
  assert.ok(compareDecimal('2',null)<0);
+ assert.equal(compareDecimal(2,1),1);assert.equal(compareDecimal(1,2),-1);assert.equal(compareDecimal(1,'1.0'),0);
+ assert.ok(compareDecimal(1,Infinity)<0);assert.ok(compareDecimal(1,NaN)<0);
 });
 test('Settings, CLI guidance and learning describe available behavior without writable or fabricated workflows',async()=>{
  const settings=setup('/settings');await settings.unlock();assert.match(settings.nodes['settings-limits'].textContent,/₹62.50/);assert.match(settings.nodes['settings-summary'].textContent,/20 holding sessions/);
@@ -133,4 +144,39 @@ test('missing research, holdings and invalid schema stay honest; no network acti
  const d=setup('/discovery',async()=>ok(data));await d.unlock();assert.match(d.nodes['research-context'].textContent,/No saved/);assert.match(d.nodes['research-rows'].textContent,/No saved research rows/);assert.match(d.nodes['fundamental-state'].textContent,/unavailable/);
  const p=setup('/holdings',async()=>ok(data));await p.unlock();assert.match(p.nodes['holdings-status'].textContent,/No held shares/);
  const invalid=setup('/dashboard',async()=>ok({schema_version:2}));await invalid.unlock();assert.equal(invalid.nodes.main.hidden,true);assert.match(invalid.nodes.message.textContent,/could not be loaded/);
+});
+test('dashboard signs and dated daily change preserve exact values without inventing a trend',async()=>{
+ const s=setup();await s.unlock();const cards=s.nodes['dashboard-metrics'].children;
+ assert.equal(cards[3].children[1].className,'desk-value financial-loss');
+ assert.match(cards[4].textContent,/-₹3.004/);assert.match(cards[4].textContent,/earlier accounting day/);
+});
+test('portfolio draws only complete allocation and fresh P&L, labels exact decimals, clears all visuals on Lock',async()=>{
+ const data=fixture();data.portfolio.valuation_state='fresh';data.portfolio.positions.push({...data.portfolio.positions[0],symbol:'NSE:B',unrealized_pnl:'0.0000000000000001'});
+ data.portfolio.allocation={state:'available',cash_weight_pct:'20.0000000000000001',positions:[{symbol:'NSE:A',weight_pct:'79.9999999999999999'}]};
+ const s=setup('/holdings',async()=>ok(data));await s.unlock();
+ assert.equal(s.nodes['allocation-visual'].children[0].attributes.role,'img');assert.match(s.nodes['allocation-visual'].textContent,/79.9999999999999999%/);
+ assert.match(s.nodes['holding-pnl'].children[0].textContent,/NSE:B.*Gain ₹0.0000000000000001/);assert.match(s.nodes['holding-pnl'].textContent,/Loss -₹12.3456/);
+ assert.equal(s.nodes['holding-pnl'].children[1].children[1].attributes['aria-label'],'NSE:A estimated loss -₹12.3456');
+ s.view.lock();assert.equal(s.nodes['allocation-visual'].textContent,'');assert.equal(s.nodes['holding-pnl'].textContent,'');
+});
+test('stale, truncated or invalid visual evidence never presents a current chart',async()=>{
+ const data=fixture();data.portfolio.allocation={state:'unavailable',positions:[{weight_pct:'99'}]};
+ let s=setup('/holdings',async()=>ok(data));await s.unlock();assert.match(s.nodes['holding-pnl'].textContent,/unavailable/);assert.match(s.nodes['allocation-visual'].textContent,/unavailable/);
+ data.portfolio.valuation_state='fresh';data.portfolio.positions_truncated=true;data.portfolio.allocation={state:'available',cash_weight_pct:'20',positions:[{weight_pct:null}]};
+ s=setup('/holdings',async()=>ok(data));await s.unlock();assert.match(s.nodes['holding-pnl'].textContent,/unavailable/);assert.match(s.nodes['allocation-visual'].textContent,/cannot be drawn/);
+});
+test('scientific decimal comparisons retain signs and order without Number or exponent expansion',()=>{
+ for(const [left,right,expected] of [['-1E-8','0',-1],['0','1E-1000',-1],['1.2300E+4','12300',0],['-0E+999','0',0],['0.0012','12E-4',0],['9.007199254740993125e15','9007199254740993.124999',1],['-2E+3000','-1E+3000',-1],['1E+99999999999999999999','9E+99999999999999999998',1]])assert.equal(Math.sign(compareDecimal(left,right)),expected);
+});
+test('scientific P&L preserves exact loss and zero labels and malformed values cannot be charted',async()=>{
+ const data=fixture();data.portfolio.valuation_state='fresh';data.portfolio.net_unrealized_pnl='-1E-8';
+ data.portfolio.positions=[{symbol:'NSE:LOSS',unrealized_pnl:'-1E-8'},{symbol:'NSE:ZERO',unrealized_pnl:'-0E-5'}];
+ const s=setup('/holdings',async()=>ok(data));await s.unlock();
+ assert.equal(s.nodes['portfolio-metrics'].children[3].children[1].className,'desk-value financial-loss');
+ assert.match(s.nodes['holding-pnl'].children[0].textContent,/NSE:ZERO.*Unchanged -₹0.00000/);
+ const loss=s.nodes['holding-pnl'].children[1];assert.equal(loss.className,'holding-bar financial-loss');
+ assert.equal(loss.children[1].attributes.role,'img');assert.equal(loss.children[1].children[0].attributes.width,'100');
+ assert.equal(loss.children[1].attributes['aria-label'],'NSE:LOSS estimated loss -₹0.00000001');
+ data.portfolio.positions[0].unrealized_pnl=' ';
+ await s.view.refresh();assert.match(s.nodes['holding-pnl'].textContent,/unavailable.*complete finite estimates/);
 });

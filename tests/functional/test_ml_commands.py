@@ -80,6 +80,21 @@ def test_complete_ml_cli_and_artifacts_are_isolated_from_service_account(tmp_pat
         )
     )
     assert rerun["metrics"]["net_pnl"] == "504.70" and not service.exists()
+    decisions = [
+        json.loads(line) for line in (tmp_path / "scored/decisions.jsonl").read_text().splitlines()
+    ]
+    probabilities = [row["ml_probability"] for row in decisions if "ml_probability" in row]
+    assert len(probabilities) == 10
+    assert all(0 <= probability <= 1 for probability in probabilities)
+    assert len(set(probabilities)) > 1
+    artifact = json.loads((tmp_path / "model/model.json").read_text())
+    readable = (tmp_path / "model/validation.md").read_text()
+    assert "not causal feature importance" in readable
+    for feature, weight in zip(
+        artifact["feature_names"], artifact["coefficients"]["weights"], strict=True
+    ):
+        row = next(line for line in readable.splitlines() if line.startswith(f"| {feature} |"))
+        assert float(row.split("|")[4]) == float(f"{weight:.12g}")
     for path in (
         directory / "model/validation.md",
         directory / "model/manifest.json",

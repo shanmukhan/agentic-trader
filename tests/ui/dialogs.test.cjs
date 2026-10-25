@@ -105,3 +105,31 @@ test('all controllers in one document share one lifecycle; an overlapping reques
 test('a delayed close event from the previous review cannot dismiss a newly opened confirmation',()=>{
  const s=fixture();s.api.open(s.dialog,{focus:s.cancel});s.api.close();s.api.open(s.dialog,{focus:s.cancel});s.dialog.fire('close');assert.equal(s.dialog.open,true);s.api.destroy();
 });
+test('reviewed JSON inputs are captured once and duplicate or reentrant confirmations cannot resubmit',()=>{
+ const s=fixture(),body={request:{budget:'1000.000000000000000001',sessions:['2026-10-25']}},calls=[];
+ assert.equal(s.api.confirmWith(s.dialog,reviewed=>{calls.push(reviewed);assert.equal(s.api.confirm(s.dialog),false);},body,{focus:s.cancel}),true);
+ body.request.budget='9999';body.request.sessions.push('2026-10-26');
+ assert.equal(s.api.confirm(s.dialog),true);assert.equal(s.api.confirm(s.dialog),false);
+ assert.deepEqual(calls,[{request:{budget:'1000.000000000000000001',sessions:['2026-10-25']}}]);
+ assert.equal(s.dialog.open,false);assert.equal(s.parent.count,0);assert.equal(s.win.count,0);
+});
+test('every cancellation or close path revokes the reviewed callback',()=>{
+ for(const method of ['escape','native','pagehide','destroy','cancel','close']){
+  const s=fixture();let calls=0;s.api.confirmWith(s.dialog,()=>calls++,{symbol:'NSE:DEMO'},{focus:s.cancel});
+  if(method==='escape')s.dialog.fire('cancel');if(method==='native')s.dialog.close();if(method==='pagehide')s.win.fire('pagehide');
+  if(method==='destroy')s.api.destroy();if(method==='cancel')s.api.cancel(s.dialog);if(method==='close')s.api.close(s.dialog);
+  assert.equal(s.api.confirm(s.dialog),false);assert.equal(calls,0);assert.equal(s.dialog.open,false);
+ }
+});
+test('failed opening and invalid JSON inputs leave no reviewed callback',()=>{
+ const s=fixture();let calls=0,cancels=0;s.dialog.showModal=()=>{throw Error('native opening failed');};
+ assert.equal(s.api.confirmWith(s.dialog,()=>calls++,{amount:'500'},{cancel:()=>cancels++}),false);
+ assert.equal(s.api.confirm(s.dialog),false);assert.equal(cancels,1);assert.equal(calls,0);
+ const cyclic={};cyclic.self=cyclic;
+ assert.equal(s.api.confirmWith(s.dialog,()=>calls++,cyclic,{cancel:()=>cancels++}),false);
+ assert.equal(s.api.confirm(s.dialog),false);assert.equal(cancels,2);assert.equal(calls,0);
+});
+test('a throwing reviewed callback is already consumed and cannot run twice',()=>{
+ const s=fixture();let calls=0;s.api.confirmWith(s.dialog,()=>{calls++;throw Error('controller failed');},{},{focus:s.cancel});
+ assert.throws(()=>s.api.confirm(s.dialog),/controller failed/);assert.equal(s.api.confirm(s.dialog),false);assert.equal(calls,1);
+});

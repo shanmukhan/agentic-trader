@@ -1,5 +1,19 @@
 # Threat model and security decisions
 
+## Operator-token generation and local access
+
+The minimum token length validates shape, not randomness. Generate a fresh secret with
+`.venv/bin/python -c 'import secrets; print(secrets.token_hex(32))'` (64 hexadecimal
+characters from 32 random bytes) and keep it in the private operator environment.
+Repeated/predictable characters remain weak regardless of length. Do not put a token
+in a URL, documentation, screenshot or browser storage.
+
+The service binds only to configured `127.0.0.1` or `::1`. Trusted Host checks allow
+those loopback names plus `localhost` for supported local navigation; a Host allowlist
+does not bind a socket or resolve a DNS name. Removing `localhost` is not a substitute
+for the existing loopback bind and bearer/origin checks. Remote hosting and TLS
+termination remain outside this local-only server's contract.
+
 ## Registered research boundary (0.17.0)
 
 Browser jobs accept only a registered opaque resource identity/hash, stable request key
@@ -350,3 +364,7 @@ parse AST across execution/portfolio/risk/action modules, avoiding table-name fa
 positives while widening coverage. Shared money rendering uses decimal strings;
 private page values remain in memory and clear on lock. No browser persistence or
 client sizing authority. See [portfolio-contributions.md](portfolio-contributions.md).
+
+### Generate an unpredictable operator token
+
+Length validation is not an entropy check. Generate the local value with `.venv/bin/python -c "import secrets; print(secrets.token_hex(32))"` in a private terminal, then place it only in the private `.env` as `TRADING_OPERATOR_TOKEN`. This yields 32 random bytes encoded as 64 hexadecimal characters. Do not use repeated characters, human phrases, commit it or paste it into reports/chat. The workspace retains it only in tab memory; sessionStorage/localStorage token reuse is deliberately avoided.

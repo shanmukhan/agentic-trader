@@ -207,6 +207,13 @@ exclude a second same-day DP charge once paid. Extreme illiquid, low-price exits
 spanning many days can exhaust cash for new DP fees: the fill remains blocked with
 `INSUFFICIENT_EXIT_FEE_CASH`; no fake sale or negative cash is manufactured.
 
+Account, console and workspace responses always return `delivery_fee_buffer` as an
+exact decimal string. Intraday accounts return the known zero `"0"`, displayed as
+₹0 rather than unavailable; delivery accounts return the derived reserve. Allocation
+commitments carry the same value without subtracting it again from owned allocation.
+This is a derived fee-policy amount, not an independently adjustable setting. Reading
+these views does not charge a fee, reserve ledger cash or change account state.
+
 Each new reviewed session anchors daily P&L to the last fully trusted portfolio
 observation before new quotes. Opening gaps remain included. This is an observed
 reference, not an official exchange close. Only fully fresh portfolio observations update these checkpoints/loss gates; stale

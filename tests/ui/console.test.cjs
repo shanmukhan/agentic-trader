@@ -28,7 +28,7 @@ function data(overrides = {}) {
 }
 const ok = value => ({ ok: true, status: 200, json: async () => value });
 const flush = () => new Promise(resolve => setImmediate(resolve));
-function setup(fetcher = async () => ok(data())) {
+function setup(fetcher = async () => ok(data()), windowOptions = {}) {
   const nodes = Object.fromEntries([...readFileSync('src/trading_agent/api/static/index.html', 'utf8')
     .matchAll(/\bid="([^"]+)"/g)].map(match => [match[1], new Element()]));
   const events = {}, intervals = [], timeouts = new Map(), calls = [];
@@ -36,13 +36,40 @@ function setup(fetcher = async () => ok(data())) {
   const doc = { hidden: false, getElementById: id => { assert.ok(nodes[id], id); return nodes[id]; },
     createElement: () => new Element(), addEventListener: (name, cb) => { events[name] = cb; } };
   const win = { Date: { now: () => now }, setInterval: (cb, ms) => intervals.push({ cb, ms }),
-    setTimeout: cb => { timeouts.set(++sequence, cb); return sequence; }, clearTimeout: id => timeouts.delete(id) };
+    setTimeout: cb => { timeouts.set(++sequence, cb); return sequence; }, clearTimeout: id => timeouts.delete(id), ...windowOptions };
   const instance = createConsole(doc, win, async (url, options) => { calls.push({ url, options }); return fetcher(url, options); });
   async function unlock(value = 'ephemeral-unit-test-operator-token') {
     nodes.token.value = value; nodes.unlock.fire('submit'); await flush();
   }
   return { nodes, doc, events, intervals, timeouts, calls, instance, unlock, advance: ms => { now += ms; } };
 }
+
+test('a failed read revokes an open reviewed action and loading clears after failure', async () => {
+  const loading=[];let reads=0;
+  const s=setup(async()=>{if(++reads===1)return ok(data());throw Error('offline');},{AgenticFeedback:{setBusy:value=>loading.push(value)}});
+  await s.unlock();s.nodes.arm.fire('click');assert.equal(s.nodes.confirm.open,true);
+  await s.instance.refresh();assert.equal(s.nodes.confirm.open,false);
+  s.nodes['confirm-action'].fire('click');await flush();
+  assert.equal(s.calls.filter(c=>c.options.method==='POST').length,0);
+  assert.ok(loading.includes(true));assert.equal(loading.at(-1),false);
+  assert.match(s.nodes.message.textContent,/offline/);
+});
+
+test('shared console loading covers reads and Lock clears it during a pending read',async()=>{
+ const loading=[];let resolve;
+ const s=setup(()=>new Promise(done=>{resolve=done;}),{AgenticFeedback:{setBusy:value=>loading.push(value)}});
+ await s.unlock();assert.equal(loading.at(-1),true);s.nodes.lock.fire('click');assert.equal(loading.at(-1),false);
+ resolve(ok(data()));await flush();assert.equal(loading.at(-1),false);assert.equal(s.nodes.equity.textContent,'—');
+});
+
+test('shared console loading covers a mutation and its reconciliation read while preserving feedback',async()=>{
+ const loading=[],notices=[];let resolve;
+ const s=setup(async(url,options)=>options.method==='POST'?new Promise(done=>{resolve=done;}):ok(data()),{AgenticFeedback:{setBusy:value=>loading.push(value),notify:value=>notices.push(value)}});
+ await s.unlock();s.nodes.arm.fire('click');s.nodes['confirm-action'].fire('click');
+ assert.equal(loading.at(-1),true);resolve(ok({}));await flush();
+ assert.equal(loading.at(-1),false);assert.equal(s.calls.filter(c=>c.options.method==='POST').length,1);
+ assert.equal(notices.length,1);assert.match(notices[0],/Paper action completed/);
+});
 
 test('money retains all server decimal digits and groups Indian rupees without float rounding', () => {
   for (const [value, expected] of [['25000.00', '₹25,000.00'], ['10000000', '₹1,00,00,000.00'],

@@ -187,3 +187,30 @@ changes only the display. **Local registration and CLI help** is also expandable
 No launch, cancellation, retry or comparison contract changed; unavailable worker
 isolation still blocks launch. Automated checks include safe bundle labels, complete
 identity and existing exact report/comparison behavior. See [validation](test-plan.md).
+
+## Equity, drawdown and comparison charts (25 October 2026)
+
+After **Inspect recorded report**, the result shows an equity curve (INR) and a
+drawdown area below zero (percent loss from the report's recorded running peak).
+Only returned rows explicitly marked `valuation_fresh: true` are plotted; stale,
+incomplete, null and invalid observations break the line. A single fresh observation
+is a point. With no fresh evidence, the panel says unavailable and directs you to
+the exact valuation table. No missing value becomes zero or a cost-based valuation.
+Drawdown is a presentation of the server's recorded positive loss percentage with a
+negative display sign; the browser does not compute financial returns.
+
+Select two completed jobs and **Check comparison** to overlay equity on one shared
+observation-time axis. Solid and dashed lines distinguish the first and second reports.
+The existing identical-resource and declared-method checks run before a chart is drawn.
+Changing either selection clears the previous comparison so it cannot be mistaken for
+the new selection. Mismatched identities block both chart and table.
+
+Plots use approximate browser coordinates and timestamps displayed in IST; very large
+axis values use scientific notation. Exact recorded decimals, timestamps, valuation
+coverage and source declarations remain in expandable keyboard-scrollable tables.
+These event observations are not daily return cuts or an annualized performance series.
+A bounded/truncated response is still labelled and does not imply the complete history.
+If a report cannot be read/verified, refresh jobs and inspect server diagnostics; no
+values or job retries are invented. Lock/page exit clears charts, tables and cached
+reports. Charts are read-only and do not enable a worker whose isolation check failed,
+start simulations, alter account capital or establish market/broker acceptance.

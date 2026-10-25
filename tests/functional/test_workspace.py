@@ -63,7 +63,7 @@ def test_workspace_shell_assets_and_scoped_framing(engine):
         ):
             assert label in shell
         assert 'class="workspace-sidebar"' in shell
-        assert 'content="light"' in shell
+        assert 'content="light dark"' in shell
         assert "No automatic entry schedule" in shell
         assert engine.snapshot(NOW) == before
 

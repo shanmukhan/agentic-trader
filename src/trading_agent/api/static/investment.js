@@ -23,22 +23,27 @@
     ['scope-and-returns', 'Account value, income and performance coverage', 'A dated daily accounting change is not an account lifetime return. Cash contributions, purchases, income, fees, corporate-action claims and unknown marks need separate treatment. Unavailable benchmark, allocation and return calculations are shown as unavailable rather than zero.', '/holdings', 'Review valuation scope and limitations']
   ];
 
-  // Exact decimal ordering for server strings. Monetary values never pass through Number.
+  // Compare significands and decimal positions without expanding exponent notation
+  // or converting money to Number. Zero has no sign, including scientific zero.
+  function decimalParts(value) {
+    if (typeof value !== 'string') return null;
+    const match = /^(-?)(\d+)(?:\.(\d+))?(?:[eE]([+-]?\d+))?$/.exec(value);
+    if (!match) return null;
+    const raw = match[2] + (match[3] || ''), digits = raw.replace(/^0+/, '');
+    return digits ? {negative: match[1] === '-', digits, place: BigInt(match[2].length - (raw.length - digits.length)) + BigInt(match[4] || '0')} : {negative:false, digits:'0', place:0n};
+  }
   function compareDecimal(left, right) {
-    const parse = value => {
-      const match = /^(-?)(\d+)(?:\.(\d+))?$/.exec(String(value ?? ''));
-      return match ? {negative: match[1] === '-', whole: match[2].replace(/^0+(?=\d)/, ''), fraction: match[3] || ''} : null;
-    };
-    const a = parse(left), b = parse(right);
+    // Rank/count fields arrive as JSON numbers. Monetary fields remain exact
+    // strings; only existing finite numbers are converted to decimal text here.
+    const parts = value => decimalParts(typeof value === 'number' && Number.isFinite(value) ? String(value) : value);
+    const a = parts(left), b = parts(right);
     if (!a || !b) return a ? -1 : b ? 1 : 0;
-    const zero = v => /^0+$/.test(v.whole + v.fraction);
-    if (zero(a)) a.negative = false;
-    if (zero(b)) b.negative = false;
     if (a.negative !== b.negative) return a.negative ? -1 : 1;
-    const length = Math.max(a.fraction.length, b.fraction.length);
-    const whole = a.whole.length - b.whole.length || (a.whole < b.whole ? -1 : a.whole > b.whole ? 1 : 0);
-    const af = a.fraction.padEnd(length, '0'), bf = b.fraction.padEnd(length, '0');
-    const result = whole || (af < bf ? -1 : af > bf ? 1 : 0);
+    if (a.digits === '0' || b.digits === '0') return a.digits === b.digits ? 0 : a.digits === '0' ? -1 : 1;
+    const place = a.place < b.place ? -1 : a.place > b.place ? 1 : 0;
+    const length = Math.max(a.digits.length, b.digits.length);
+    const av = a.digits.padEnd(length, '0'), bv = b.digits.padEnd(length, '0');
+    const result = place || (av < bv ? -1 : av > bv ? 1 : 0);
     return a.negative ? -result : result;
   }
 
@@ -47,7 +52,7 @@
     const node = (tag, text) => {const n = doc.createElement(tag); if (text !== undefined) n.textContent = String(text); return n;};
     const path = win.location?.pathname || '/dashboard';
     const [screen, title, description] = screens[path] || screens['/dashboard'];
-    const dynamic = ['dashboard-metrics', 'market-status', 'dashboard-candidates', 'recent-decisions', 'research-rows', 'research-limitations', 'comparison-table', 'portfolio-metrics', 'portfolio-scope', 'holding-rows', 'portfolio-limitations', 'backtest-commands', 'backtest-limitations', 'settings-summary', 'settings-limits', 'settings-limitations', 'lessons', 'allocation-rows'];
+    const dynamic = ['dashboard-metrics', 'market-status', 'dashboard-candidates', 'recent-decisions', 'research-rows', 'research-limitations', 'comparison-table', 'portfolio-metrics', 'portfolio-scope', 'holding-rows', 'portfolio-limitations', 'backtest-commands', 'backtest-limitations', 'settings-summary', 'settings-limits', 'settings-limitations', 'lessons', 'allocation-rows', 'allocation-visual', 'holding-pnl'];
     const privateText = ['observed', 'next-title', 'next-detail', 'dashboard-valuation', 'dashboard-research-context', 'performance-coverage', 'research-context', 'research-source', 'research-count', 'fundamental-state', 'valuation-state', 'portfolio-provenance', 'day-baseline', 'holdings-status', 'portfolio-performance', 'backtest-state', 'lesson-count', 'checklist-status', 'allocation-status', 'allocation-basis', 'allocation-exclusions', 'allocation-commitments'];
     let token = '', generation = 0, active = null, busy = false, latest = null, lastReceipt = 0;
     const selected = new Set();
@@ -64,6 +69,7 @@
     const definition = (container, label, value) => {const pair = node('div'); pair.append(node('dt', label), node('dd', value)); container.append(pair);};
     const link = (label, href) => {const a = node('a', label); a.setAttribute('href', href); return a;};
     function controls() {
+      win.AgenticFeedback?.setBusy(busy);
       for (const id of ['refresh', 'research-search', 'research-status', 'research-sort', 'clear-comparison', 'lesson-search']) el(id).disabled = !token || busy;
       el('unlock').disabled = busy;
     }
@@ -80,7 +86,7 @@
     }
     function metric(container, label, value, detail) {
       const card = node('article'); card.className = 'panel metric';
-      const figure = node('p', amount(value)); figure.className = 'desk-value';
+      const figure = node('p', amount(value)); figure.className = 'desk-value' + (/P&L|accounting change/.test(label) && decimalParts(value) && compareDecimal(value, '0') !== 0 ? (compareDecimal(value, '0') < 0 ? ' financial-loss' : ' financial-gain') : '');
       const explanation = node('p', detail); explanation.className = 'muted';
       card.append(node('h2', label), figure, explanation); container.append(card);
     }
@@ -112,6 +118,7 @@
         const item = node('article'); item.append(node('h3', decision.side + ' ' + decision.symbol + ' · ' + friendly(decision.state)), node('p', (decision.order_id ? 'Linked order: ' + decision.order_id : 'No linked order recorded') + ' · Updated ' + date(decision.updated_at)), node('p', 'Outcome: ' + friendly(decision.outcome))); el('recent-decisions').append(item);
       }
       if (!(data.dashboard?.recent_decisions || []).length) el('recent-decisions').append(node('p', 'No saved proposals are available in this bounded history view.'));
+      metric(metrics, 'Dated daily accounting change', p.day_pnl, 'Baseline: ' + (p.day || 'not recorded') + (p.accounting_day_current ? ' · current accounting day.' : ' · earlier accounting day; not today’s return.'));
       el('performance-coverage').textContent = performanceDetail(p);
     }
     function researchRows() {
@@ -173,6 +180,42 @@
     function performanceDetail(p) {
       return p.performance?.detail || 'Account returns, benchmark comparison and received-income performance are unavailable in this view. Existing paper ledger amounts are not a validated performance series. Missing metrics are not zero.';
     }
+    // Numbers below determine visual geometry only. Exact server strings remain in labels/tables.
+    function renderHoldingVisuals(p) {
+      const container = el('holding-pnl'); container.replaceChildren();
+      const positions = p.positions || [];
+      if (p.positions_truncated || p.valuation_state !== 'fresh' && p.valuation_state !== 'empty') {container.append(node('p', 'P&L comparison unavailable: valuation is stale or incomplete. Inspect saved values and quote coverage in the table.')); return;}
+      const rows = [...positions].filter(row => decimalParts(row.unrealized_pnl)).sort((a, b) => compareDecimal(b.unrealized_pnl, a.unrealized_pnl));
+      const magnitude = Math.max(0, ...rows.map(row => Math.abs(Number(row.unrealized_pnl))));
+      if (rows.length !== positions.length || !Number.isFinite(magnitude)) {container.append(node('p', 'P&L chart unavailable: complete finite estimates are required.')); return;}
+      if (!rows.length) container.append(node('p', 'No held shares to compare.'));
+      for (const row of rows) {
+        const line = node('div'); line.className = 'holding-bar financial-gain';
+        const signed = compareDecimal(row.unrealized_pnl, '0');
+        const svg = tag => doc.createElementNS ? doc.createElementNS('http://www.w3.org/2000/svg', tag) : node(tag);
+        const meter = svg('svg'), bar = svg('rect');
+        if (signed <= 0) line.className = signed < 0 ? 'holding-bar financial-loss' : 'holding-bar';
+        meter.setAttribute('viewBox', '0 0 100 20'); meter.setAttribute('role', 'img'); meter.setAttribute('preserveAspectRatio', 'none');
+        bar.setAttribute('x', '0'); bar.setAttribute('y', '2'); bar.setAttribute('height', '16'); bar.setAttribute('width', String(Math.abs(Number(row.unrealized_pnl)) / (magnitude || 1) * 100)); bar.setAttribute('rx', '2'); meter.append(bar);
+        meter.setAttribute('aria-label', row.symbol + ' estimated ' + (signed < 0 ? 'loss ' : signed > 0 ? 'gain ' : 'unchanged ') + amount(row.unrealized_pnl));
+        const label = node('strong', (signed < 0 ? 'Loss ' : signed > 0 ? 'Gain ' : 'Unchanged ') + amount(row.unrealized_pnl)); label.className = signed < 0 ? 'financial-loss' : signed > 0 ? 'financial-gain' : '';
+        line.append(node('span', row.symbol), meter, label); container.append(line);
+      }
+    }
+    function renderAllocationVisual(allocation) {
+      const container = el('allocation-visual'); container.replaceChildren();
+      if (allocation?.state !== 'available') {container.append(node('p', 'Allocation chart unavailable until every held price is current and accepted.')); return;}
+      const rows = [{symbol:'Cash', weight_pct:allocation.cash_weight_pct}, ...(allocation.positions || [])];
+      const values = rows.map(row => Number(row.weight_pct));
+      if (rows.length > 64 || rows.some((row, i) => !decimalParts(String(row.weight_pct)) || !Number.isFinite(values[i]) || values[i] < 0 || values[i] > 100) || Math.abs(values.reduce((a,b) => a+b, 0) - 100) > .01) {container.append(node('p', 'Allocation cannot be drawn on this scale. Use the exact weights below.')); return;}
+      const svg = tag => doc.createElementNS ? doc.createElementNS('http://www.w3.org/2000/svg', tag) : node(tag);
+      const chart = svg('svg'); chart.setAttribute('viewBox', '0 0 180 180'); chart.setAttribute('width', '180'); chart.setAttribute('height', '180'); chart.setAttribute('role', 'img'); chart.setAttribute('aria-label', 'Cash and held-share allocation at last refresh. Exact percentages follow.');
+      const list = node('ul'); list.className = 'allocation-key'; let offset = 0;
+      rows.forEach((row, i) => {
+        const circle = svg('circle'); circle.setAttribute('cx', '90'); circle.setAttribute('cy', '90'); circle.setAttribute('r', '60'); circle.setAttribute('pathLength', '100'); circle.setAttribute('class', 'allocation-segment allocation-' + i % 6); circle.setAttribute('stroke-dasharray', values[i] + ' ' + (100-values[i])); circle.setAttribute('stroke-dashoffset', -offset); circle.setAttribute('transform', 'rotate(-90 90 90)'); chart.append(circle); offset += values[i];
+        const item = node('li', row.symbol + ' · ' + row.weight_pct + '%'); item.className = 'allocation-' + i % 6; list.append(item);
+      }); container.append(chart, list);
+    }
     function renderPortfolio(data) {
       const p = data.portfolio; el('portfolio-metrics').replaceChildren(); portfolioMetrics(el('portfolio-metrics'), p);
       metric(el('portfolio-metrics'), 'Realized capital P&L', p.realized_pnl, 'Recorded realized result; distinct from current unrealized estimates.');
@@ -191,7 +234,8 @@
         el('holding-rows').append(tr);
       }
       el('holdings-status').textContent = p.positions?.length ? p.positions.length + ' of ' + (p.position_count ?? p.positions.length) + ' held stocks shown' + (p.positions_truncated ? ' · response bounded to ' + p.position_limit : '') + '. Estimates do not imply an executable exit or guaranteed liquidity.' : 'No held shares are recorded. An unfilled order or cancelled proposal is not a holding.';
-      const allocation = p.allocation;
+      renderHoldingVisuals(p);
+      const allocation = p.allocation; renderAllocationVisual(allocation);
       el('allocation-rows').replaceChildren();
       el('allocation-status').textContent = allocation?.state === 'available' ? 'Weights available at last refresh · base ' + amount(allocation.allocation_base) : 'Current weights unavailable. ' + (allocation?.reason_codes?.map(friendly).join('; ') || 'Accepted held-price coverage is not recorded.');
       el('allocation-basis').textContent = allocation?.basis || 'Weights require actual cash and current accepted bid marks for every held share.';

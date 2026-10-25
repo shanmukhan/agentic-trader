@@ -59,7 +59,8 @@ def test_redesigned_shells_keep_accessible_labels_and_balanced_workflows(engine)
             page.feed(response.text)
             assert not page.sections, route
             assert set(page.references) <= page.ids, route
-            assert 'content="light"' in response.text, route
+            assert 'name="color-scheme" content="light dark"' in response.text, route
+            assert 'name="description"' in response.text, route
             assert 'type="password"' in response.text, route
             if route in {
                 "/desk",
@@ -133,3 +134,20 @@ class IconLabels(HTMLParser):
         if tag in {"button", "a"} and self.current_label is not None:
             self.action_labels.append(self.current_label.strip())
             self.current_label = None
+
+
+def test_theme_and_responsive_rules_follow_canonical_defaults(engine):
+    with TestClient(
+        create_app(engine, clock=lambda: NOW, background=False), base_url="http://127.0.0.1"
+    ) as client:
+        css = client.get("/dashboard.css").text
+        # A consolidated base placed after this breakpoint previously hid content behind a sidebar.
+        assert css.index(".workspace-sidebar {") < css.index("@media(max-width:767px)")
+        assert "@media(prefers-color-scheme:dark)" in css
+        assert "@media(prefers-reduced-motion:reduce)" in css
+        assert "--surface:#22323f" in css
+        assert "background:#f6f8fa" not in css
+        setup = client.get("/setup").text
+        assert '<body class="setup-page">' in setup
+        assert 'id="error-alert" role="alert"' in setup
+        assert 'id="loading-state"' in setup

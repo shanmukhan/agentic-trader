@@ -1,62 +1,205 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="color-scheme" content="light"><title>Broker connection · Agentic Trader</title>
-<link rel="stylesheet" href="/dashboard.css"><script src="/dialogs.js" defer></script><script src="/workspace-bridge.js" defer></script><script src="/setup.js" defer></script></head>
-<body class="portfolio-page"><a class="skip" href="#main">Skip to setup steps</a>
-<header class="masthead"><div><p class="eyebrow">AGENTIC TRADER · PAPER ONLY</p><h1>Broker &amp; settings</h1>
-<p class="muted">Connect Zerodha market data for your paper account.</p>
-<p class="muted"><a href="/">Trading console</a> · <a href="/portfolio">Paper portfolio</a></p></div><span id="state" class="badge">Locked</span></header>
-<section class="panel access"><h2>Unlock local setup</h2><p class="muted">Use <strong>TRADING_OPERATOR_TOKEN</strong> from your private local .env file. This is your dashboard password. A Zerodha request_token or access_token will not work here.</p>
-<form id="access" autocomplete="off"><label for="token">Local operator token</label><input id="token" type="password" autocomplete="off" required spellcheck="false">
-<button id="unlock"><svg class="icon" aria-hidden="true" focusable="false" width="20" height="20"><use href="/icons.svg#unlock"/></svg>Unlock / refresh</button><button id="lock" type="button" class="quiet" disabled><svg class="icon" aria-hidden="true" focusable="false" width="20" height="20"><use href="/icons.svg#lock"/></svg>Lock</button></form></section>
-<p id="message" role="status" aria-live="polite">Locked. Broker credentials and setup status are hidden.</p>
-<main id="main">
-<section id="private" hidden>
-<section class="panel connection-overview" aria-labelledby="connection-title"><div class="section-heading"><div><p class="eyebrow">ZERODHA · READ-ONLY MARKET DATA</p><h2 id="connection-title">Broker connection</h2></div><span id="connection-status" class="badge" role="status" aria-live="polite"></span></div>
-<p id="connection-description" class="muted"></p>
-<dl class="connection-facts"><div><dt>Broker session</dt><dd id="overview-session"></dd></div><div><dt>Saved subscriptions</dt><dd id="overview-symbols"></dd></div><div><dt>Exchange calendar</dt><dd id="overview-calendar"></dd></div></dl>
-<div class="setup-overview-action"><div><h3>Next action</h3><p id="connection-next" class="muted"></p></div><button id="setup-next-action" type="button" aria-describedby="connection-next">Review connection setup</button></div>
-<p class="notice">Paper account only. Connecting data does not place a new order or arm automation. Pending paper fills and protective exits can resume with fresh quotes.</p>
-</section>
-<div class="setup-guide-heading"><h2>Connection guide</h2><p id="setup-progress" class="muted" role="status" aria-live="polite">Choose a step to review its settings.</p><p class="muted">Open any step, or use Back and Continue. Moving between steps does not save settings or approve a trading date.</p></div>
-<details id="setup-step-1" class="panel setup-step" name="broker-setup"><summary id="setup-step-title-1" class="setup-step-summary"><span class="step-number" aria-hidden="true">1</span><span class="step-title">Register your Kite app<span class="sr-only"> · Step 1 of 6</span></span><span id="setup-step-state-1" class="setup-step-state muted"></span></summary><div class="setup-step-body"><p class="muted">Create an app and choose market-data access in <a href="https://developers.kite.trade/" target="_blank" rel="noopener noreferrer">Kite’s developer console</a>. App registration, subscription payment, Zerodha login and 2FA stay on Zerodha’s website.</p>
-<p id="redirect" class="notice"></p><p class="muted">Postback URL is not needed. The free Personal plan does not include live quotes. Confirm current charges before buying a data subscription.</p>
-<nav class="setup-step-navigation" aria-label="Step 1 navigation"><button id="setup-next-1" type="button">Continue to app credentials →</button></nav></div></details>
-<details id="setup-step-2" class="panel setup-step" name="broker-setup"><summary id="setup-step-title-2" class="setup-step-summary"><span class="step-number" aria-hidden="true">2</span><span class="step-title">Save app credentials privately<span class="sr-only"> · Step 2 of 6</span></span><span id="setup-step-state-2" class="setup-step-state muted"></span></summary><div class="setup-step-body"><p id="credentials-state" class="muted"></p>
-<p class="muted">Leave this step alone if credentials are already configured. Saving replacements clears the stored access token. Secrets are stored in a private file beside this account’s database. Status hides credential values; the public API key appears in the broker login URL, while the secret and access token are never returned.</p>
-<form id="credentials" class="review-form" autocomplete="off"><label>API key<input id="api-key" type="password" autocomplete="off" required maxlength="256" spellcheck="false"></label>
-<label>API secret<input id="api-secret" type="password" autocomplete="off" required maxlength="256" spellcheck="false"></label><button id="save-credentials">Save app credentials</button></form>
-<nav class="setup-step-navigation" aria-label="Step 2 navigation"><button id="setup-back-2" type="button" class="quiet">← Back</button><button id="setup-next-2" type="button">Continue to broker sign-in →</button></nav></div></details>
-<details id="setup-step-3" class="panel setup-step" name="broker-setup"><summary id="setup-step-title-3" class="setup-step-summary"><span class="step-number" aria-hidden="true">3</span><span class="step-title">Sign in to Zerodha<span class="sr-only"> · Step 3 of 6</span></span><span id="setup-step-state-3" class="setup-step-state muted"></span></summary><div class="setup-step-body"><p id="session-state" class="muted"></p>
-<p class="muted">Disconnect the feed before replacing a session. Open the login window, complete login and 2FA, then return here. With the redirect URL above, the request token is captured into the field below. If capture is unavailable, copy only the request_token value from the redirect address.</p>
-<div class="controls"><button id="login" type="button">Open Zerodha login</button><button id="profile" type="button" class="quiet"><svg class="icon" aria-hidden="true" focusable="false" width="20" height="20"><use href="/icons.svg#check"/></svg>Check saved broker session</button></div>
-<p id="session-feedback" role="status" aria-live="polite" aria-atomic="true"></p>
-<form id="exchange" class="review-form" autocomplete="off"><label>One-time request token<input id="request-token" type="password" autocomplete="off" required maxlength="256" spellcheck="false"></label>
-<button id="exchange-button">Exchange and verify session</button></form><p class="muted">No access token needs copying into .env after a UI exchange. The saved session is used by this manual account on reconnect/restart. A saved token can still be expired; check it before connecting.</p>
-<nav class="setup-step-navigation" aria-label="Step 3 navigation"><button id="setup-back-3" type="button" class="quiet">← Back</button><button id="setup-next-3" type="button">Continue to stock subscriptions →</button></nav></div></details>
-<details id="setup-step-4" class="panel setup-step" name="broker-setup"><summary id="setup-step-title-4" class="setup-step-summary"><span class="step-number" aria-hidden="true">4</span><span class="step-title">Choose stock subscriptions<span class="sr-only"> · Step 4 of 6</span></span><span id="setup-step-state-4" class="setup-step-state muted"></span></summary><div class="setup-step-body"><p id="catalog-state" class="muted"></p>
-<p id="selection-help" class="muted">The catalog is a symbol/token lookup. This account streams live quotes for up to ten saved symbols, used for paper fills and monitoring holdings. These names are your saved watchlist, not a fixed list of allowed stocks or a promise of profit. For broader stock screening, use Trading desk → Prepare a paper strategy with Nifty 100 or Nifty 500, then review its proposed shortlist.</p>
-<button id="catalog" type="button" class="quiet"><svg class="icon" aria-hidden="true" focusable="false" width="20" height="20"><use href="/icons.svg#download"/></svg>Download / validate catalog</button><p class="muted">Disconnect before catalog or selection changes. Existing mappings are never silently replaced. Selection must include every held symbol; resolve pending orders before changing it.</p>
-<form id="symbols" class="review-form"><label><span id="symbol-list-label">One to ten symbols, comma separated</span><input id="symbol-list" placeholder="NSE:SYMBOL, NSE:ANOTHER" required maxlength="400" spellcheck="false" aria-describedby="selection-help selection-save-help"></label><button id="save-symbols">Validate and save selection</button></form>
-<p id="selection-save-help" class="muted">Editing the field does not change subscriptions. Validate and save, then confirm to update the saved list below. A symbol’s token identifies it to the broker; tick is its permitted price increment in rupees.</p>
-<h3 id="selected-title">Saved feed subscriptions</h3><div id="selected" class="records"></div><p class="notice">A catalog EQ row can be an ETF. Current cost estimates assume equity shares; ETF-specific fees are not validated. Subscription alone does not approve an instrument for paper execution.</p>
-<nav class="setup-step-navigation" aria-label="Step 4 navigation"><button id="setup-back-4" type="button" class="quiet">← Back</button><button id="setup-next-4" type="button">Continue to exchange session →</button></nav></div></details>
-<details id="setup-step-5" class="panel setup-step" name="broker-setup"><summary id="setup-step-title-5" class="setup-step-summary"><span class="step-number" aria-hidden="true">5</span><span class="step-title">Add a reviewed exchange session<span class="sr-only"> · Step 5 of 6</span></span><span id="setup-step-state-5" class="setup-step-state muted"></span></summary><div class="setup-step-body"><p id="calendar-state" class="muted"></p>
-<p class="muted">Review <a href="https://www.nseindia.com/resources/exchange-communication-holidays" target="_blank" rel="noopener noreferrer">NSE holidays and notices</a> before adding a date. No weekday, holiday roll-forward or market opening is assumed. Existing definitions cannot be changed here. Supported hours are within 09:15–15:30 IST.</p>
-<p id="session-hours-help" class="muted">The fields default to 09:15 AM–03:30 PM IST and remain editable. These defaults do not approve a trading date: review holidays and special-session notices before saving. A strategy’s 03:15 PM flatten/cutoff time is separate from the exchange close. Enter exchange hours here, not your current clock time.</p>
-<form id="calendar" class="review-form"><label>Date (IST)<input id="session-date" type="date" required></label><label>Reviewed exchange open (IST)<input id="session-open" type="time" min="09:15" max="15:30" aria-describedby="session-hours-help" required></label><label>Reviewed exchange close (IST)<input id="session-close" type="time" min="09:15" max="15:30" aria-describedby="session-hours-help" required></label>
-<label>NSE notice / review reference<input id="session-source" required minlength="3" maxlength="300" placeholder="Official NSE URL, circular number or review notes"></label>
-<label class="check"><input id="session-reviewed" type="checkbox" required> I reviewed this date and these times against exchange notices.</label><button id="save-session">Save reviewed session</button></form>
-<div id="sessions" class="records"></div><p class="muted">Long-term corporate-action/price-basis reviews are a separate per-symbol step in the trading console. This calendar form does not clear them.</p>
-<nav class="setup-step-navigation" aria-label="Step 5 navigation"><button id="setup-back-5" type="button" class="quiet">← Back</button><button id="setup-next-5" type="button">Continue to market data →</button></nav></div></details>
-<details id="feed-connection" class="panel setup-step" name="broker-setup" tabindex="-1"><summary id="setup-step-title-6" class="setup-step-summary"><span class="step-number" aria-hidden="true">6</span><span class="step-title">Connect the read-only feed<span class="sr-only"> · Step 6 of 6</span></span><span id="setup-step-state-6" class="setup-step-state muted"></span></summary><div class="setup-step-body"><p id="feed-state" class="notice"></p>
-<div class="controls"><button id="connect" type="button">Connect paper market data</button><button id="disconnect" type="button" class="quiet">Disconnect market data</button><button id="refresh-status" type="button" class="quiet"><svg class="icon" aria-hidden="true" focusable="false" width="20" height="20"><use href="/icons.svg#refresh"/></svg>Refresh setup status</button></div>
-<p class="muted">Connection requested is not proof of fresh usable quotes. Check readiness in the trading console. Reconnecting can resume pending fills and protective exits; review the confirmation. Disconnecting does not close holdings: fills and exits require a working feed. No automatic retry is performed by these setup buttons; the streaming worker retains its bounded reconnect policy.</p>
-<nav class="setup-step-navigation" aria-label="Step 6 navigation"><button id="setup-back-6" type="button" class="quiet">← Back</button><a href="/">Review trading readiness →</a></nav></div></details>
-</section><details class="panel setup-credential-guide"><summary>Help: which credential do I need?</summary><ul class="reasons">
-<li><strong>Operator token:</strong> unlocks this local app. It is generated locally.</li>
-<li><strong>Kite request token:</strong> returned after Zerodha login; single use, valid for only a few minutes.</li>
-<li><strong>Kite access token:</strong> obtained by exchange and used only by the server for market data; expires daily.</li></ul>
-<p class="muted">These steps do not place orders, arm automation, deposit money or clear trading safeguards. This setup is for manual paper accounts. Keep the server on loopback and use a trusted personal computer.</p></details></main><footer class="muted">Start locally with ./scripts/start_ui.sh · Keep that terminal running · Lock clears this tab; it does not stop the server or feed.</footer>
-<dialog id="confirm" aria-labelledby="confirm-title" aria-describedby="confirm-text"><h2 id="confirm-title">Confirm setup change</h2><p id="confirm-text"></p><div class="dialog-actions"><button id="cancel-confirm" class="quiet">Cancel</button><button id="confirm-action">Confirm</button></div></dialog>
-</body></html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <meta name="description" content="Local paper trading workspace: inspect saved evidence, review risk and confirm simulated actions.">
+    <title>Broker connection · Agentic Trader</title>
+    <link rel="stylesheet" href="/dashboard.css">
+    <script src="/dialogs.js" defer></script>
+    <script src="/workspace-bridge.js" defer></script>
+    <script src="/setup.js" defer></script>
+  </head>
+  <body class="setup-page">
+    <a class="skip" href="#main">Skip to setup steps</a>
+    <header class="masthead">
+      <div>
+        <p class="eyebrow">AGENTIC TRADER · PAPER ONLY</p>
+        <h1>Broker &amp; settings</h1>
+        <p class="muted">Connect Zerodha market data for your paper account.</p>
+        <p class="muted"><a href="/">Trading console</a> · <a href="/portfolio">Paper portfolio</a></p>
+      </div>
+      <span id="state" class="badge">Locked</span>
+    </header>
+    <section class="panel access" aria-label="Local operator access">
+      <h2>Unlock local setup</h2>
+      <p class="muted">Use <strong>TRADING_OPERATOR_TOKEN</strong> from your private local .env file. This is your dashboard password. A Zerodha request_token or access_token will not work here.</p>
+      <form id="access" autocomplete="off">
+        <label for="token">Local operator token</label>
+        <input id="token" type="password" autocomplete="off" required spellcheck="false">
+        <button id="unlock"><svg class="icon" aria-hidden="true" focusable="false" width="20" height="20"><use href="/icons.svg#unlock"/></svg>Unlock / refresh</button>
+        <button id="lock" type="button" class="quiet" disabled><svg class="icon" aria-hidden="true" focusable="false" width="20" height="20"><use href="/icons.svg#lock"/></svg>Lock</button>
+      </form>
+    </section>
+    <p id="message" role="status" aria-live="polite">Locked. Broker credentials and setup status are hidden.</p>
+    <p id="error-alert" role="alert" class="sr-only"></p>
+    <div id="loading-state" class="loading-state" role="status" hidden>Loading the latest saved evidence…<span class="skeleton" aria-hidden="true"></span></div>
+    <main id="main">
+      <section id="private" hidden>
+        <section class="panel connection-overview" aria-labelledby="connection-title">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">ZERODHA · READ-ONLY MARKET DATA</p>
+              <h2 id="connection-title">Broker connection</h2>
+            </div>
+            <span id="connection-status" class="badge" role="status" aria-live="polite"></span>
+          </div>
+          <p id="connection-description" class="muted"></p>
+          <dl class="connection-facts">
+            <div>
+              <dt>Broker session</dt>
+              <dd id="overview-session"></dd>
+            </div>
+            <div>
+              <dt>Saved subscriptions</dt>
+              <dd id="overview-symbols"></dd>
+            </div>
+            <div>
+              <dt>Exchange calendar</dt>
+              <dd id="overview-calendar"></dd>
+            </div>
+          </dl>
+          <div class="setup-overview-action">
+            <div>
+              <h3>Next action</h3>
+              <p id="connection-next" class="muted"></p>
+            </div>
+            <button id="setup-next-action" type="button" aria-describedby="connection-next">Review connection setup</button>
+          </div>
+          <p class="notice">Paper account only. Connecting data does not place a new order or arm automation. Pending paper fills and protective exits can resume with fresh quotes.</p>
+        </section>
+        <div class="setup-guide-heading">
+          <h2>Connection guide</h2>
+          <p id="setup-progress" class="muted" role="status" aria-live="polite">Choose a step to review its settings.</p>
+          <p class="muted">Open any step, or use Back and Continue. Moving between steps does not save settings or approve a trading date.</p>
+        </div>
+        <details id="setup-step-1" class="panel setup-step" name="broker-setup">
+          <summary id="setup-step-title-1" class="setup-step-summary"><span class="step-number" aria-hidden="true">1</span><span class="step-title">Register your Kite app<span class="sr-only"> · Step 1 of 6</span></span><span id="setup-step-state-1" class="setup-step-state muted"></span></summary>
+          <div class="setup-step-body">
+            <p class="muted">Create an app and choose market-data access in <a href="https://developers.kite.trade/" target="_blank" rel="noopener noreferrer">Kite’s developer console</a>. App registration, subscription payment, Zerodha login and 2FA stay on Zerodha’s website.</p>
+            <p id="redirect" class="notice"></p>
+            <p class="muted">Postback URL is not needed. The free Personal plan does not include live quotes. Confirm current charges before buying a data subscription.</p>
+            <nav class="setup-step-navigation" aria-label="Step 1 navigation">
+              <button id="setup-next-1" type="button">Continue to app credentials →</button>
+            </nav>
+          </div>
+        </details>
+        <details id="setup-step-2" class="panel setup-step" name="broker-setup">
+          <summary id="setup-step-title-2" class="setup-step-summary"><span class="step-number" aria-hidden="true">2</span><span class="step-title">Save app credentials privately<span class="sr-only"> · Step 2 of 6</span></span><span id="setup-step-state-2" class="setup-step-state muted"></span></summary>
+          <div class="setup-step-body">
+            <p id="credentials-state" class="muted"></p>
+            <p class="muted">Leave this step alone if credentials are already configured. Saving replacements clears the stored access token. Secrets are stored in a private file beside this account’s database. Status hides credential values; the public API key appears in the broker login URL, while the secret and access token are never returned.</p>
+            <form id="credentials" class="review-form" autocomplete="off">
+              <label>API key<input id="api-key" type="password" autocomplete="off" required maxlength="256" spellcheck="false"></label>
+              <label>API secret<input id="api-secret" type="password" autocomplete="off" required maxlength="256" spellcheck="false"></label>
+              <button id="save-credentials">Save app credentials</button>
+            </form>
+            <nav class="setup-step-navigation" aria-label="Step 2 navigation">
+              <button id="setup-back-2" type="button" class="quiet">← Back</button>
+              <button id="setup-next-2" type="button">Continue to broker sign-in →</button>
+            </nav>
+          </div>
+        </details>
+        <details id="setup-step-3" class="panel setup-step" name="broker-setup">
+          <summary id="setup-step-title-3" class="setup-step-summary"><span class="step-number" aria-hidden="true">3</span><span class="step-title">Sign in to Zerodha<span class="sr-only"> · Step 3 of 6</span></span><span id="setup-step-state-3" class="setup-step-state muted"></span></summary>
+          <div class="setup-step-body">
+            <p id="session-state" class="muted"></p>
+            <p class="muted">Disconnect the feed before replacing a session. Open the login window, complete login and 2FA, then return here. With the redirect URL above, the request token is captured into the field below. If capture is unavailable, copy only the request_token value from the redirect address.</p>
+            <div class="controls">
+              <button id="login" type="button">Open Zerodha login</button>
+              <button id="profile" type="button" class="quiet"><svg class="icon" aria-hidden="true" focusable="false" width="20" height="20"><use href="/icons.svg#check"/></svg>Check saved broker session</button>
+            </div>
+            <p id="session-feedback" role="status" aria-live="polite" aria-atomic="true"></p>
+            <form id="exchange" class="review-form" autocomplete="off">
+              <label>One-time request token<input id="request-token" type="password" autocomplete="off" required maxlength="256" spellcheck="false"></label>
+              <button id="exchange-button">Exchange and verify session</button>
+            </form>
+            <p class="muted">No access token needs copying into .env after a UI exchange. The saved session is used by this manual account on reconnect/restart. A saved token can still be expired; check it before connecting.</p>
+            <nav class="setup-step-navigation" aria-label="Step 3 navigation">
+              <button id="setup-back-3" type="button" class="quiet">← Back</button>
+              <button id="setup-next-3" type="button">Continue to stock subscriptions →</button>
+            </nav>
+          </div>
+        </details>
+        <details id="setup-step-4" class="panel setup-step" name="broker-setup">
+          <summary id="setup-step-title-4" class="setup-step-summary"><span class="step-number" aria-hidden="true">4</span><span class="step-title">Choose stock subscriptions<span class="sr-only"> · Step 4 of 6</span></span><span id="setup-step-state-4" class="setup-step-state muted"></span></summary>
+          <div class="setup-step-body">
+            <p id="catalog-state" class="muted"></p>
+            <p id="selection-help" class="muted">The catalog is a symbol/token lookup. This account streams live quotes for up to ten saved symbols, used for paper fills and monitoring holdings. These names are your saved watchlist, not a fixed list of allowed stocks or a promise of profit. For broader stock screening, use Trading desk → Prepare a paper strategy with Nifty 100 or Nifty 500, then review its proposed shortlist.</p>
+            <button id="catalog" type="button" class="quiet"><svg class="icon" aria-hidden="true" focusable="false" width="20" height="20"><use href="/icons.svg#download"/></svg>Download / validate catalog</button>
+            <p class="muted">Disconnect before catalog or selection changes. Existing mappings are never silently replaced. Selection must include every held symbol; resolve pending orders before changing it.</p>
+            <form id="symbols" class="review-form">
+              <label><span id="symbol-list-label">One to ten symbols, comma separated</span><input id="symbol-list" placeholder="NSE:SYMBOL, NSE:ANOTHER" required maxlength="400" spellcheck="false" aria-describedby="selection-help selection-save-help"></label>
+              <button id="save-symbols">Validate and save selection</button>
+            </form>
+            <p id="selection-save-help" class="muted">Editing the field does not change subscriptions. Validate and save, then confirm to update the saved list below. A symbol’s token identifies it to the broker; tick is its permitted price increment in rupees.</p>
+            <h3 id="selected-title">Saved feed subscriptions</h3>
+            <div id="selected" class="records"></div>
+            <p class="notice">A catalog EQ row can be an ETF. Current cost estimates assume equity shares; ETF-specific fees are not validated. Subscription alone does not approve an instrument for paper execution.</p>
+            <nav class="setup-step-navigation" aria-label="Step 4 navigation">
+              <button id="setup-back-4" type="button" class="quiet">← Back</button>
+              <button id="setup-next-4" type="button">Continue to exchange session →</button>
+            </nav>
+          </div>
+        </details>
+        <details id="setup-step-5" class="panel setup-step" name="broker-setup">
+          <summary id="setup-step-title-5" class="setup-step-summary"><span class="step-number" aria-hidden="true">5</span><span class="step-title">Add a reviewed exchange session<span class="sr-only"> · Step 5 of 6</span></span><span id="setup-step-state-5" class="setup-step-state muted"></span></summary>
+          <div class="setup-step-body">
+            <p id="calendar-state" class="muted"></p>
+            <p class="muted">Review <a href="https://www.nseindia.com/resources/exchange-communication-holidays" target="_blank" rel="noopener noreferrer">NSE holidays and notices</a> before adding a date. No weekday, holiday roll-forward or market opening is assumed. Existing definitions cannot be changed here. Supported hours are within 09:15–15:30 IST.</p>
+            <p id="session-hours-help" class="muted">The fields default to 09:15 AM–03:30 PM IST and remain editable. These defaults do not approve a trading date: review holidays and special-session notices before saving. A strategy’s 03:15 PM flatten/cutoff time is separate from the exchange close. Enter exchange hours here, not your current clock time.</p>
+            <form id="calendar" class="review-form">
+              <label>Date (IST)<input id="session-date" type="date" required></label>
+              <label>Reviewed exchange open (IST)<input id="session-open" type="time" min="09:15" max="15:30" aria-describedby="session-hours-help" required></label>
+              <label>Reviewed exchange close (IST)<input id="session-close" type="time" min="09:15" max="15:30" aria-describedby="session-hours-help" required></label>
+              <label>NSE notice / review reference<input id="session-source" required minlength="3" maxlength="300" placeholder="Official NSE URL, circular number or review notes"></label>
+              <label class="check"><input id="session-reviewed" type="checkbox" required> I reviewed this date and these times against exchange notices.</label>
+              <button id="save-session">Save reviewed session</button>
+            </form>
+            <div id="sessions" class="records"></div>
+            <p class="muted">Long-term corporate-action/price-basis reviews are a separate per-symbol step in the trading console. This calendar form does not clear them.</p>
+            <nav class="setup-step-navigation" aria-label="Step 5 navigation">
+              <button id="setup-back-5" type="button" class="quiet">← Back</button>
+              <button id="setup-next-5" type="button">Continue to market data →</button>
+            </nav>
+          </div>
+        </details>
+        <details id="feed-connection" class="panel setup-step" name="broker-setup" tabindex="-1">
+          <summary id="setup-step-title-6" class="setup-step-summary"><span class="step-number" aria-hidden="true">6</span><span class="step-title">Connect the read-only feed<span class="sr-only"> · Step 6 of 6</span></span><span id="setup-step-state-6" class="setup-step-state muted"></span></summary>
+          <div class="setup-step-body">
+            <p id="feed-state" class="notice"></p>
+            <div class="controls">
+              <button id="connect" type="button">Connect paper market data</button>
+              <button id="disconnect" type="button" class="quiet">Disconnect market data</button>
+              <button id="refresh-status" type="button" class="quiet"><svg class="icon" aria-hidden="true" focusable="false" width="20" height="20"><use href="/icons.svg#refresh"/></svg>Refresh setup status</button>
+            </div>
+            <p class="muted">Connection requested is not proof of fresh usable quotes. Check readiness in the trading console. Reconnecting can resume pending fills and protective exits; review the confirmation. Disconnecting does not close holdings: fills and exits require a working feed. No automatic retry is performed by these setup buttons; the streaming worker retains its bounded reconnect policy.</p>
+            <nav class="setup-step-navigation" aria-label="Step 6 navigation">
+              <button id="setup-back-6" type="button" class="quiet">← Back</button>
+              <a href="/">Review trading readiness →</a>
+            </nav>
+          </div>
+        </details>
+      </section>
+      <details class="panel setup-credential-guide">
+        <summary>Help: which credential do I need?</summary>
+        <ul class="reasons">
+          <li><strong>Operator token:</strong> unlocks this local app. It is generated locally.</li>
+          <li><strong>Kite request token:</strong> returned after Zerodha login; single use, valid for only a few minutes.</li>
+          <li><strong>Kite access token:</strong> obtained by exchange and used only by the server for market data; expires daily.</li>
+        </ul>
+        <p class="muted">These steps do not place orders, arm automation, deposit money or clear trading safeguards. This setup is for manual paper accounts. Keep the server on loopback and use a trusted personal computer.</p>
+      </details>
+    </main>
+    <footer class="muted">Start locally with ./scripts/start_ui.sh · Keep that terminal running · Lock clears this tab; it does not stop the server or feed.</footer>
+    <dialog id="confirm" aria-labelledby="confirm-title" aria-describedby="confirm-text">
+      <h2 id="confirm-title">Confirm setup change</h2>
+      <p id="confirm-text"></p>
+      <div class="dialog-actions">
+        <button id="cancel-confirm" class="quiet">Cancel</button>
+        <button id="confirm-action">Confirm</button>
+      </div>
+    </dialog>
+  </body>
+</html>

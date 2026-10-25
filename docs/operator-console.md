@@ -14,6 +14,21 @@ Cancel sends nothing. A failed geometry/reveal closes safely. Lock/pagehide igno
 late reads; it does not undo an already received server action. Exact financial and
 risk behavior is unchanged. See [the shared component guide](frontend-modernization.md).
 
+Risk Management and Purchases & SIP also share the reviewed-action lifecycle.
+Opening confirmation captures the displayed JSON instruction, including exact
+decimal strings. Confirm consumes it once before invoking the page's freshness,
+account-access and generation checks; repeated clicks cannot replay it. Cancel,
+Escape, native close, failed opening and pagehide discard it. A failed Risk read
+revokes an open review, and refreshing Purchases or editing its reviewed inputs
+requires opening a new confirmation. Nothing is submitted by dismissal. If the
+display ages out, refresh and review again. This does not reverse an action the
+server already accepted or clear an unknown outcome after a timeout.
+
+Risk reads and actions expose the same loading state to the shared feedback
+component. Lock clears loading and access immediately; late responses cannot restore
+the previous account. Unit UI checks cover captured input values, stale/changed
+evidence, double clicks, canceled/failed reviews and feedback/loading cleanup.
+
 The UI is a local browser application served by FastAPI. It is **paper only**.
 There is no native Android/iOS app, installable PWA, public hosting or real-money
 order screen. Desktop browsers use account cards and two-column readiness/controls;

@@ -6,6 +6,22 @@ from trading_agent.execution.costs import Charges
 from trading_agent.models import RiskDecision
 
 
+def validate_exit(*, quantity: int, held_quantity: int, price: Decimal) -> None:
+    """Shared fill invariant for intraday and delivery exits, including gap-through stops.
+
+    Freshness, session, displayed liquidity and delivery price-basis/fee authority are
+    checked by the caller. A stop is an exit trigger, never a minimum sale price.
+    """
+    if (
+        type(quantity) is not int
+        or type(held_quantity) is not int
+        or not 0 < quantity <= held_quantity
+    ):
+        raise RuntimeError("paper sell exceeds position or has invalid quantity")
+    if not price.is_finite() or price <= 0:
+        raise RuntimeError("paper sell requires a finite positive price")
+
+
 def size(
     *,
     price: Decimal,

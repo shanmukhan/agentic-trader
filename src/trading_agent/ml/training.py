@@ -12,6 +12,7 @@ from trading_agent.backtesting.dataset import digest_file
 from trading_agent.backtesting.report import code_digest
 from trading_agent.market_data.calendar import IST
 from trading_agent.ml.contracts import Outcome
+from trading_agent.ml.features import FEATURE_NAMES
 from trading_agent.ml.inference import Artifact, ArtifactManifest, Coefficients
 from trading_agent.ml.samples import Samples
 from trading_agent.ml.schema import TrainingSettings
@@ -248,7 +249,30 @@ def train_model(samples: Samples, *, settings: TrainingSettings, output: Path) -
         + "\nFinal coefficients were frozen before holdout metrics were computed. "
         "No threshold or parameter search runs. Selected trade P&L sums isolated labels, "
         "not portfolio performance. Hashes, split windows, purges and reliability bins "
-        "are in validation.json.\n"
+        "are in validation.json.\n" + "\n## Final model coefficients\n\n"
+        "These describe the frozen model, not causal feature importance or trading "
+        "recommendations. Each base coefficient is the log-odds change for one "
+        "training standard deviation with other features fixed. Correlated features "
+        "can share or reverse coefficients. The calibrated coefficient includes the "
+        "sigmoid calibration slope; calibration can reverse the base direction. "
+        "No feature ranking or parameter search is performed.\n\n"
+        + "| Feature | Training mean | Training scale | Base coefficient | "
+        "Calibrated coefficient |\n|---|---:|---:|---:|---:|\n"
+        + "".join(
+            f"| {name} | {mean:.12g} | {scale:.12g} | {weight:.12g} | "
+            f"{weight * coefficients.calibration_slope:.12g} |\n"
+            for name, mean, scale, weight in zip(
+                FEATURE_NAMES,
+                coefficients.means,
+                coefficients.scales,
+                coefficients.weights,
+                strict=True,
+            )
+        )
+        + f"\nBase intercept: `{coefficients.intercept:.12g}`. Calibration slope: "
+        f"`{coefficients.calibration_slope:.12g}`; calibration intercept: "
+        f"`{coefficients.calibration_intercept:.12g}`. Full-precision values and "
+        "feature order are retained in `model.json`; display values above are rounded.\n"
     )
     manifest = ArtifactManifest(
         model_sha256=report["model_sha256"],

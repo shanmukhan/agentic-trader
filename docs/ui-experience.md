@@ -1,5 +1,22 @@
 # Workspace usability and icons — 0.19.0
 
+## 25 October audit refinements
+
+System light/dark preference now controls all screens. System reduced motion stops the loading shimmer; a textual loading status and `aria-busy` remain. Existing values stay explicitly stale after a failed read. Static HTML is formatted for maintenance, access forms have visible token labels and named regions, and Trade History explains orders/fills before unlock. Setup uses its own body class.
+
+Action responses can appear in a persistent **Action feedback** bar near the top of the workspace. Read the recorded outcome and choose **Dismiss**. Errors also use a separate assertive region; repeated identical polling errors are not announced repeatedly. Messages are literal bounded text from the current same-origin frame/path only. Lock clears them. A success response acknowledges an instruction, not a fill; an unknown outcome requires reading saved state before another request.
+
+The header now explains Lock consequences within small screens. It clears browser access without disarming or stopping the server. A visible/unlocked shell checks `/api/feed/status` every ten seconds, with stale/error guidance and no account queries. Tick receipt recency is explicitly separate from per-symbol quote usability and full readiness. No token is written to browser storage. Direct section URLs already redirect into the shared in-memory workspace.
+
+Portfolio adds a cash/held-share allocation ring with exact percentages and P&L comparison bars with explicit Gain/Loss text. Bar lengths are approximate display geometry; exact source strings remain in labels/tables. Stale, incomplete or truncated P&L coverage disables the comparison; missing current allocation disables the ring. Current values do not create a historical return series. Dashboard financial cards include sign styling and the actual dated accounting baseline.
+
+In Paper Trading, **Alt+R** focuses the first enabled proposal review. Press Enter to inspect its exact preview, then use the existing separate confirmation. It ignores text entry, pending dialogs, busy/locked state and repeated key events. It sends no approval.
+
+Stock Analysis and Backtesting now have interactive/saved-evidence plots; see [analysis controls](market-analysis.md) and [report controls](browser-backtesting.md). Risk and Purchases share reviewed-callback lifecycle handling while retaining their separate freshness checks. Closing/cancelling or locking a confirmation revokes the callback.
+
+The [audit resolution](audit-2026-10-25-resolution.md) records corrected claims and the [roadmap](ROADMAP.md) records source/contract-dependent work. Synthetic checks do not certify broker/device acceptance.
+
+
 The 23 October 2026 usability pass makes the existing paper workflows easier to scan.
 It adds a local SVG icon system, shorter repeated status messages, progressive help
 and a four-step investment-policy draft form. It does not change account values,

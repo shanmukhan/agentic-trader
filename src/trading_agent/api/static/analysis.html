@@ -1,42 +1,201 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="color-scheme" content="light"><title>Market &amp; Analysis · Paper only</title>
-  <link rel="stylesheet" href="/dashboard.css">
-  <script src="/money.js" defer></script><script src="/workspace-bridge.js" defer></script><script src="/analysis.js" defer></script>
-</head>
-<body class="analysis-page">
-  <a class="skip" href="#main">Skip to market analysis</a>
-  <header class="masthead"><div><p class="eyebrow">AGENTIC TRADER <span class="pill">PAPER ONLY</span></p><h1>Market &amp; Analysis</h1><p class="muted">Explore saved price history and understand the research behind your shortlist.</p></div><span id="state" class="badge">Locked</span></header>
-  <section class="access panel"><form id="access" autocomplete="off"><label for="token">Local operator token</label><input id="token" type="password" autocomplete="off" required><button id="unlock"><svg class="icon" aria-hidden="true" focusable="false" width="20" height="20"><use href="/icons.svg#unlock"/></svg>Unlock / refresh</button><button id="lock" type="button" class="quiet" disabled><svg class="icon" aria-hidden="true" focusable="false" width="20" height="20"><use href="/icons.svg#lock"/></svg>Lock</button></form></section>
-  <p id="message" role="status" aria-live="polite">Unlock to view saved market data.</p>
-  <main id="main" hidden>
-    <section class="panel analysis-toolbar" aria-label="Chart selection">
-      <div><label for="stock-search">Find a stock</label><input id="stock-search" type="search" placeholder="Search saved research and shortlist" autocomplete="off" aria-describedby="stock-help"></div>
-      <div><label for="stock">Stock</label><select id="stock" aria-describedby="stock-help"></select></div>
-      <div><label for="timeframe">Candle interval</label><select id="timeframe"><option value="1d">Daily</option><option value="1w">Weekly</option><option value="1mo">Monthly</option><option value="1m">1 minute</option><option value="5m">5 minutes</option></select></div>
-      <div><label for="chart-range">Chart display range</label><select id="chart-range" aria-describedby="range-help"><option value="all">All returned candles</option><option value="50">Latest 50 candles</option><option value="100">Latest 100 candles</option></select></div>
-      <button id="open-chart" type="button"><svg class="icon" aria-hidden="true" focusable="false" width="20" height="20"><use href="/icons.svg#chart"/></svg>Open chart</button><button id="refresh" type="button" class="quiet"><svg class="icon" aria-hidden="true" focusable="false" width="20" height="20"><use href="/icons.svg#refresh"/></svg>Refresh saved data</button>
-      <p id="stock-help" class="muted">Search saved stocks. Opening a chart does not download history or subscribe.</p>
-      <details class="chart-help"><summary>Chart range and indicator history</summary><p id="range-help" class="muted">Display range changes the drawing and candle table only. Indicators retain their full eligible history seed; no new data is fetched or calculated.</p></details>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <meta name="description" content="Local paper trading workspace: inspect saved evidence, review risk and confirm simulated actions.">
+    <title>Market &amp; Analysis · Paper only</title>
+    <link rel="stylesheet" href="/dashboard.css">
+    <script src="/money.js" defer></script>
+    <script src="/workspace-bridge.js" defer></script>
+    <script src="/analysis.js" defer></script>
+  </head>
+  <body class="analysis-page">
+    <a class="skip" href="#main">Skip to market analysis</a>
+    <header class="masthead">
+      <div>
+        <p class="eyebrow">AGENTIC TRADER <span class="pill">PAPER ONLY</span></p>
+        <h1>Market &amp; Analysis</h1>
+        <p class="muted">Explore saved price history and understand the research behind your shortlist.</p>
+      </div>
+      <span id="state" class="badge">Locked</span>
+    </header>
+    <section class="access panel" aria-label="Local operator access">
+      <form id="access" autocomplete="off">
+        <label for="token">Local operator token</label>
+        <input id="token" type="password" autocomplete="off" required>
+        <button id="unlock"><svg class="icon" aria-hidden="true" focusable="false" width="20" height="20"><use href="/icons.svg#unlock"/></svg>Unlock / refresh</button>
+        <button id="lock" type="button" class="quiet" disabled><svg class="icon" aria-hidden="true" focusable="false" width="20" height="20"><use href="/icons.svg#lock"/></svg>Lock</button>
+      </form>
     </section>
-    <section class="metrics" aria-label="Current quote">
-      <article class="panel metric"><h2>Last accepted price</h2><p id="last-price" class="desk-value">—</p><p id="quote-time" class="muted"></p></article>
-      <article class="panel metric"><h2>Quote status</h2><p id="quote-state" class="desk-value">—</p><p id="quote-detail" class="muted"></p></article>
-      <article class="panel metric"><h2>Reviewed market session</h2><p id="session-state" class="desk-value">—</p><p id="subscription" class="muted"></p></article>
-    </section>
-    <div class="analysis-layout">
-      <section class="panel" aria-labelledby="chart-title"><div class="section-heading"><div><p class="eyebrow">PRICE HISTORY</p><h2 id="chart-title">Saved candles</h2></div><span id="chart-count" class="badge"></span></div><p id="chart-status" role="status" aria-live="polite"></p><div id="price-chart" class="analysis-chart"></div><details class="inline-help"><summary>Chart legend and price basis</summary><p id="chart-legend" class="muted">Teal: close at or above open · red: close below open · blue: SMA 20 · amber: SMA 50 · purple: SMA 200. Volume appears below. The saved source determines the price and volume basis. Moving averages are research context, not trade signals.</p></details><p id="chart-source" class="muted"></p><p id="chart-period" class="muted"></p></section>
-      <aside class="panel analysis-summary" aria-labelledby="screen-title"><p class="eyebrow">PRIOR DAILY RESEARCH</p><h2 id="screen-title">Screening context</h2><p id="screen-state" class="desk-value">—</p><div id="screen-metrics" class="indicator-grid"></div><p id="screen-reasons" class="muted"></p><p id="screen-date" class="muted"></p><a href="/desk#strategy-setup">Review strategy data →</a><p class="notice">A research candidate is not an order or an approval. Quote quality, price-basis review and independent risk checks still apply.</p></aside>
-    </div>
-    <section class="panel" aria-labelledby="research-title">
-      <p class="eyebrow">TECHNICAL RESEARCH</p><h2 id="research-title"><svg class="icon" aria-hidden="true" focusable="false" width="20" height="20"><use href="/icons.svg#chart"/></svg>Indicators and evidence</h2><p id="research-basis" class="muted"></p><div id="research-indicators" class="indicator-grid"></div>
-      <details><summary>All indicator values, definitions and availability</summary><p class="muted">Values preserve the server's decimal strings. Warming up means the required completed history is unavailable; a missing value is never treated as zero. Lookbacks count candles at the selected interval. These measurements do not approve a trade.</p><div class="analysis-table-wrap" role="region" tabindex="0" aria-label="Latest indicator values, horizontally scrollable"><table class="research-indicator-table"><caption id="indicator-caption">Latest completed-candle indicator values</caption><thead><tr><th scope="col">Indicator and meaning</th><th scope="col">Exact value</th><th scope="col">Availability</th><th scope="col">Lookback</th><th scope="col">Price basis</th><th scope="col">Available at (IST)</th></tr></thead><tbody id="indicator-data"></tbody></table></div></details>
-    </section>
-    <section class="panel" aria-labelledby="coverage-title"><h2 id="coverage-title"><svg class="icon" aria-hidden="true" focusable="false" width="20" height="20"><use href="/icons.svg#info"/></svg>Research coverage</h2><p id="research-coverage" class="muted"></p><ul id="partial-periods" class="muted"></ul><h3>Benchmark comparison</h3><p id="benchmark-state"></p><p id="benchmark-detail" class="muted"></p><h3>Company fundamentals</h3><p id="fundamentals-state" class="muted"></p><ul id="research-explanations" class="muted"></ul></section>
-    <section class="panel"><details><summary>Accessible candle, moving average and price drawdown history</summary><p class="muted">Exact saved prices are listed below. The drawing uses approximate display coordinates; this table preserves the source decimal values. Newest candles appear first. Price drawdown and segment maximum drawdown use the stated adjusted-price basis within each continuous segment; they exclude cash dividends and account returns. Unavailable history is not zero.</p><div class="analysis-table-wrap" role="region" tabindex="0" aria-label="Candle and price drawdown history, horizontally scrollable"><table><caption id="data-caption">Saved OHLC and volume</caption><thead><tr><th scope="col">Time (IST)</th><th scope="col">Open</th><th scope="col">High</th><th scope="col">Low</th><th scope="col">Close</th><th scope="col">Volume</th><th scope="col">SMA 20</th><th scope="col">SMA 50</th><th scope="col">SMA 200</th><th scope="col">Price drawdown (%)</th><th scope="col">Segment maximum price drawdown (%)</th></tr></thead><tbody id="candle-data"></tbody></table></div></details></section>
-    <section class="panel"><details><summary>Data coverage and limitations</summary><ul id="limitations" class="muted"></ul><p>No data here represents a backtest, expected return or a recommendation. Use Strategies to download and explicitly review new history; use Broker &amp; Data to troubleshoot a live feed.</p><div class="desk-links"><a href="/desk#strategy-setup">Prepare strategy data →</a><a href="/setup#feed-connection">Check market-data feed →</a></div></details></section>
-    <p id="updated" class="muted"></p>
-  </main>
-</body></html>
+    <p id="message" role="status" aria-live="polite">Unlock to view saved market data.</p>
+    <p id="error-alert" role="alert" class="sr-only"></p>
+    <div id="loading-state" class="loading-state" role="status" hidden>Loading the latest saved evidence…<span class="skeleton" aria-hidden="true"></span></div>
+    <main id="main" hidden>
+      <section class="panel analysis-toolbar" aria-label="Chart selection">
+        <div>
+          <label for="stock-search">Find a stock</label>
+          <input id="stock-search" type="search" placeholder="Search saved research and shortlist" autocomplete="off" aria-describedby="stock-help">
+        </div>
+        <div>
+          <label for="stock">Stock</label>
+          <select id="stock" aria-describedby="stock-help"></select>
+        </div>
+        <div>
+          <label for="timeframe">Candle interval</label>
+          <select id="timeframe">
+            <option value="1d">Daily</option>
+            <option value="1w">Weekly</option>
+            <option value="1mo">Monthly</option>
+            <option value="1m">1 minute</option>
+            <option value="5m">5 minutes</option>
+          </select>
+        </div>
+        <div>
+          <label for="chart-range">Chart display range</label>
+          <select id="chart-range" aria-describedby="range-help">
+            <option value="all">All returned candles</option>
+            <option value="50">Latest 50 candles</option>
+            <option value="100">Latest 100 candles</option>
+          </select>
+        </div>
+        <button id="open-chart" type="button"><svg class="icon" aria-hidden="true" focusable="false" width="20" height="20"><use href="/icons.svg#chart"/></svg>Open chart</button>
+        <button id="refresh" type="button" class="quiet"><svg class="icon" aria-hidden="true" focusable="false" width="20" height="20"><use href="/icons.svg#refresh"/></svg>Refresh saved data</button>
+        <p id="stock-help" class="muted">Search saved stocks. Opening a chart does not download history or subscribe.</p>
+        <details class="chart-help">
+          <summary>Chart range and indicator history</summary>
+          <p id="range-help" class="muted">Display range changes the drawing and candle table only. Indicators retain their full eligible history seed; no new data is fetched or calculated.</p>
+        </details>
+      </section>
+      <section class="metrics" aria-label="Current quote">
+        <article class="panel metric">
+          <h2>Last accepted price</h2>
+          <p id="last-price" class="desk-value">—</p>
+          <p id="quote-time" class="muted"></p>
+        </article>
+        <article class="panel metric">
+          <h2>Quote status</h2>
+          <p id="quote-state" class="desk-value">—</p>
+          <p id="quote-detail" class="muted"></p>
+        </article>
+        <article class="panel metric">
+          <h2>Reviewed market session</h2>
+          <p id="session-state" class="desk-value">—</p>
+          <p id="subscription" class="muted"></p>
+        </article>
+      </section>
+      <div class="analysis-layout">
+        <section class="panel" aria-labelledby="chart-title">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">PRICE HISTORY</p>
+              <h2 id="chart-title">Saved candles</h2>
+            </div>
+            <span id="chart-count" class="badge"></span>
+          </div>
+          <p id="chart-status" role="status" aria-live="polite"></p>
+          <div class="chart-toolbar" aria-label="Optional saved indicator panels">
+            <label><input id="show-rsi" type="checkbox">RSI panel</label>
+            <label><input id="show-macd" type="checkbox">MACD panel</label>
+            <label><input id="show-atr" type="checkbox">Close ± ATR 14 envelope</label>
+          </div>
+          <p class="muted">Drag the candle slider, use its arrow keys, or tap a candle to inspect exact values. Scroll the chart sideways when needed. Missing indicators remain gaps; the ATR envelope is research context, not a price forecast.</p>
+          <div id="price-chart" class="analysis-chart" role="region" tabindex="0" aria-label="Saved candle chart, horizontally scrollable"></div>
+          <label for="candle-inspector">Inspect a displayed candle</label>
+          <input id="candle-inspector" type="range" min="0" max="0" value="0" aria-describedby="chart-inspection">
+          <p id="chart-inspection" class="chart-inspection"></p>
+          <details class="inline-help">
+            <summary>Chart legend and price basis</summary>
+            <p id="chart-legend" class="muted">Teal: close at or above open · red: close below open · blue: SMA 20 · amber: SMA 50 · purple: SMA 200. Volume appears below. The saved source determines the price and volume basis. Moving averages are research context, not trade signals.</p>
+          </details>
+          <p id="chart-source" class="muted"></p>
+          <p id="chart-period" class="muted"></p>
+        </section>
+        <aside class="panel analysis-summary" aria-labelledby="screen-title">
+          <p class="eyebrow">PRIOR DAILY RESEARCH</p>
+          <h2 id="screen-title">Screening context</h2>
+          <p id="screen-state" class="desk-value">—</p>
+          <div id="screen-metrics" class="indicator-grid"></div>
+          <p id="screen-reasons" class="muted"></p>
+          <p id="screen-date" class="muted"></p>
+          <a href="/desk#strategy-setup">Review strategy data →</a>
+          <p class="notice">A research candidate is not an order or an approval. Quote quality, price-basis review and independent risk checks still apply.</p>
+        </aside>
+      </div>
+      <section class="panel" aria-labelledby="research-title">
+        <p class="eyebrow">TECHNICAL RESEARCH</p>
+        <h2 id="research-title"><svg class="icon" aria-hidden="true" focusable="false" width="20" height="20"><use href="/icons.svg#chart"/></svg>Indicators and evidence</h2>
+        <p id="research-basis" class="muted"></p>
+        <div id="research-indicators" class="indicator-grid"></div>
+        <details>
+          <summary>All indicator values, definitions and availability</summary>
+          <p class="muted">Values preserve the server's decimal strings. Warming up means the required completed history is unavailable; a missing value is never treated as zero. Lookbacks count candles at the selected interval. These measurements do not approve a trade.</p>
+          <div class="analysis-table-wrap" role="region" tabindex="0" aria-label="Latest indicator values, horizontally scrollable">
+            <table class="research-indicator-table">
+              <caption id="indicator-caption">Latest completed-candle indicator values</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Indicator and meaning</th>
+                  <th scope="col">Exact value</th>
+                  <th scope="col">Availability</th>
+                  <th scope="col">Lookback</th>
+                  <th scope="col">Price basis</th>
+                  <th scope="col">Available at (IST)</th>
+                </tr>
+              </thead>
+              <tbody id="indicator-data"></tbody>
+            </table>
+          </div>
+        </details>
+      </section>
+      <section class="panel" aria-labelledby="coverage-title">
+        <h2 id="coverage-title"><svg class="icon" aria-hidden="true" focusable="false" width="20" height="20"><use href="/icons.svg#info"/></svg>Research coverage</h2>
+        <p id="research-coverage" class="muted"></p>
+        <ul id="partial-periods" class="muted"></ul>
+        <h3>Benchmark comparison</h3>
+        <p id="benchmark-state"></p>
+        <p id="benchmark-detail" class="muted"></p>
+        <h3>Company fundamentals</h3>
+        <p id="fundamentals-state" class="muted"></p>
+        <ul id="research-explanations" class="muted"></ul>
+      </section>
+      <section class="panel">
+        <details>
+          <summary>Accessible candle, moving average and price drawdown history</summary>
+          <p class="muted">Exact saved prices are listed below. The drawing uses approximate display coordinates; this table preserves the source decimal values. Newest candles appear first. Price drawdown and segment maximum drawdown use the stated adjusted-price basis within each continuous segment; they exclude cash dividends and account returns. Unavailable history is not zero.</p>
+          <div class="analysis-table-wrap" role="region" tabindex="0" aria-label="Candle and price drawdown history, horizontally scrollable">
+            <table>
+              <caption id="data-caption">Saved OHLC and volume</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Time (IST)</th>
+                  <th scope="col">Open</th>
+                  <th scope="col">High</th>
+                  <th scope="col">Low</th>
+                  <th scope="col">Close</th>
+                  <th scope="col">Volume</th>
+                  <th scope="col">SMA 20</th>
+                  <th scope="col">SMA 50</th>
+                  <th scope="col">SMA 200</th>
+                  <th scope="col">Price drawdown (%)</th>
+                  <th scope="col">Segment maximum price drawdown (%)</th>
+                </tr>
+              </thead>
+              <tbody id="candle-data"></tbody>
+            </table>
+          </div>
+        </details>
+      </section>
+      <section class="panel">
+        <details>
+          <summary>Data coverage and limitations</summary>
+          <ul id="limitations" class="muted"></ul>
+          <p>No data here represents a backtest, expected return or a recommendation. Use Strategies to download and explicitly review new history; use Broker &amp; Data to troubleshoot a live feed.</p>
+          <div class="desk-links"><a href="/desk#strategy-setup">Prepare strategy data →</a><a href="/setup#feed-connection">Check market-data feed →</a></div>
+        </details>
+      </section>
+      <p id="updated" class="muted"></p>
+    </main>
+  </body>
+</html>

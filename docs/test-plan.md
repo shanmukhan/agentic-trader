@@ -1,5 +1,47 @@
 # Test and validation plan
 
+## 25 October 2026 audit validation
+
+Final integrated commands:
+
+```sh
+.venv/bin/pytest -q --cov=trading_agent --cov-report=json:/private/tmp/audit-2026-10-25-coverage.json --cov-report=term:skip-covered
+node --test tests/ui/*.test.cjs
+.venv/bin/ruff check src tests
+.venv/bin/ruff format --check src tests
+.venv/bin/mypy src/trading_agent
+.venv/bin/python scripts/check_secrets.py
+git diff --check
+```
+
+**1,335 Python / 232 Node tests passed**. Statement coverage is **92.06%**
+(11,151 / 12,113). Ruff and formatting cover 222 Python files; mypy passes on
+125 source files. The full Python run emitted 52 SQLite ResourceWarnings in existing
+paths; this is not evidence of fault-free resource lifecycle.
+
+New evidence includes independent exact fee/cash/gap-exit persistence; 800 generated
+intraday/delivery sizing cases against exhaustive Decimal oracles; safe request
+rejections without engine fault; no-ledger feed health and rollback/reconnect/clock
+observations; bounded retry/authentication exclusions; full supervisor iterations
+through real ASGI handlers with independent SQLite reads; cross-horizon exact buffer
+serialization/no double deduction; ML loaded inference [0,1] and coefficient/artifact
+agreement. UI checks cover chart coordinates/gaps/warmup and keyboard/pointer controls,
+compatible comparisons, exact scientific decimal signs/sorting, numeric ranks, invalid
+or stale chart evidence, loading, feedback identity/privacy, confirmation revocation,
+shortcut no-approval, static HTML labels and responsive/theme rule ordering.
+
+A real disposable loopback app used invented 240-bar daily sources, three held stocks
+and genuine offline synthetic replay reports. Desktop Firefox verified the Dashboard
+and Portfolio accessibility tree and desktop layout. Independent mode=ro full SQLite
+dump comparison retained cash **₹20,495.23**, three orders, three fills, three positions,
+27 events and no pending orders. No read created orders, fills or account events.
+The fixture server was stopped. Complete rendered dark/narrow/chart interactions were
+not accepted in this pass (the shared native browser was in active use); automated
+checks do not substitute for physical-device, broker, licensed-source, native worker or
+sustained feed-scale acceptance. No user account or broker action was performed.
+
+See [each audit disposition](audit-2026-10-25-resolution.md) and [open gates](ROADMAP.md).
+
 ## Issue-report remediation (24 October 2026)
 
 Integrated commands executed after the final code changes:

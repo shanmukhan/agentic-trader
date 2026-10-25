@@ -5,7 +5,7 @@ import tomllib
 from datetime import time
 from decimal import Decimal
 from pathlib import Path
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, SecretStr, model_validator
 
@@ -35,7 +35,7 @@ class Settings(BaseModel):
     flatten_at: time = time(15, 15)
     calendar: Path = Path("config/sessions.csv")
     stream_limit: int = Field(default=10, ge=1, le=3000, strict=True)
-    stream_tokens: tuple[int, ...] = ()
+    stream_tokens: tuple[Annotated[int, Field(gt=0, strict=True)], ...] = ()
     operator_token: SecretStr = SecretStr("")
 
     @model_validator(mode="after")

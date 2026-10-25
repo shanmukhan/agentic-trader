@@ -250,3 +250,7 @@ its genuine source, policy, model and readiness requirements pass; empirical
 profit-oriented qualification remains separate. See [stock-selection-plan.md](stock-selection-plan.md). Do not interpret a
 connected feed, a completed bar or an offline synthetic research rank as trading
 approval or proof of profit.
+
+## Lightweight connection observation and feedback
+
+The unlocked, visible workspace polls authenticated `/api/feed/status` every ten seconds, displays its observation time/accepted receipt age and labels connection status stale after missed checks. It does not load account tables or infer per-stock usability. Open Paper Trading to inspect complete readiness and Broker & Data for connection recovery. Errors/outcomes from the current same-origin section are bounded literal text in a dismissible action-feedback bar; Lock aborts the health request and clears late/private responses. Charts, loading, system theme and keyboard controls are described in [the UI guide](ui-experience.md).

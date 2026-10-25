@@ -1,94 +1,168 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="color-scheme" content="light">
-  <title>Risk Management · Paper only</title>
-  <link rel="stylesheet" href="/dashboard.css">
-  <script src="/money.js" defer></script><script src="/dialogs.js" defer></script>
-  <script src="/kite-callback.js" defer></script>
-  <script src="/workspace-bridge.js" defer></script>
-  <script src="/dashboard.js" defer></script>
-</head>
-<body>
-  <a class="skip" href="#main">Skip to account</a>
-  <header class="masthead">
-    <div><p class="eyebrow">AGENTIC TRADER <span class="pill">PAPER ONLY</span></p>
-      <h1>Risk Management</h1><p class="muted">Exposure, quote readiness and protective controls · Virtual INR</p></div>
-    <div class="connection"><span id="horizon" class="badge">Paper account</span> <span id="feed" class="badge">Locked</span><p id="updated" class="muted">No account data loaded</p></div>
-  </header>
-  <section class="panel access" aria-labelledby="access-heading">
-    <div><h2 id="access-heading">Local operator access</h2><p class="muted">Use <strong>TRADING_OPERATOR_TOKEN</strong> from your private local .env. Zerodha request/access tokens will not unlock this app. It stays in this tab's memory.</p><p><a href="/setup">Kite login, feed selection and session setup →</a></p></div>
-    <form id="unlock" autocomplete="off">
-      <label for="token" class="sr-only">Operator token</label>
-      <input id="token" type="password" autocomplete="off" placeholder="Operator token" spellcheck="false" required>
-      <button type="submit" id="refresh"><svg class="icon" aria-hidden="true" focusable="false" width="20" height="20"><use href="/icons.svg#unlock"/></svg>Unlock / refresh</button><button type="button" id="lock" class="quiet" disabled><svg class="icon" aria-hidden="true" focusable="false" width="20" height="20"><use href="/icons.svg#lock"/></svg>Lock</button>
-    </form>
-  </section>
-  <p id="message" role="status" aria-live="polite">Locked. Enter an operator token to view the account.</p>
-  <main id="main"><nav class="subnav" aria-label="Risk views"><a href="/console" aria-current="page">Risk &amp; controls</a><a href="/console#long-term">Price-basis reviews</a><a href="/setup">Broker &amp; administration</a></nav>
-    <section class="metrics" aria-label="Virtual account overview">
-      <article class="panel metric"><h2>Virtual equity</h2><p id="equity" class="amount">—</p><p class="muted">After estimated exit costs</p></article>
-      <article class="panel metric"><h2>Available cash</h2><p id="cash" class="amount">—</p><p id="reserved" class="muted">Reserved: —</p></article>
-      <article class="panel metric"><h2>Day P&amp;L</h2><p id="pnl" class="amount">—</p><p id="fees" class="muted">Charged fees: —</p></article>
-    </section>
-    <div class="workspace">
-      <section class="panel" aria-labelledby="readiness-heading">
-        <div class="section-heading"><h2 id="readiness-heading"><svg class="icon" aria-hidden="true" focusable="false" width="20" height="20"><use href="/icons.svg#check"/></svg>Entry readiness</h2><span id="readiness" class="badge">Locked</span></div>
-        <p class="muted">Prerequisites only. Every candidate must still pass the independent risk gate.</p>
-        <ul id="reasons" class="reasons"><li>Unlock to inspect readiness.</li></ul>
-        <h3>Observed quotes</h3><div id="quotes" class="records"><p class="muted">Locked</p></div>
-      </section>
-      <section class="panel" aria-labelledby="controls-heading">
-        <div class="section-heading"><h2 id="controls-heading"><svg class="icon" aria-hidden="true" focusable="false" width="20" height="20"><use href="/icons.svg#shield"/></svg>Emergency &amp; entry controls</h2><span id="armed" class="badge">Locked</span></div>
-        <p id="risk" class="muted">Unlock to inspect risk state.</p>
-        <fieldset class="control-group emergency-controls"><legend>Emergency actions</legend><div class="controls">
-          <button id="kill" class="danger" disabled><svg class="icon" aria-hidden="true" focusable="false" width="20" height="20"><use href="/icons.svg#shield"/></svg>Activate kill switch</button>
-          <button id="flatten" class="danger secondary" disabled><svg class="icon" aria-hidden="true" focusable="false" width="20" height="20"><use href="/icons.svg#warning"/></svg>Queue flatten</button>
-        </div></fieldset>
-        <fieldset class="control-group"><legend>Entry permissions</legend><div class="controls">
-          <button id="disarm" class="quiet" disabled><svg class="icon" aria-hidden="true" focusable="false" width="20" height="20"><use href="/icons.svg#lock"/></svg>Disarm entries</button>
-          <button id="arm" disabled><svg class="icon" aria-hidden="true" focusable="false" width="20" height="20"><use href="/icons.svg#unlock"/></svg>Arm paper automation</button>
-          <button id="reset" class="quiet" disabled><svg class="icon" aria-hidden="true" focusable="false" width="20" height="20"><use href="/icons.svg#refresh"/></svg>Reset kill switch</button>
-        </div></fieldset>
-        <p class="notice">Queued exits need fresh quotes and liquidity. A queued exit is not a completed fill. Resetting the kill switch does not rearm automation.</p>
-      </section>
-    </div>
-    <section id="long-term" class="panel" hidden aria-labelledby="long-term-heading">
-      <h2 id="long-term-heading">Long-term paper safeguards</h2>
-      <p><a href="/portfolio">Review paper purchases, holding additions and SIP plans →</a></p>
-      <p id="long-term-state" class="muted"></p>
-      <dl class="claim-metrics">
-        <div><dt>Unpaid dividends</dt><dd id="lt-receivable">—</dd><dd class="claim-note">Included in estimated equity; unavailable to spend.</dd></div>
-        <div><dt>Unvalued fractional claims</dt><dd id="lt-fractions">—</dd><dd class="claim-note">Retained after whole-share exit. Unknown value pauses new entries.</dd></div>
-        <div><dt>Dividend income received</dt><dd id="lt-income">—</dd><dd class="claim-note">Recorded net cash, separate from capital trading P&amp;L.</dd></div>
-      </dl>
-      <p id="lt-guidance" class="notice" role="status"></p>
-      <p class="muted">Virtual holdings only. Review changes since the last accepted quote. Supported share adjustments and cash receipts use the reviewed offline workflow; complex actions remain quarantined.</p>
-      <form id="holding-review" class="review-form">
-        <label>Registered symbol <input id="review-symbol" placeholder="NSE:SYMBOL" required maxlength="34" pattern="NSE:[A-Z0-9&amp;_.-]+"></label>
-        <label>IST session date <input id="review-date" type="date" required></label>
-        <label>Review source/reference <input id="review-reference" required minlength="3" maxlength="300" placeholder="Reviewed notice or private evidence reference"></label>
-        <label class="check"><input id="review-clear" type="checkbox"> I reviewed intervening actions, including applied batches, and confirm the current price basis is clear. Leave unchecked to quarantine.</label>
-        <button id="review-submit" type="submit" disabled>Record paper review</button>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <meta name="description" content="Local paper trading workspace: inspect saved evidence, review risk and confirm simulated actions.">
+    <title>Risk Management · Paper only</title>
+    <link rel="stylesheet" href="/dashboard.css">
+    <script src="/money.js" defer></script>
+    <script src="/dialogs.js" defer></script>
+    <script src="/kite-callback.js" defer></script>
+    <script src="/workspace-bridge.js" defer></script>
+    <script src="/dashboard.js" defer></script>
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to account</a>
+    <header class="masthead">
+      <div>
+        <p class="eyebrow">AGENTIC TRADER <span class="pill">PAPER ONLY</span></p>
+        <h1>Risk Management</h1>
+        <p class="muted">Exposure, quote readiness and protective controls · Virtual INR</p>
+      </div>
+      <div class="connection">
+        <span id="horizon" class="badge">Paper account</span>
+        <span id="feed" class="badge">Locked</span>
+        <p id="updated" class="muted">No account data loaded</p>
+      </div>
+    </header>
+    <section class="panel access" aria-labelledby="access-heading">
+      <div>
+        <h2 id="access-heading">Local operator access</h2>
+        <p class="muted">Use <strong>TRADING_OPERATOR_TOKEN</strong> from your private local .env. Zerodha request/access tokens will not unlock this app. It stays in this tab's memory.</p>
+        <p><a href="/setup">Kite login, feed selection and session setup →</a></p>
+      </div>
+      <form id="unlock" autocomplete="off">
+        <label for="token" class="sr-only">Operator token</label>
+        <input id="token" type="password" autocomplete="off" placeholder="Operator token" spellcheck="false" required>
+        <button type="submit" id="refresh"><svg class="icon" aria-hidden="true" focusable="false" width="20" height="20"><use href="/icons.svg#unlock"/></svg>Unlock / refresh</button>
+        <button type="button" id="lock" class="quiet" disabled><svg class="icon" aria-hidden="true" focusable="false" width="20" height="20"><use href="/icons.svg#lock"/></svg>Lock</button>
       </form>
     </section>
-    <details id="positions-panel" class="panel"><summary>Positions &amp; protection levels</summary>
-      <div class="section-heading"><h2 id="positions-heading">Open positions</h2><span id="valuation" class="muted">Locked</span></div>
-      <div id="positions" class="records"><p class="muted">Locked</p></div>
-    </details>
-    <details class="panel"><summary>Open orders &amp; reservations</summary>
-      <div class="section-heading"><h2 id="orders-heading">Paper orders</h2><span id="order-count" class="muted">Locked</span></div>
-      <p class="muted">Most recently recorded first. Accepted orders have reserved capacity; fills require a later quote.</p>
-      <div id="orders" class="records"><p class="muted">Locked</p></div>
-    </details>
-    <details class="panel"><summary>Account and automation details</summary><pre id="details">Locked</pre></details>
-  </main>
-  <footer class="muted">Local operator console · Desktop and mobile browser layout · Refreshes every 3 seconds while visible<br>Prices and money retain the server's decimal values. Session rules and displayed update times use IST.</footer>
-  <dialog id="confirm" aria-labelledby="confirm-title" aria-describedby="confirm-description">
-    <h2 id="confirm-title">Confirm paper action</h2><p id="confirm-description"></p>
-    <div class="dialog-actions"><button id="cancel-confirm" class="quiet">Cancel</button><button id="confirm-action">Confirm</button></div>
-  </dialog>
-</body>
+    <p id="message" role="status" aria-live="polite">Locked. Enter an operator token to view the account.</p>
+    <p id="error-alert" role="alert" class="sr-only"></p>
+    <div id="loading-state" class="loading-state" role="status" hidden>Loading the latest saved evidence…<span class="skeleton" aria-hidden="true"></span></div>
+    <main id="main">
+      <nav class="subnav" aria-label="Risk views"><a href="/console" aria-current="page">Risk &amp; controls</a><a href="/console#long-term">Price-basis reviews</a><a href="/setup">Broker &amp; administration</a></nav>
+      <section class="metrics" aria-label="Virtual account overview">
+        <article class="panel metric">
+          <h2>Virtual equity</h2>
+          <p id="equity" class="amount">—</p>
+          <p class="muted">After estimated exit costs</p>
+        </article>
+        <article class="panel metric">
+          <h2>Available cash</h2>
+          <p id="cash" class="amount">—</p>
+          <p id="reserved" class="muted">Reserved: —</p>
+        </article>
+        <article class="panel metric">
+          <h2>Day P&amp;L</h2>
+          <p id="pnl" class="amount">—</p>
+          <p id="fees" class="muted">Charged fees: —</p>
+        </article>
+      </section>
+      <div class="workspace">
+        <section class="panel" aria-labelledby="readiness-heading">
+          <div class="section-heading">
+            <h2 id="readiness-heading"><svg class="icon" aria-hidden="true" focusable="false" width="20" height="20"><use href="/icons.svg#check"/></svg>Entry readiness</h2>
+            <span id="readiness" class="badge">Locked</span>
+          </div>
+          <p class="muted">Prerequisites only. Every candidate must still pass the independent risk gate.</p>
+          <ul id="reasons" class="reasons">
+            <li>Unlock to inspect readiness.</li>
+          </ul>
+          <h3>Observed quotes</h3>
+          <div id="quotes" class="records">
+            <p class="muted">Locked</p>
+          </div>
+        </section>
+        <section class="panel" aria-labelledby="controls-heading">
+          <div class="section-heading">
+            <h2 id="controls-heading"><svg class="icon" aria-hidden="true" focusable="false" width="20" height="20"><use href="/icons.svg#shield"/></svg>Emergency &amp; entry controls</h2>
+            <span id="armed" class="badge">Locked</span>
+          </div>
+          <p id="risk" class="muted">Unlock to inspect risk state.</p>
+          <fieldset class="control-group emergency-controls">
+            <legend>Emergency actions</legend>
+            <div class="controls">
+              <button id="kill" class="danger" disabled><svg class="icon" aria-hidden="true" focusable="false" width="20" height="20"><use href="/icons.svg#shield"/></svg>Activate kill switch</button>
+              <button id="flatten" class="danger secondary" disabled><svg class="icon" aria-hidden="true" focusable="false" width="20" height="20"><use href="/icons.svg#warning"/></svg>Queue flatten</button>
+            </div>
+          </fieldset>
+          <fieldset class="control-group">
+            <legend>Entry permissions</legend>
+            <div class="controls">
+              <button id="disarm" class="quiet" disabled><svg class="icon" aria-hidden="true" focusable="false" width="20" height="20"><use href="/icons.svg#lock"/></svg>Disarm entries</button>
+              <button id="arm" disabled><svg class="icon" aria-hidden="true" focusable="false" width="20" height="20"><use href="/icons.svg#unlock"/></svg>Arm paper automation</button>
+              <button id="reset" class="quiet" disabled><svg class="icon" aria-hidden="true" focusable="false" width="20" height="20"><use href="/icons.svg#refresh"/></svg>Reset kill switch</button>
+            </div>
+          </fieldset>
+          <p class="notice">Queued exits need fresh quotes and liquidity. A queued exit is not a completed fill. Resetting the kill switch does not rearm automation.</p>
+        </section>
+      </div>
+      <section id="long-term" class="panel" hidden aria-labelledby="long-term-heading">
+        <h2 id="long-term-heading">Long-term paper safeguards</h2>
+        <p><a href="/portfolio">Review paper purchases, holding additions and SIP plans →</a></p>
+        <p id="long-term-state" class="muted"></p>
+        <dl class="claim-metrics">
+          <div>
+            <dt>Unpaid dividends</dt>
+            <dd id="lt-receivable">—</dd>
+            <dd class="claim-note">Included in estimated equity; unavailable to spend.</dd>
+          </div>
+          <div>
+            <dt>Unvalued fractional claims</dt>
+            <dd id="lt-fractions">—</dd>
+            <dd class="claim-note">Retained after whole-share exit. Unknown value pauses new entries.</dd>
+          </div>
+          <div>
+            <dt>Dividend income received</dt>
+            <dd id="lt-income">—</dd>
+            <dd class="claim-note">Recorded net cash, separate from capital trading P&amp;L.</dd>
+          </div>
+        </dl>
+        <p id="lt-guidance" class="notice" role="status"></p>
+        <p class="muted">Virtual holdings only. Review changes since the last accepted quote. Supported share adjustments and cash receipts use the reviewed offline workflow; complex actions remain quarantined.</p>
+        <form id="holding-review" class="review-form">
+          <label>Registered symbol <input id="review-symbol" placeholder="NSE:SYMBOL" required maxlength="34" pattern="NSE:[A-Z0-9&amp;_.-]+"></label>
+          <label>IST session date <input id="review-date" type="date" required></label>
+          <label>Review source/reference <input id="review-reference" required minlength="3" maxlength="300" placeholder="Reviewed notice or private evidence reference"></label>
+          <label class="check"><input id="review-clear" type="checkbox"> I reviewed intervening actions, including applied batches, and confirm the current price basis is clear. Leave unchecked to quarantine.</label>
+          <button id="review-submit" type="submit" disabled>Record paper review</button>
+        </form>
+      </section>
+      <details id="positions-panel" class="panel" aria-labelledby="positions-heading">
+        <summary>Positions &amp; protection levels</summary>
+        <div class="section-heading">
+          <h2 id="positions-heading">Open positions</h2>
+          <span id="valuation" class="muted">Locked</span>
+        </div>
+        <div id="positions" class="records">
+          <p class="muted">Locked</p>
+        </div>
+      </details>
+      <details class="panel">
+        <summary>Open orders &amp; reservations</summary>
+        <div class="section-heading">
+          <h2 id="orders-heading">Paper orders</h2>
+          <span id="order-count" class="muted">Locked</span>
+        </div>
+        <p class="muted">Most recently recorded first. Accepted orders have reserved capacity; fills require a later quote.</p>
+        <div id="orders" class="records">
+          <p class="muted">Locked</p>
+        </div>
+      </details>
+      <details class="panel"><summary>Account and automation details</summary><pre id="details">Locked</pre></details>
+    </main>
+    <footer class="muted">Local operator console · Desktop and mobile browser layout · Refreshes every 3 seconds while visible<br>Prices and money retain the server's decimal values. Session rules and displayed update times use IST.</footer>
+    <dialog id="confirm" aria-labelledby="confirm-title" aria-describedby="confirm-description">
+      <h2 id="confirm-title">Confirm paper action</h2>
+      <p id="confirm-description"></p>
+      <div class="dialog-actions">
+        <button id="cancel-confirm" class="quiet">Cancel</button>
+        <button id="confirm-action">Confirm</button>
+      </div>
+    </dialog>
+  </body>
 </html>

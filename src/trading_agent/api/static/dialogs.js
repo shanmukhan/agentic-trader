@@ -72,6 +72,7 @@
     function finish(record, cancelled) {
       if (active !== record) return;
       active = null;
+      record.review = null;
       record.listeners.splice(0).forEach(remove => remove());
       record.observer?.disconnect();
       if (record.dialog.open) record.dialog.close();
@@ -82,7 +83,7 @@
     }
     function open(dialog, options = {}) {
       if (active || dialog.open) { options.cancel?.(); return false; }
-      const record = { dialog, cancel: options.cancel, trigger: doc.activeElement, listeners: [], styles: {} };
+      const record = { dialog, cancel: options.cancel, review: options.review, trigger: doc.activeElement, listeners: [], styles: {} };
       if (dialog.style) for (const name of properties) record.styles[name] = dialog.style[name] || '';
       active = record;
       if (!position(record, true)) { finish(record, true); return false; }
@@ -103,7 +104,25 @@
       focus?.focus?.({ preventScroll: true });
       return true;
     }
-    const api = { open, close: dialog => { if (active && (!dialog || active.dialog === dialog)) finish(active, false); },
+    function confirmWith(dialog, action, body, options = {}) {
+      if (typeof action !== 'function') throw TypeError('A reviewed action callback is required');
+      // Capture exactly the JSON inputs being reviewed. Later form/object changes
+      // cannot silently change the submitted instruction. No credentials belong here.
+      let reviewed;
+      try { reviewed = body === undefined ? undefined : JSON.parse(JSON.stringify(body)); }
+      catch (_) { options.cancel?.(); return false; }
+      return open(dialog, { ...options, review: () => action(reviewed) });
+    }
+    function confirm(dialog) {
+      if (!active || active.dialog !== dialog || !dialog.open || !active.review) return false;
+      const submit = active.review;
+      // Consume before close/focus/callback: duplicate clicks and reentrant events
+      // cannot submit the reviewed instruction twice. Controllers recheck authority.
+      finish(active, false);
+      submit();
+      return true;
+    }
+    const api = { open, confirmWith, confirm, close: dialog => { if (active && (!dialog || active.dialog === dialog)) finish(active, false); },
       cancel: dialog => { if (active && (!dialog || active.dialog === dialog)) finish(active, true); },
       destroy: () => { if (active) finish(active, true); } };
     instances.set(doc, api);

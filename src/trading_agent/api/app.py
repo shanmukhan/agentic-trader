@@ -84,7 +84,7 @@ def create_app(
             except Exception:
                 engine.faulted = True
                 engine.set_connected(False)
-                logging.getLogger(__name__).error("watchdog failed; entries blocked")
+                logging.getLogger(__name__).exception("watchdog failed; entries blocked")
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
@@ -409,6 +409,31 @@ def create_app(
     @app.get("/api/console", dependencies=[Depends(authorized)])
     def console() -> dict[str, Any]:
         return console_snapshot(engine, clock(), automation)
+
+    @app.get("/api/feed/status", dependencies=[Depends(authorized)])
+    def feed_status() -> dict[str, Any]:
+        """Connection/receipt observations only; no account, ledger scan or readiness work."""
+        from trading_agent.models import stamp, utc
+
+        now = utc(clock())
+        with engine.lock:
+            received = engine.last_tick_received_at if engine.connected else None
+            age = (now - received).total_seconds() if received else None
+            return {
+                "schema_version": 1,
+                "observed_at": stamp(now),
+                "connected": engine.connected,
+                "feed_connected": engine.connected,
+                "faulted": engine.faulted,
+                "last_tick_at": stamp(received) if received else None,
+                "last_tick_ms": int(age * 1000) if age is not None and age >= 0 else None,
+                "last_tick_recent": bool(
+                    engine.connected
+                    and not engine.faulted
+                    and age is not None
+                    and 0 <= age <= engine.settings.max_quote_age_seconds
+                ),
+            }
 
     @app.get("/health")
     def health() -> dict[str, str]:

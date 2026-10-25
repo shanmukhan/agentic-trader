@@ -1,5 +1,38 @@
+/* Consistent feedback; private text is cleared by each controller on Lock. */
 (function () {
   'use strict';
+  function createFeedback(doc, win) {
+    const el = id => doc.getElementById(id);
+    let lastError = '';
+    function notify(text, error = false) {
+      if (typeof text !== 'string' || !text.trim()) return;
+      const bounded = text.slice(0, 1000);
+      if (error && el('error-alert')) el('error-alert').textContent = bounded;
+      if (win.parent && win.parent !== win) win.parent.postMessage({type:'workspace-feedback', path:win.location.pathname, text:bounded, error:error === true}, win.location.origin);
+    }
+    function update() {
+      const message = el('message');
+      const error = message?.classList?.contains('error') ? message.textContent.trim() : '';
+      if (error && error !== lastError) notify(error, true);
+      if (!error && el('error-alert')) el('error-alert').textContent = '';
+      lastError = error;
+    }
+    function setBusy(busy) {
+      const loading = el('loading-state');
+      const main = el('main') || el('private');
+      // Background refreshes preserve content height and avoid repeated live announcements.
+      if (loading) loading.hidden = !busy || main?.hidden === false;
+      main?.setAttribute?.('aria-busy', String(Boolean(busy)));
+    }
+    if (win.MutationObserver && el('message')) new win.MutationObserver(update).observe(el('message'), {childList:true, subtree:true, characterData:true, attributes:true, attributeFilter:['class']});
+    return {notify, setBusy, update};
+  }
+  if (typeof module !== 'undefined' && module.exports) module.exports = {createFeedback};
+  if (typeof window !== 'undefined' && document.getElementById) window.AgenticFeedback = createFeedback(document, window);
+})();
+(function () {
+  'use strict';
+  if (typeof window === 'undefined') return;
   const win = window, doc = document;
   const embedded = win.parent !== win;
   const views = {'/':'dashboard','/desk':'dashboard','/dashboard':'dashboard','/discovery':'discovery','/analysis':'analysis','/strategies':'strategies','/investment-policy':'strategies','/backtesting':'backtesting','/paper':'paper','/holdings':'portfolio','/portfolio':'portfolio','/activity':'history','/console':'risk','/setup':'broker','/settings':'settings','/learn':'learn'};

@@ -1,5 +1,29 @@
 # Phase 4: supervised live-feed paper trading
 
+## Audit follow-up: historical retries and health reads
+
+Historical intraday and daily candle reads now retry HTTP **429** and **503** at most
+three total attempts. Each attempt retains the shared minimum 400 ms request spacing;
+retry waits are one then two seconds. A numeric `Retry-After` can lengthen a wait up to
+30 seconds. A larger numeric request stops this attempt for later operator review;
+invalid/non-numeric values use the bounded exponential delay. Authentication errors,
+redirects, other HTTP failures, malformed successful responses and transport failures
+are not retried. Session-token exchange POSTs are never retried. No request range,
+token, timestamp or candle availability is changed to obtain a successful response.
+
+Exhaustion returns the existing sanitized unavailable error. Inspect the saved
+preparation/download state and session/entitlement, then explicitly retry when ready;
+there is no automatic new setup confirmation, install, connection or mode activation.
+Mock HTTP transport tests verify request identity, pacing, retry limits and error
+redaction. They do not establish broker availability or rate-limit acceptance.
+
+For connection-only monitoring, authenticated `GET /api/feed/status` avoids the
+full console snapshot and any database read. See [its precise timestamp and freshness
+limits](api-contracts.md#lightweight-feed-observation). Empty `stream_tokens` remains a
+valid offline/manual configuration; attempting a feed connection still requires at
+least one reviewed selected instrument. Configured tokens must now be positive integer
+values: booleans, decimal numbers and numeric strings are rejected at config load.
+
 Manual Broker & Data streams now commit complete decoded quote frames together.
 Every accepted quote/audit event and per-quote protection remains; read
 [transaction, read-snapshot and failure behavior](quote-persistence.md). The separate

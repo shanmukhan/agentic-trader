@@ -42,6 +42,21 @@ cumulative fee accounting preserves the brokerage cap for each order.
 
 ## Accounting and exits
 
+Intraday and delivery sell fills share `risk.limits.validate_exit`: requested shares
+must be positive whole integers owned by the account, and the actual execution price
+must be finite and positive. The existing session, fresh quote, displayed liquidity
+and delivery review/fee-cash gates still apply. A stop is a trigger, not a minimum sale
+price; an exit below its stop must remain possible after a price gap. The audit's
+suggested above-stop rule would obstruct protective liquidation and is not used.
+An independent SQLite test sells ten shares after a gap through ₹495 at ₹489.70,
+retaining exact ₹2.11/₹3.15 entry/exit fees and ₹24,889.24 final virtual cash.
+
+The audit follow-up adds 800 deterministic generated sizing cases across intraday and
+delivery fee schedules. An independent exhaustive integer-quantity oracle with exact
+Decimal fees checks allowed quantity, cash/exposure/cap/risk/quantity-limit constraints
+and reservations; exact one-share fee boundaries reject one-paisa shortfalls. These
+are local synthetic checks, not broker contract-note or market acceptance.
+
 Buy cash debit = quantity × fill price + incremental order fees. The same amount
 forms position cost basis. Sell credit = quantity × fill price − incremental fees.
 Realized P&L deducts proportional entry cost basis. The last sale consumes the exact

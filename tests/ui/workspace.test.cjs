@@ -275,3 +275,21 @@ test('first unlocked alert state says checking and countdown updates leave the l
   s.instance.lock();assert.equal(deadline.textContent,'');
  }finally{Date.now=originalNow;}
 });
+test('workspace outcomes require current origin, frame, route and unlock; dismissal and Lock clear private text',async()=>{
+ const s=setup();await s.unlock();
+ const send=extra=>s.events.message({origin:s.win.location.origin,source:s.child,data:{type:'workspace-feedback',path:'/console',text:'Paper exit queued. Await fills.',...extra}});
+ s.events.message({origin:'https://evil.test',source:s.child,data:{type:'workspace-feedback',path:'/console',text:'spoof'}});assert.ok(s.nodes['workspace-toast'].hidden);
+ send({path:'/setup'});assert.ok(s.nodes['workspace-toast'].hidden);send({text:'x'.repeat(1001)});assert.ok(s.nodes['workspace-toast'].hidden);
+ send();assert.equal(s.nodes['workspace-toast'].hidden,false);assert.match(s.nodes['workspace-toast-text'].textContent,/Await fills/);
+ s.nodes['workspace-toast-dismiss'].fire('click');assert.equal(s.nodes['workspace-toast-text'].textContent,'');send({text:'Outcome unknown',error:true});assert.equal(s.nodes['workspace-error-alert'].textContent,'Outcome unknown');
+ s.instance.lock();assert.equal(s.nodes['workspace-error-alert'].textContent,'');assert.equal(s.nodes['workspace-toast-text'].textContent,'');send();assert.ok(s.nodes['workspace-toast'].hidden);
+});
+test('lightweight feed check is authenticated read-only, does not imply readiness, and discards replies after Lock',async()=>{
+ let finish,hold=false;const s=setup(async url=>url==='/api/feed/status'?(hold?new Promise(r=>{finish=r;}):ok({schema_version:1,observed_at:'2026-10-25T05:00:00Z',feed_connected:true,faulted:false,last_tick_ms:300,last_tick_recent:true})):ok(info()));
+ await s.instance.refreshHealth();assert.equal(s.calls.length,0);await s.unlock();await s.instance.refreshHealth();
+ assert.equal(s.calls.at(-1).url,'/api/feed/status');assert.match(s.calls.at(-1).options.headers.Authorization,/Bearer /);assert.match(s.nodes['workspace-feed-health'].textContent,/300 ms ago/);assert.match(s.nodes['workspace-feed-health'].textContent,/readiness require Paper Trading/);
+ hold=true;const pending=s.instance.refreshHealth();const signal=s.calls.at(-1).options.signal;s.instance.lock();assert.equal(signal.aborted,true);finish(ok({schema_version:1,observed_at:'2026-10-25T05:00:00Z',feed_connected:true}));await pending;assert.equal(s.nodes['workspace-feed-health'].textContent,'');assert.equal(s.nodes['workspace-feed-health'].hidden,true);
+});
+test('connected feed does not prompt redundant connection setup when request ownership is absent',async()=>{
+ const s=setup(async()=>ok({...info(),analysis_configured:true,calendar_today:true,feed_requested:false,feed_connected:true}));await s.unlock();assert.equal(s.nodes['workspace-onboarding'].hidden,true);
+});

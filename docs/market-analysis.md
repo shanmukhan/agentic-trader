@@ -175,3 +175,30 @@ With no saved stocks, the selection help now points to Strategies or Broker & Da
 An unmatched search instead offers clearing the search. **Open chart** stays disabled
 while there is no selectable result; clearing the search restores it when saved
 choices exist. Search remains local and sends no request.
+
+## Inspecting charts (25 October 2026)
+
+The candlestick chart now has an inline SMA colour legend and a larger volume panel
+(90 pixels of the 456-pixel base drawing). It keeps at least five drawing pixels per
+candle and uses a keyboard-focusable horizontal scroll region when the screen is
+narrow. Available space determines the date-label count (three to eight); resizing
+redraws the cached series without reading the server or changing indicator history.
+Choose **Latest 50 candles** for a closer view of a dense history.
+
+Use **Inspect a displayed candle** with Left/Right/Home/End, or tap/point at the chart.
+The inspection text and slider's accessible value preserve exact server decimal strings
+for OHLC, volume, RSI, MACD/signal and ATR. The crosshair follows the inspected candle.
+The text is beside the chart rather than a hover-only tooltip, so touch users can read
+it. Lock/page exit clears this evidence and rejects late pointer/read updates.
+
+Enable **RSI panel**, **MACD panel**, or **Close ± ATR 14 envelope** to display the
+saved indicator values. RSI uses the fixed 0–100 scale and labelled 30/70 reference
+levels; MACD shows its line, signal and zero-centred histogram. Missing values and
+explicit segment boundaries break lines. Unavailable panels explain warmup/source
+coverage instead of drawing zero. The ATR envelope uses approximate browser drawing
+coordinates around the saved close; it is neither a forecast nor an executable stop.
+These controls make no request and do not recalculate an indicator. Exact financial
+and research evidence remains in the tables; large coordinate labels use scientific
+notation to stay readable. Invalid coordinates retain the exact table and explain why
+the drawing is unavailable. This change supplies simulated DOM/geometry tests, not
+real-market, broker, physical-touch-device or investment-performance acceptance.

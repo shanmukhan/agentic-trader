@@ -8,6 +8,7 @@ import csv
 import hashlib
 import io
 import json
+import math
 import os
 import struct
 import threading
@@ -26,6 +27,7 @@ _history_next = 0.0
 MAX_STREAM_INSTRUMENTS = 3000
 SUBSCRIPTION_BATCH_SIZE = 500
 FULL_QUOTE_BYTES = 184
+HISTORY_ATTEMPTS = 3
 
 
 def history_slot() -> None:
@@ -88,13 +90,35 @@ class RestrictedKiteHTTP:
             headers["Authorization"] = f"token {self.api_key}:{self.access_token}"
         try:
             with httpx.Client(timeout=10, follow_redirects=False, trust_env=False) as client:
-                response = client.request(
-                    method,
-                    "https://api.kite.trade" + path,
-                    headers=headers,
-                    params=params if method == "GET" else None,
-                    data=params if method == "POST" else None,
-                )
+                historical = (route, method) == ("market.historical", "GET")
+                for attempt in range(HISTORY_ATTEMPTS if historical else 1):
+                    if historical:
+                        history_slot()
+                    response = client.request(
+                        method,
+                        "https://api.kite.trade" + path,
+                        headers=headers,
+                        params=params if method == "GET" else None,
+                        data=params if method == "POST" else None,
+                    )
+                    if (
+                        not historical
+                        or response.status_code not in (429, 503)
+                        or attempt == HISTORY_ATTEMPTS - 1
+                    ):
+                        break
+                    delay = float(2**attempt)
+                    try:
+                        requested = float(response.headers.get("Retry-After", ""))
+                    except ValueError:
+                        requested = 0.0
+                    if math.isfinite(requested) and requested >= 0:
+                        # Respect numeric server delays within the bounded local budget.
+                        # A longer requested wait requires a later operator retry.
+                        if requested > 30:
+                            raise BrokerUnavailable("historical retry delay exceeds budget")
+                        delay = max(delay, requested)
+                    time.sleep(delay)
                 response.raise_for_status()
                 if len(response.content) > 20_000_000:
                     raise BrokerUnavailable("oversized broker response")
@@ -137,7 +161,6 @@ class RestrictedKiteHTTP:
     ) -> list[dict[str, Any]]:
         if continuous or oi:
             raise BrokerUnavailable("derivative data unsupported")
-        history_slot()
         data = self._request(
             "market.historical",
             "GET",

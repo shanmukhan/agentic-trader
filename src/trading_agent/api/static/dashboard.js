@@ -8,7 +8,7 @@
   function createConsole(doc, win, request) {
     const dialogs = createDialogs(doc, win);
     let token = '', generation = 0, busy = false, mutating = false, fresh = false;
-    let controller = null, lastReceipt = 0, latest = null, pendingAction = null, holdingExitButtons = [];
+    let controller = null, lastReceipt = 0, latest = null, holdingExitButtons = [];
     const el = id => doc.getElementById(id);
     const controls = ['kill', 'flatten', 'reset', 'arm', 'disarm'];
     const routes = { kill: '/api/control/kill', flatten: '/api/control/flatten',
@@ -41,6 +41,7 @@
       }
     }
     function buttons() {
+      win.AgenticFeedback?.setBusy(busy || mutating);
       for (const name of controls) el(name).disabled = !token || !latest || mutating;
       for (const button of holdingExitButtons) button.disabled = !token || !latest || mutating;
       el('review-submit').disabled = !token || !latest || mutating || !fresh || latest.account.investment_horizon !== 'long_term';
@@ -53,6 +54,7 @@
     }
     function stale(text) {
       fresh = false;
+      dialogs.cancel(el('confirm'));
       badge('feed', 'Display stale');
       badge('readiness', 'Update required');
       el('valuation').textContent = 'Displayed values are stale estimates';
@@ -65,7 +67,6 @@
       token = ''; fresh = false; latest = null; busy = false; mutating = false; holdingExitButtons = [];
       if (controller) controller.abort();
       controller = null;
-      pendingAction = null;
       dialogs.cancel(el('confirm'));
       el('token').value = ''; el('token').required = true; el('lock').disabled = true;
       for (const id of ['equity', 'cash', 'pnl']) el(id).textContent = '—';
@@ -174,7 +175,7 @@
     }
     async function refresh() {
       if (!token || busy || mutating) return;
-      busy = true;
+      busy = true; buttons();
       const version = generation;
       const active = new AbortController(); controller = active;
       const timeout = win.setTimeout(() => active.abort(), 10000);
@@ -189,11 +190,12 @@
         else stale(error.name === 'AbortError' ? 'Update timed out. Displayed values may be stale.' : error.message);
       } finally {
         win.clearTimeout(timeout);
-        if (version === generation) { busy = false; controller = null; }
+        if (version === generation) { busy = false; controller = null; buttons(); }
       }
     }
     async function action(name, body) {
       if (!token || mutating || !latest) return;
+      dialogs.cancel(el('confirm'));
       if (['arm', 'reset', 'review'].includes(name) && (!fresh || win.Date.now() - lastReceipt > 6000)) {
         stale('Refresh the account before confirming this action.'); return;
       }
@@ -220,7 +222,7 @@
         win.clearTimeout(timeout);
         if (actionVersion === generation) { mutating = false; controller = null; buttons(); }
       }
-      if (generation === version + 1) { await refresh(); if (outcome) message(outcome, outcomeError); }
+      if (generation === version + 1) { await refresh(); if (outcome) {message(outcome, outcomeError); if (!outcomeError) win.AgenticFeedback?.notify(outcome);} }
     }
     el('unlock').addEventListener('submit', event => {
       event.preventDefault();
@@ -231,7 +233,7 @@
     el('lock').addEventListener('click', lock);
     function confirmAction(name, body) {
       if (!token || !latest || mutating || el('confirm').open) return;
-      pendingAction = { name, body };
+      const version = generation;
       el('confirm-title').textContent = name === 'review' ? 'Record ' + (body.no_corporate_action ? 'clear review' : 'persistent quarantine') + ' for ' + body.symbol + '?' : name === 'exit' ? 'Queue full paper exit for ' + body.symbol + '?' :
         name === 'arm' ? 'Arm paper automation?' : 'Reset the kill switch?';
       el('confirm-description').textContent = name === 'review' ?
@@ -239,7 +241,12 @@
         'The entire remaining virtual holding will be queued for sale. This request persists across restarts; fresh reviewed quotes and liquidity are required for fills.' : name === 'arm' ?
         'This permits new virtual entries while all server-side readiness and risk checks pass. Protective exits remain active.' :
         'The server must verify a flat account and eligible risk state. This does not rearm automation.';
-      if (!dialogs.open(el('confirm'), { cancel: () => { pendingAction = null; }, focus: el('cancel-confirm') }))
+      if (!dialogs.confirmWith(el('confirm'), pending => {
+        if (version !== generation || !token || !latest || mutating) {
+          message('Refresh and review the action again before confirming.', true); return;
+        }
+        action(pending.name, pending.body);
+      }, { name, body }, { focus: el('cancel-confirm') }))
         message('The confirmation could not be displayed. Reopen Risk Center and review the action again. Nothing was submitted.', true);
     }
     for (const name of controls) el(name).addEventListener('click', () => {
@@ -252,10 +259,7 @@
         no_corporate_action: el('review-clear').checked, reference: el('review-reference').value.trim() });
     });
     el('cancel-confirm').addEventListener('click', () => dialogs.cancel(el('confirm')));
-    el('confirm-action').addEventListener('click', () => {
-      const pending = pendingAction; pendingAction = null; dialogs.close(el('confirm'));
-      if (pending) action(pending.name, pending.body);
-    });
+    el('confirm-action').addEventListener('click', () => dialogs.confirm(el('confirm')));
     doc.addEventListener('visibilitychange', () => { if (!doc.hidden) refresh(); });
     win.setInterval(() => { if (token && !doc.hidden) refresh(); }, 3000);
     win.setInterval(() => {

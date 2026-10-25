@@ -66,6 +66,7 @@
       states.forEach((text, index) => { el('setup-step-state-' + (index + 1)).textContent = text; });
     }
     function buttons() {
+      win.AgenticFeedback?.setBusy(busy);
       for (const id of actionIds) el(id).disabled = !token || busy;
       el('unlock').disabled = busy;
       if (!token || busy || !latest) return;
@@ -157,6 +158,7 @@
         if (response.status === 401 || response.status === 403) { lock(); message('Use TRADING_OPERATOR_TOKEN from your local .env. Zerodha request/access tokens do not unlock this app.', true); return; }
         if (!response.ok) throw Error(typeof data.detail === 'string' ? data.detail : 'Setup request failed.');
         if (path !== '/login') render(data);
+        if (path) win.AgenticFeedback?.notify('Setup action completed. Review the updated status; no orders were submitted.');
         message(path ? 'Setup action completed. Review the updated status; no orders were submitted.' : 'Setup status updated. All trading safeguards remain active.');
         if (sessionAction) sessionMessage(path === '/login' ? 'Complete login and 2FA in the Zerodha window, then exchange the returned request token here.' : 'Broker session verified successfully. This checks profile access only; connect paper market data in step 6 and check fresh usable quotes separately.');
         else if (path === '/credentials') sessionMessage('App credentials saved. Open Zerodha login to create a new broker session.');

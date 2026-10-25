@@ -1,5 +1,15 @@
 # How to use Agentic Trader
 
+The [25 October audit fixes](audit-2026-10-25-resolution.md) improve chart inspection, portfolio summaries, feedback and recovery. Restart the owning server with `./scripts/start_ui.sh`, reload `/workspace`, and unlock once for all sections.
+
+- In **Stock Analysis**, select saved stock/interval/range, then tap a candle or use the candle slider and arrow keys. Toggle saved RSI, MACD or close ± ATR panels; gaps/warmup remain unavailable.
+- In **Backtesting**, open a completed report for equity/drawdown plots; compare compatible reports for an overlay. Exact tables remain the source evidence.
+- In **Portfolio**, current complete evidence enables allocation/P&L visuals. Stale/incomplete evidence shows why a chart is unavailable. Dashboard signs include exact values and the accounting baseline date.
+- The interface follows system light/dark and reduced-motion preferences. Loading is explicit. Dismiss action feedback after reading its outcome; errors explain recovery. **Alt+R** focuses a proposal review in Paper Trading and never approves it.
+- The shell checks lightweight feed observations every ten seconds while visible/unlocked. A recent tick is not readiness for every stock. Open Paper Trading for per-stock safeguards. Historical reads retry only bounded transient failures; uncertain financial actions still require inspecting saved outcomes before retrying.
+
+See [UI controls and recovery](ui-experience.md), [chart controls](market-analysis.md), [browser reports](browser-backtesting.md), and [remaining source/contract work](ROADMAP.md). Lock clears browser access and private chart/feedback text; it does not stop the server or change its trading mode.
+
 The [24 October issue review](../PROJECT_ISSUES_GAPS_AND_IMPROVEMENTS.md) now distinguishes
 implemented fixes, existing features and remaining product gaps. After updating the
 prepared environment (`uv sync --extra broker --extra dev`), stop and restart the

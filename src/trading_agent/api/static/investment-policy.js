@@ -13,7 +13,7 @@
     };
     let token = '', generation = 0, controller = null, busy = false, pending = null, uncertain = null, reconciled = false, dirty = false, definitions = [], drafts = [], buttons = [], currentGroup = 0, validationShown = false;
     function message(text, error = false) {el('message').textContent = text; el('message').className = error ? 'error' : '';}
-    function controls() {
+    function controls() {win.AgenticFeedback?.setBusy(busy);
       const blocked = !token || busy || Boolean(pending);
       for (const id of ['refresh', 'discard']) el(id).disabled = blocked;
       el('unlock').disabled = busy; el('review').disabled = blocked || !definitions.length || Boolean(uncertain);

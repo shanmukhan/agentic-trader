@@ -1,5 +1,48 @@
 # Implementation plan, enhancements and status
 
+## 25 October 2026 — audit fixes and clearer paper workflows
+
+Reviewed every numbered finding in `PROJECT_AUDIT_2026-10-25.md`; the
+[audit resolution](audit-2026-10-25-resolution.md) distinguishes implemented fixes,
+incorrect absence claims and source/contract-dependent work. Added an owned,
+prioritized [roadmap](ROADMAP.md) without promoting unavailable features to execution.
+
+Analysis adds exact touch/pointer/keyboard inspection, responsive readable candle
+widths, larger volume, date labels, SMA swatches and optional saved RSI/MACD/ATR
+panels. Backtesting draws fresh-only equity/drawdown/compatible-report overlays,
+retaining exact tables and stale gaps. Portfolio adds available-weight allocation
+and fresh complete P&L summaries; decimal/exponent sign/order and numeric rank
+handling retain exact labels. No historical return or prior-close trend is invented.
+
+Consolidated canonical CSS before responsive/theme overrides, added system dark mode,
+reduced-motion loading, named/consistent access forms, static history guidance,
+formatted HTML, assertive error regions and dismissible current-frame action feedback.
+Visible Lock guidance and cleanup retain in-memory access only. Alt+R focuses a
+proposal review without approving. Shared confirmations capture reviewed callbacks
+and revoke them on cancellation/failure/Lock; page-specific authority checks remain.
+
+Backend adds authenticated ledger-free feed observation, committed receipt-age cache,
+bounded historical 429/503 retries, watchdog tracebacks, shared safe sell invariants
+and strict stream identities. Gap-through-stop exits remain allowed. Intraday zero
+and derived delivery fee buffers now serialize consistently as exact decimal strings.
+ML readable reports add descriptive standardized/calibrated coefficients without
+changing strict artifacts, chronological folds, purging or final holdout selection.
+
+Validation: **1,335 Python tests and 232 Node UI tests passed**; **92.06% statement
+coverage** (11,151/12,113), Ruff lint/format, mypy on 125 files, secret-pattern and
+whitespace checks passed. Financial tests use independent SQLite reads/exhaustive
+Decimal oracles, including 800 generated sizing cases, exact gap-exit fees,
+cross-horizon fee-buffer contracts, supervisor loop persistence and ML artifact checks.
+The full run emitted **52 SQLite ResourceWarnings** in existing test paths; resource
+lifecycle remains separately reviewable.
+
+Desktop Firefox verified disposable synthetic Dashboard/Portfolio values and accessible
+visual labels. An independent full SQLite dump stayed unchanged: cash ₹20,495.23,
+three orders/fills/positions, 27 events and no pending orders. Other charts/theme/narrow
+behavior have automated checks; complete rendered dark/narrow/chart interaction and
+physical-device/broker/native-worker acceptance remain open. The fixture server was
+stopped. No user account, broker order or trading-mode change was performed.
+
 ## 24 October 2026 — issue-report reliability fixes
 
 Revalidated `PROJECT_ISSUES_GAPS_AND_IMPROVEMENTS.md` against 0.19.0 rather than its

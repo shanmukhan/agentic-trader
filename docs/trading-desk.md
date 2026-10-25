@@ -387,3 +387,7 @@ Price-gap blockers now explain that the quote lies outside the policy's entry bo
 and require a usable in-bound quote or new reviewed signal. Calendar blockers direct
 you to Strategies for fresh data and a reviewed exchange calendar. Startup and delayed
 authorization outcomes explain the next action without changing any safeguard.
+
+## Keyboard review and persistent feedback
+
+In Paper Trading, Alt+R focuses the first available proposal review button. Enter opens the existing preview; approval still needs explicit confirmation and fresh server risk checks. The shortcut ignores text fields, held key repeats, busy state, active confirmation and Lock. Recorded action feedback stays in the workspace until dismissed, distinguishes acceptance from fills and is cleared on Lock. No key sends approval directly.

@@ -1,52 +1,135 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="color-scheme" content="light"><title>Paper contributions and SIP plans</title>
-<link rel="stylesheet" href="/dashboard.css"><script src="/money.js" defer></script><script src="/dialogs.js" defer></script><script src="/workspace-bridge.js" defer></script><script src="/portfolio.js" defer></script></head>
-<body class="portfolio-page"><a class="skip" href="#main">Skip to contributions</a>
-<header class="masthead"><div><p class="eyebrow">AGENTIC TRADER · PAPER ONLY</p><h1>Purchases &amp; SIP</h1>
-<p class="muted">Purchases, holding additions and reviewed SIP dates · <a href="/console">Risk Management &amp; exits</a></p></div>
-<span id="state" class="badge">Locked</span></header>
-<section class="panel access"><h2>Local operator access</h2><p class="muted">Use TRADING_OPERATOR_TOKEN from your private local .env, not a Zerodha request/access token. It stays in this tab's memory. <a href="/setup">Broker and feed setup →</a></p>
-<form id="access" autocomplete="off"><label for="token" class="sr-only">Operator token</label><input id="token" type="password" autocomplete="off" placeholder="Operator token" required>
-<button id="unlock" type="submit"><svg class="icon" aria-hidden="true" focusable="false" width="20" height="20"><use href="/icons.svg#unlock"/></svg>Unlock / refresh</button><button id="lock" type="button" disabled><svg class="icon" aria-hidden="true" focusable="false" width="20" height="20"><use href="/icons.svg#lock"/></svg>Lock</button></form></section>
-<p id="message" role="status" aria-live="polite">Locked. No private account data loaded.</p>
-<main id="main"><nav class="subnav" aria-label="Paper trading views"><a href="/activity">Orders &amp; history</a><a href="#holdings-heading">Holdings</a><a href="/portfolio" aria-current="page">Purchases &amp; SIP</a><a href="/paper">Proposals &amp; modes</a></nav><section class="metrics" aria-label="Contribution capacity">
-<article class="panel metric"><h2>Available virtual cash</h2><p id="cash" class="amount">—</p><p class="muted">After reservations and delivery fee buffer</p></article>
-<article class="panel metric"><h2>Reserved for purchases</h2><p id="reserved" class="amount">—</p><p class="muted">Plans reserve cash only after an occurrence is confirmed</p></article>
-<article class="panel metric"><h2>Quote and risk state</h2><p id="risk">Locked</p><p id="updated" class="muted">No account data loaded</p></article></section>
-<p class="notice">Each purchase needs fresh reviewed quotes and independent risk approval. Additions keep the holding's existing stop, target and opening identity. A recurring plan does not deposit cash or place automatic orders.</p>
-<section class="panel" aria-labelledby="buy-heading"><h2 id="buy-heading">1. Preview a purchase or addition</h2>
-<p class="muted">Set the maximum total cash debit, including buy fees. Whole-share sizing may use less. For an existing holding, leave protections blank to keep its current levels.</p>
-<form id="purchase" class="review-form"><label>Registered symbol<input id="symbol" required placeholder="NSE:SYMBOL" maxlength="34"></label>
-<label>Maximum virtual cash debit (INR)<input id="budget" required inputmode="decimal" placeholder="1000.00"></label>
-<label>Stop price · new holding only<input id="stop" inputmode="decimal" placeholder="Required for a new holding"></label>
-<label>Target price · new holding only<input id="target" inputmode="decimal" placeholder="Required for a new holding"></label>
-<label>Review reference<input id="reference" required minlength="3" maxlength="300" placeholder="Reason or private review reference"></label>
-<button id="preview-button" type="submit" disabled>Calculate server preview</button><button id="new-purchase" type="button" class="quiet" disabled>Start a different purchase</button></form>
-<p id="intent" class="muted"></p>
-<section id="preview" hidden aria-labelledby="preview-heading"><h3 id="preview-heading">2. Review before confirming</h3><p id="preview-summary"></p><ul id="preview-reasons" class="reasons"></ul>
-<p class="muted">This preview is tied to the quoted prices, holding and available capacity. A changed or expired preview needs another review. Fills require a later quote and can be partial.</p>
-<button id="submit-purchase" disabled>Review and confirm paper purchase</button></section></section>
-<section class="panel" aria-labelledby="plans-heading"><h2 id="plans-heading">Recurring SIP plans</h2>
-<p class="muted">Each due occurrence needs its own preview and confirmation. Missed dates never catch up. Cancelling stops future occurrences and cancels pending plan buys; filled shares stay protected.</p>
-<div id="plans" class="records"><p class="muted">Locked</p></div>
-<details><summary>Create a plan with reviewed exchange dates</summary><form id="plan-form" class="review-form">
-<label>Plan ID<input id="plan-id" required maxlength="100" placeholder="monthly-paper-1"></label><label>Registered symbol<input id="plan-symbol" required placeholder="NSE:SYMBOL"></label>
-<label>Maximum cash per occurrence (INR)<input id="plan-budget" required inputmode="decimal" placeholder="1000.00"></label>
-<label>New holding stop distance (%)<input id="plan-stop" required inputmode="decimal" placeholder="Reviewed percentage"></label><label>New holding target distance (%)<input id="plan-target" required inputmode="decimal" placeholder="Reviewed percentage"></label>
-<label>Reviewed dates · comma separated<input id="plan-dates" required placeholder="2026-11-02, 2026-12-01"></label>
-<label>Schedule and protection review reference<input id="plan-reference" required minlength="3" maxlength="300"></label><button id="save-plan" type="submit" disabled>Review plan</button></form>
-<p class="muted">Use current/future dates explicitly present in the account's sourced calendar. No holiday roll-forward is inferred. New holdings use these percentages; additions retain the holding's existing levels.</p></details></section>
-<section class="panel" aria-labelledby="purchase-orders-heading"><h2 id="purchase-orders-heading">Purchase orders and remaining reservations</h2>
-<p class="muted">Inspect the intent ID after an uncertain response before starting another purchase. Filled shares and the remaining cash reservation are separate.</p>
-<p id="orders-count" class="muted"></p><div id="orders" class="records"><p class="muted">Locked</p></div></section>
-<section class="panel" aria-labelledby="holdings-heading"><h2 id="holdings-heading">Current aggregate holdings</h2>
-<p class="muted">These quantities and pooled costs reflect sales and applied corporate actions. Stops and targets protect the full remaining holding. Use the main safeguards console to queue an exit.</p>
-<div id="holdings" class="records"><p class="muted">Locked</p></div></section>
-<section class="panel" aria-labelledby="lots-heading"><h2 id="lots-heading">Acquisition history</h2>
-<p class="notice">These are original filled purchase lots on their acquisition price basis. They include fees and partial fills. Sales and corporate actions change current aggregate holdings separately. This history does not show current lot ownership or FIFO/tax-lot gains.</p>
-<p id="lots-count" class="muted"></p><div id="lots" class="records"><p class="muted">Locked</p></div></section>
-<details class="panel"><summary>Full returned evidence and current aggregate holdings</summary><pre id="details">Locked</pre></details>
-</main><footer class="muted">Virtual money only · Exact decimal money · IST times · Desktop/mobile browser layout<br>Detailed usage: docs/portfolio-contributions.md</footer>
-<dialog id="confirm" aria-labelledby="confirm-title" aria-describedby="confirm-text"><h2 id="confirm-title"></h2><p id="confirm-text"></p>
-<div class="dialog-actions"><button id="cancel-confirm" class="quiet">Cancel</button><button id="confirm-action">Confirm paper action</button></div></dialog></body></html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <meta name="description" content="Local paper trading workspace: inspect saved evidence, review risk and confirm simulated actions.">
+    <title>Paper contributions and SIP plans</title>
+    <link rel="stylesheet" href="/dashboard.css">
+    <script src="/money.js" defer></script>
+    <script src="/dialogs.js" defer></script>
+    <script src="/workspace-bridge.js" defer></script>
+    <script src="/portfolio.js" defer></script>
+  </head>
+  <body class="portfolio-page">
+    <a class="skip" href="#main">Skip to contributions</a>
+    <header class="masthead">
+      <div>
+        <p class="eyebrow">AGENTIC TRADER · PAPER ONLY</p>
+        <h1>Purchases &amp; SIP</h1>
+        <p class="muted">Purchases, holding additions and reviewed SIP dates · <a href="/console">Risk Management &amp; exits</a></p>
+      </div>
+      <span id="state" class="badge">Locked</span>
+    </header>
+    <section class="panel access" aria-label="Local operator access">
+      <h2>Local operator access</h2>
+      <p class="muted">Use TRADING_OPERATOR_TOKEN from your private local .env, not a Zerodha request/access token. It stays in this tab's memory. <a href="/setup">Broker and feed setup →</a></p>
+      <form id="access" autocomplete="off">
+        <label for="token" class="sr-only">Operator token</label>
+        <input id="token" type="password" autocomplete="off" placeholder="Operator token" required>
+        <button id="unlock" type="submit"><svg class="icon" aria-hidden="true" focusable="false" width="20" height="20"><use href="/icons.svg#unlock"/></svg>Unlock / refresh</button>
+        <button id="lock" type="button" disabled><svg class="icon" aria-hidden="true" focusable="false" width="20" height="20"><use href="/icons.svg#lock"/></svg>Lock</button>
+      </form>
+    </section>
+    <p id="message" role="status" aria-live="polite">Locked. No private account data loaded.</p>
+    <p id="error-alert" role="alert" class="sr-only"></p>
+    <div id="loading-state" class="loading-state" role="status" hidden>Loading the latest saved evidence…<span class="skeleton" aria-hidden="true"></span></div>
+    <main id="main">
+      <nav class="subnav" aria-label="Paper trading views"><a href="/activity">Orders &amp; history</a><a href="#holdings-heading">Holdings</a><a href="/portfolio" aria-current="page">Purchases &amp; SIP</a><a href="/paper">Proposals &amp; modes</a></nav>
+      <section class="metrics" aria-label="Contribution capacity">
+        <article class="panel metric">
+          <h2>Available virtual cash</h2>
+          <p id="cash" class="amount">—</p>
+          <p class="muted">After reservations and delivery fee buffer</p>
+        </article>
+        <article class="panel metric">
+          <h2>Reserved for purchases</h2>
+          <p id="reserved" class="amount">—</p>
+          <p class="muted">Plans reserve cash only after an occurrence is confirmed</p>
+        </article>
+        <article class="panel metric">
+          <h2>Quote and risk state</h2>
+          <p id="risk">Locked</p>
+          <p id="updated" class="muted">No account data loaded</p>
+        </article>
+      </section>
+      <p class="notice">Each purchase needs fresh reviewed quotes and independent risk approval. Additions keep the holding's existing stop, target and opening identity. A recurring plan does not deposit cash or place automatic orders.</p>
+      <section class="panel" aria-labelledby="buy-heading">
+        <h2 id="buy-heading">1. Preview a purchase or addition</h2>
+        <p class="muted">Set the maximum total cash debit, including buy fees. Whole-share sizing may use less. For an existing holding, leave protections blank to keep its current levels.</p>
+        <form id="purchase" class="review-form">
+          <label>Registered symbol<input id="symbol" required placeholder="NSE:SYMBOL" maxlength="34"></label>
+          <label>Maximum virtual cash debit (INR)<input id="budget" required inputmode="decimal" placeholder="1000.00"></label>
+          <label>Stop price · new holding only<input id="stop" inputmode="decimal" placeholder="Required for a new holding"></label>
+          <label>Target price · new holding only<input id="target" inputmode="decimal" placeholder="Required for a new holding"></label>
+          <label>Review reference<input id="reference" required minlength="3" maxlength="300" placeholder="Reason or private review reference"></label>
+          <button id="preview-button" type="submit" disabled>Calculate server preview</button>
+          <button id="new-purchase" type="button" class="quiet" disabled>Start a different purchase</button>
+        </form>
+        <p id="intent" class="muted"></p>
+        <section id="preview" hidden aria-labelledby="preview-heading">
+          <h3 id="preview-heading">2. Review before confirming</h3>
+          <p id="preview-summary"></p>
+          <ul id="preview-reasons" class="reasons"></ul>
+          <p class="muted">This preview is tied to the quoted prices, holding and available capacity. A changed or expired preview needs another review. Fills require a later quote and can be partial.</p>
+          <button id="submit-purchase" disabled>Review and confirm paper purchase</button>
+        </section>
+      </section>
+      <section class="panel" aria-labelledby="plans-heading">
+        <h2 id="plans-heading">Recurring SIP plans</h2>
+        <p class="muted">Each due occurrence needs its own preview and confirmation. Missed dates never catch up. Cancelling stops future occurrences and cancels pending plan buys; filled shares stay protected.</p>
+        <div id="plans" class="records">
+          <p class="muted">Locked</p>
+        </div>
+        <details>
+          <summary>Create a plan with reviewed exchange dates</summary>
+          <form id="plan-form" class="review-form">
+            <label>Plan ID<input id="plan-id" required maxlength="100" placeholder="monthly-paper-1"></label>
+            <label>Registered symbol<input id="plan-symbol" required placeholder="NSE:SYMBOL"></label>
+            <label>Maximum cash per occurrence (INR)<input id="plan-budget" required inputmode="decimal" placeholder="1000.00"></label>
+            <label>New holding stop distance (%)<input id="plan-stop" required inputmode="decimal" placeholder="Reviewed percentage"></label>
+            <label>New holding target distance (%)<input id="plan-target" required inputmode="decimal" placeholder="Reviewed percentage"></label>
+            <label>Reviewed dates · comma separated<input id="plan-dates" required placeholder="2026-11-02, 2026-12-01"></label>
+            <label>Schedule and protection review reference<input id="plan-reference" required minlength="3" maxlength="300"></label>
+            <button id="save-plan" type="submit" disabled>Review plan</button>
+          </form>
+          <p class="muted">Use current/future dates explicitly present in the account's sourced calendar. No holiday roll-forward is inferred. New holdings use these percentages; additions retain the holding's existing levels.</p>
+        </details>
+      </section>
+      <section class="panel" aria-labelledby="purchase-orders-heading">
+        <h2 id="purchase-orders-heading">Purchase orders and remaining reservations</h2>
+        <p class="muted">Inspect the intent ID after an uncertain response before starting another purchase. Filled shares and the remaining cash reservation are separate.</p>
+        <p id="orders-count" class="muted"></p>
+        <div id="orders" class="records">
+          <p class="muted">Locked</p>
+        </div>
+      </section>
+      <section class="panel" aria-labelledby="holdings-heading">
+        <h2 id="holdings-heading">Current aggregate holdings</h2>
+        <p class="muted">These quantities and pooled costs reflect sales and applied corporate actions. Stops and targets protect the full remaining holding. Use the main safeguards console to queue an exit.</p>
+        <div id="holdings" class="records">
+          <p class="muted">Locked</p>
+        </div>
+      </section>
+      <section class="panel" aria-labelledby="lots-heading">
+        <h2 id="lots-heading">Acquisition history</h2>
+        <p class="notice">These are original filled purchase lots on their acquisition price basis. They include fees and partial fills. Sales and corporate actions change current aggregate holdings separately. This history does not show current lot ownership or FIFO/tax-lot gains.</p>
+        <p id="lots-count" class="muted"></p>
+        <div id="lots" class="records">
+          <p class="muted">Locked</p>
+        </div>
+      </section>
+      <details class="panel"><summary>Full returned evidence and current aggregate holdings</summary><pre id="details">Locked</pre></details>
+    </main>
+    <footer class="muted">Virtual money only · Exact decimal money · IST times · Desktop/mobile browser layout<br>Detailed usage: docs/portfolio-contributions.md</footer>
+    <dialog id="confirm" aria-labelledby="confirm-title" aria-describedby="confirm-text">
+      <h2 id="confirm-title"></h2>
+      <p id="confirm-text"></p>
+      <div class="dialog-actions">
+        <button id="cancel-confirm" class="quiet">Cancel</button>
+        <button id="confirm-action">Confirm paper action</button>
+      </div>
+    </dialog>
+  </body>
+</html>

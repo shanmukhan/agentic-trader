@@ -563,3 +563,20 @@ purchase history is derived from filled BUY orders, distinct from current pooled
 holdings. New UI/API share exact money formatting, bearer/origin and stale/lock gates.
 No scheduler, network client, external funding or cross-account allocator is added.
 See [portfolio-contributions.md](portfolio-contributions.md).
+
+## Audit observability and UI refinement (25 October 2026)
+
+`/api/feed/status` authenticates the same operator authority but reads only in-memory
+connection/fault/committed-tick receipt observations under the engine lock. It never
+queries account tables. The visible unlocked shell polls at ten seconds and cannot
+infer per-symbol readiness from a recent tick; financial pages retain their full
+snapshots. Reconnect and rollback never manufacture a fresh tick.
+
+The same-origin workspace bridge shares feedback/loading hooks as well as the existing
+memory-only token handoff. The shell accepts bounded literal feedback only from its
+current frame/path while unlocked and clears it on Lock. Dedicated assertive errors
+and polite statuses remain separate. Shared dialogs consume reviewed callbacks once,
+while controllers retain generation, freshness, acknowledgement and uncertain-outcome
+rules. Canonical CSS precedes responsive/theme overrides. Visuals use approximate SVG
+coordinates with exact server evidence in labels/tables and gaps for missing/stale
+values; they do not add financial calculations or authority. See [audit resolution](audit-2026-10-25-resolution.md).

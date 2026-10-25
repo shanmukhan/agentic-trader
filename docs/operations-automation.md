@@ -27,6 +27,14 @@ notification delivery, encrypted off-device replication, full service relocation
 real broker/device/power-loss acceptance remain separate work. They are not established
 by synthetic tests or a successful local report.
 
+The 25 October audit follow-up adds a three-iteration supervisor integration check
+through the real authenticated ASGI routes and a real SQLite account. It exercises
+identity validation, the independent ledger audit, durable daily/report/alert state,
+feed-disconnect detection, recovery and transition deduplication. Independent SQL
+reads confirm exact cash and unchanged financial rows. Only the HTTP transport and
+timer are replaced; this is local simulated evidence, not operating-system process,
+network, broker, service-manager or notification-device acceptance.
+
 ## Generate one daily report
 
 Start the intended UI service first. In another terminal at the repository root,

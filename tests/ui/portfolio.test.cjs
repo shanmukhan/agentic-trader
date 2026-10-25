@@ -72,3 +72,18 @@ test('unknown outcomes stop retries and structured validation errors stay readab
  const invalid=setup(async url=>url.endsWith('/preview')?{ok:false,status:422,json:async()=>({detail:[{loc:['body','budget'],msg:'Invalid decimal'}]})}:ok(data()));await invalid.unlock();await invalid.preview();assert.match(invalid.nodes.message.textContent,/budget: Invalid decimal/);
 
 });
+test('refreshing revokes a purchase review before replacing account evidence',async()=>{
+ let resolve,hold=false;
+ const s=setup(async url=>url.endsWith('/preview')?ok(proposal):hold?new Promise(done=>{resolve=done;}):ok(data()));
+ await s.unlock();await s.preview();s.nodes['submit-purchase'].fire('click');assert.equal(s.nodes.confirm.open,true);
+ hold=true;const refreshed=s.instance.refresh();assert.equal(s.nodes.confirm.open,false);
+ s.nodes['confirm-action'].fire('click');assert.equal(s.calls.filter(c=>c.url.endsWith('/contributions')).length,0);
+ resolve(ok(data()));await refreshed;s.nodes['confirm-action'].fire('click');await flush();
+ assert.equal(s.calls.filter(c=>c.url.endsWith('/contributions')).length,0);
+});
+test('changing reviewed purchase fields revokes its pending confirmation',async()=>{
+ const s=setup(async url=>ok(url.endsWith('/preview')?proposal:data()));await s.unlock();await s.preview();
+ s.nodes['submit-purchase'].fire('click');s.nodes.budget.value='9000';s.nodes.budget.fire('input');
+ assert.equal(s.nodes.confirm.open,false);s.nodes['confirm-action'].fire('click');await flush();
+ assert.equal(s.calls.filter(c=>c.url.endsWith('/contributions')).length,0);assert.equal(s.nodes.preview.hidden,true);
+});

@@ -115,3 +115,7 @@ quotes, reservations, exclusions, flow gates, month boundaries and daily paths. 
 read tests must independently compare persisted ledger values and prove account/mode
 invariance. Those are synthetic/local evidence; rendered device acceptance, real-source
 coverage, long-running daily-cut capture and profitable strategy acceptance remain open.
+
+## Current portfolio visual summaries (25 October 2026)
+
+Open `/workspace#portfolio` and unlock, then refresh saved status. Available current cash/held-share weights draw an allocation ring with exact server percentages beside the existing exact table. Estimates exclude the documented claims and keep reservations/buffers separate. Fresh complete held evidence draws P&L bars sorted by exact server values, with explicit Gain/Loss text. Numeric conversion is used only for display geometry; monetary labels and sorting preserve source precision, including exponent notation. Stale, incomplete or truncated P&L evidence disables its plot; unavailable/invalid allocation cannot draw a ring. Refresh after resolving evidence gaps; Lock removes all private plot text. No target allocation, rebalance, benchmark or historical return curve is inferred. See [remaining contracts](ROADMAP.md).

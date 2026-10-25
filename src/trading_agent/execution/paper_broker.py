@@ -15,7 +15,7 @@ from trading_agent.execution.long_term import LongTermBook
 from trading_agent.market_data.calendar import IST, SessionCalendar
 from trading_agent.models import Candidate, Instrument, Quote, RiskDecision, stamp, utc
 from trading_agent.persistence.database import Database
-from trading_agent.risk.limits import size
+from trading_agent.risk.limits import size, validate_exit
 from trading_agent.risk.policy import policy_fingerprint
 from trading_agent.settings import Settings
 
@@ -70,6 +70,7 @@ class PaperBroker:
         self.long_term = LongTermBook(self) if settings.investment_horizon == "long_term" else None
         self.lock = threading.RLock()
         self.connected = False  # explicitly NOT restored; reconnect must provide fresh data
+        self.last_tick_received_at: datetime | None = None
         self.faulted = False
         self.bad_symbols: set[str] = set()
         self.seen_symbols: set[str] = set()
@@ -144,6 +145,7 @@ class PaperBroker:
         with self.lock:
             if not connected or connected != self.connected:
                 self.seen_symbols.clear()
+                self.last_tick_received_at = None
             self.connected = connected
 
     def invalidate_quote(self, symbol: str) -> None:
@@ -240,6 +242,9 @@ class PaperBroker:
             "cash": str(cash),
             "reserved_cash": str(reserved),
             "available_cash": str(cash - reserved),
+            # Intraday has no delivery DP reserve; its known zero is still money.
+            # LongTermBook.decorate replaces this with the derived delivery reserve.
+            "delivery_fee_buffer": "0",
             "equity": str(equity),
             "positions": positions,
             "exposure": str(exposure + pending_exposure),
@@ -716,7 +721,21 @@ class PaperBroker:
                             raise ValueError("quote batch clock moved backward")
                         now = observed
                         accepted.append(self._ingest(tx, quote, now))
-                    return accepted
+                # Publish observation time only after the complete frame has committed.
+                # Unchanged repeats and rejected/rolled-back frames cannot renew it.
+                received = [
+                    quote.received_time
+                    for quote, valid in zip(quotes, accepted, strict=True)
+                    if valid
+                ]
+                if received and self.connected:
+                    self.last_tick_received_at = max(
+                        [
+                            *received,
+                            *([self.last_tick_received_at] if self.last_tick_received_at else []),
+                        ]
+                    )
+                return accepted
             except BaseException as exc:
                 self.seen_symbols, self.bad_symbols = seen, bad
                 for quote in quotes:
@@ -877,6 +896,13 @@ class PaperBroker:
     def _fill(
         self, tx: sqlite3.Connection, order: sqlite3.Row, qty: int, price: Decimal, now: datetime
     ) -> None:
+        position = tx.execute(
+            "SELECT * FROM positions WHERE symbol=?", (order["symbol"],)
+        ).fetchone()
+        if order["side"] == "SELL":
+            validate_exit(
+                quantity=qty, held_quantity=position["quantity"] if position else 0, price=price
+            )
         turnover = D(order["turnover"]) + price * qty
         fees_total = (
             self.long_term.order_fees(tx, order, turnover, now, record=True)
@@ -885,9 +911,6 @@ class PaperBroker:
         )
         fee = fees_total - D(order["fees"])
         cash = D(self.db.get(tx, "cash"))
-        position = tx.execute(
-            "SELECT * FROM positions WHERE symbol=?", (order["symbol"],)
-        ).fetchone()
         if order["side"] == "BUY":
             cash -= price * qty + fee
             cost = price * qty + fee + (D(position["cost"]) if position else D(0))

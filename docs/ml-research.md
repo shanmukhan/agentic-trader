@@ -174,6 +174,25 @@ baseline, ten reliability bins, expected calibration error (ECE), threshold-sele
 count and selected net counterfactual P&L. ECE is a bin-dependent diagnostic, not a
 guarantee that probabilities are reliable on future markets.
 
+New `ml-train` and `ml-demo` runs also put a **Final model coefficients** table in
+`validation.md`. It names all twelve features in model order and shows the training
+mean/scale, standardized base coefficient and coefficient multiplied by the final
+calibration slope. Positive/negative signs describe the fitted model's direction
+with other inputs held fixed; correlated features can share or reverse coefficients.
+These values are descriptive model diagnostics, not causal importance, profitability
+guarantees or permission to trade. Table values are rounded to twelve significant
+digits; inspect `model.json` for full precision and intercepts. Existing artifacts
+remain readable and need no migration. Failed fitting still aborts before a completion
+manifest; a coefficient table does not override failed validation gates.
+
+The 25 October audit's claim that this pipeline uses only one split was incorrect:
+the predeclared expanding walk-forward folds, separate calibration, interval purge,
+embargo and final frozen holdout described above already run. Random k-fold validation
+or automatic hyperparameter search is not added, because it would change the causal
+experiment and acceptance policy. Functional tests run labeling, sample export,
+training, verified artifact loading and scored replay on invented data, and assert
+finite probabilities within [0, 1]; they do not establish market acceptance.
+
 Every fold and final holdout must meet all predeclared gates: enough samples and
 both classes, ROC-AUC ≥0.55, Brier strictly better than the training-only constant
 baseline, ECE ≤0.15, at least ten threshold-selected samples and positive selected

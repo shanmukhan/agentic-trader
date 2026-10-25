@@ -1,5 +1,30 @@
 # Operator API and command contracts
 
+## Lightweight feed observation
+
+`GET /api/feed/status` requires the operator bearer token and returns a no-store
+schema-1 observation: `observed_at`, `connected` / `feed_connected` (the same transport
+flag), `faulted`, `last_tick_at`, `last_tick_ms` and `last_tick_recent`. It reads only
+engine memory under the engine lock; it does not read the ledger, build valuations,
+check entry readiness, tick automation or write account state.
+
+The tick timestamp is the latest receipt time of an accepted quote in a committed
+frame during the current connection. Restart, disconnect and reconnect clear it.
+Unchanged repeats, rejected quotes and rolled-back frames do not renew it. Age is a
+nonnegative integer number of milliseconds, or null before a quote/when the clock
+precedes that receipt. `last_tick_recent` also requires connection, no runtime fault
+and age within configured `max_quote_age_seconds`. One recent tick is not proof of
+freshness for every holding/subscription, a reviewed basis, an open session or trading
+authority. Use `/api/console` / desk readiness for those checks. No credentials,
+positions, orders or financial values are returned. Unauthorized requests are 401;
+unconfigured operator controls are 503.
+
+Expected HTTP errors retain FastAPI's existing handlers: authentication/origin
+rejections, missing routes and malformed/invalid request bodies do not fault or
+disconnect the engine. Unexpected internal exceptions still latch the runtime fault,
+disconnect and return a sanitized 503. Watchdog failures include a traceback in local
+server logs; inspect the cause and verify account state before restarting.
+
 ## Daily operations evidence and acquisition
 
 `GET /api/operations` requires the existing operator bearer token and returns schema-1

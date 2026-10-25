@@ -14,13 +14,14 @@ const indicatorDefinitions=[
 function createAnalysis(doc,win,fetcher){
  const el=id=>doc.getElementById(id),node=(tag,text)=>{const n=doc.createElement(tag);if(text!==undefined)n.textContent=String(text);return n;};
  const svgNode=(tag,attrs,text)=>{const n=doc.createElementNS(SVG,tag);for(const [key,value]of Object.entries(attrs))n.setAttribute(key,String(value));if(text!==undefined)n.textContent=String(text);return n;};
- let token='',generation=0,active=null,busy=false,latest=null,options=[],lastReceipt=0;
+ let token='',generation=0,active=null,busy=false,latest=null,options=[],lastReceipt=0,inspectCandle=null,chartWidth=0;
  const clock=()=>win.Date?win.Date.now():Date.now();
  const date=value=>value?new Date(value).toLocaleString('en-IN',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}):'—';
  const friendly=value=>String(value||'').toLowerCase().replaceAll('_',' ');
- function controls(){for(const id of ['stock','timeframe','open-chart','refresh','stock-search'])el(id).disabled=!token||busy;el('chart-range').disabled=!token||busy||!latest;el('unlock').disabled=busy;el('open-chart').disabled=!token||busy||!el('stock').children.length;}
+ function controls(){win.AgenticFeedback?.setBusy(busy);for(const id of ['stock','timeframe','open-chart','refresh','stock-search'])el(id).disabled=!token||busy;for(const id of ['chart-range','show-rsi','show-macd','show-atr'])el(id).disabled=!token||busy||!latest;el('candle-inspector').disabled=!token||busy||!inspectCandle;el('unlock').disabled=busy;el('open-chart').disabled=!token||busy||!el('stock').children.length;}
  function lock(){
-  if(win.AgenticNavigation)win.AgenticNavigation.locked();generation++;active?.abort();active=null;token='';busy=false;latest=null;options=[];lastReceipt=0;
+  if(win.AgenticNavigation)win.AgenticNavigation.locked();generation++;active?.abort();active=null;token='';busy=false;latest=null;options=[];lastReceipt=0;inspectCandle=null;chartWidth=0;
+  el('candle-inspector').value='0';el('candle-inspector').max='0';el('candle-inspector').setAttribute('aria-valuetext','');el('chart-inspection').textContent='';for(const id of ['show-rsi','show-macd','show-atr'])el(id).checked=false;
   el('token').value='';el('token').required=true;el('lock').disabled=true;el('main').hidden=true;el('stock-search').value='';el('timeframe').value='1d';el('chart-range').value='all';
   for(const id of ['stock','price-chart','screen-metrics','candle-data','limitations','research-indicators','indicator-data','partial-periods','research-explanations'])el(id).replaceChildren();
   for(const id of ['last-price','quote-state','screen-state','session-state'])el(id).textContent='—';
@@ -37,33 +38,64 @@ function createAnalysis(doc,win,fetcher){
   el('stock-help').textContent=filtered.length?filtered.length+' saved stocks match. Select Open chart to view a result. Charts never download data or change subscriptions.':options.length?'No saved stocks match this search. Clear the search to see all available stocks.':'No saved stocks are available. Prepare reviewed history in Strategies or select stocks in Broker & Data, then refresh.';controls();
  }
  function chart(bars,symbol,timeframe){
-  el('price-chart').replaceChildren();if(!bars.length){el('price-chart').append(node('p','No chart is drawn until real completed candles are available.'));return;}
+  el('price-chart').replaceChildren();inspectCandle=null;el('chart-inspection').textContent='';el('candle-inspector').setAttribute('aria-valuetext','');el('candle-inspector').value='0';el('candle-inspector').max='0';el('candle-inspector').disabled=true;
+  if(!bars.length){el('candle-inspector').disabled=true;el('price-chart').append(node('p','No chart is drawn until real completed candles are available.'));return;}
   const optional=value=>value===null||value===undefined||value===''?null:Number(value);
-  const numeric=bars.map(b=>({open:Number(b.open),high:Number(b.high),low:Number(b.low),close:Number(b.close),volume:Number(b.volume),sma20:optional(b.sma20),sma50:optional(b.sma50),sma200:optional(b.sma200)}));
-  const values=numeric.flatMap(b=>[b.high,b.low,...[b.sma20,b.sma50,b.sma200].filter(v=>v!==null)]);
-  if(!values.every(Number.isFinite)||!numeric.every(b=>Number.isFinite(b.volume)&&b.volume>=0)){el('price-chart').append(node('p','Chart coordinates could not be rendered. Inspect the exact saved candle table below.'));return;}
-  const W=920,H=420,L=68,R=20,T=20,P=286,V=370,B=400,width=W-L-R,step=width/bars.length;
+  const numeric=bars.map(b=>Object.fromEntries(['open','high','low','close','volume','sma20','sma50','sma200','atr14','rsi14','macd','macd_signal','macd_histogram'].map(key=>[key,optional(b[key])])));
+  const atr=el('show-atr').checked,rsi=el('show-rsi').checked,macd=el('show-macd').checked;
+  const values=numeric.flatMap(b=>[b.high,b.low,...[b.sma20,b.sma50,b.sma200].filter(v=>v!==null),...(atr&&b.atr14!==null?[b.close-b.atr14,b.close+b.atr14]:[])]);
+  if(!values.every(v=>v!==null&&Number.isFinite(v))||!numeric.every(b=>['open','close','volume'].every(key=>b[key]!==null&&Number.isFinite(b[key]))&&b.volume>=0)){el('price-chart').append(node('p','Chart coordinates could not be rendered. Inspect the exact saved candle table below.'));return;}
+  // Preserve readable candle widths on small screens; horizontal scrolling keeps all returned evidence.
+  chartWidth=Math.round(el('price-chart').clientWidth||920);
+  const W=Math.max(520,chartWidth,bars.length*5+88),L=68,R=20,T=46,P=286,VT=326,V=416;
+  const panels=(rsi?1:0)+(macd?1:0),H=456+panels*130,width=W-L-R,step=width/bars.length;
   let min=Math.min(...values),max=Math.max(...values);const pad=(max-min)*.08||Math.abs(max)*.005||1;min-=pad;max+=pad;
   const y=value=>T+(max-value)/(max-min)*(P-T),x=index=>L+(index+.5)*step,maxVolume=Math.max(...numeric.map(b=>b.volume),1);
-  const svg=svgNode('svg',{viewBox:'0 0 '+W+' '+H,role:'img','aria-labelledby':'price-chart-title price-chart-description',width:'100%'});
+  const svg=svgNode('svg',{viewBox:'0 0 '+W+' '+H,role:'img','aria-labelledby':'price-chart-title price-chart-description',width:W,class:'candle-chart'});
   svg.append(svgNode('title',{id:'price-chart-title'},symbol+' '+timeframe+' saved candlestick chart'));
-  svg.append(svgNode('desc',{id:'price-chart-description'},bars.length+' completed candles with available SMA 20, SMA 50, SMA 200 and volume. Exact OHLC, volume and averages are in the accessible data tables below. Moving-average lines break at missing intervals and explicit segment boundaries.'));
-  for(let line=0;line<=4;line++){const value=min+(max-min)*line/4,yy=y(value);svg.append(svgNode('line',{x1:L,y1:yy,x2:W-R,y2:yy,class:'chart-grid'}));svg.append(svgNode('text',{x:L-9,y:yy+4,'text-anchor':'end',class:'chart-label'},value.toLocaleString('en-IN',{maximumFractionDigits:2})));}
-  svg.append(svgNode('text',{x:L,y:P+25,class:'chart-label'},'VOLUME'));
+  svg.append(svgNode('desc',{id:'price-chart-description'},bars.length+' completed candles with available SMA 20, SMA 50, SMA 200 and volume. Exact OHLC, volume and averages are in the accessible data tables below. Moving-average lines break at missing intervals and explicit segment boundaries. Use the candle slider for keyboard inspection or tap a candle. Optional panels use only saved indicators; unavailable values remain gaps.'));
+  for(const [i,label,cls]of [[0,'SMA 20','indicator-line'],[1,'SMA 50','indicator-line indicator-long'],[2,'SMA 200','indicator-line indicator-longest']]){const xx=L+i*125;svg.append(svgNode('line',{x1:xx,y1:18,x2:xx+24,y2:18,class:cls}));svg.append(svgNode('text',{x:xx+30,y:22,class:'chart-label'},label));}
+  for(let line=0;line<=4;line++){const value=min+(max-min)*line/4,yy=y(value);svg.append(svgNode('line',{x1:L,y1:yy,x2:W-R,y2:yy,class:'chart-grid'}));svg.append(svgNode('text',{x:L-9,y:yy+4,'text-anchor':'end',class:'chart-label'},(Math.abs(value)>=1e7?value.toExponential(2):value.toLocaleString('en-IN',{maximumFractionDigits:2}))));}
+  svg.append(svgNode('text',{x:L,y:VT-10,class:'chart-label'},'VOLUME · saved share units'));
   for(let i=0;i<bars.length;i++){
-   const b=numeric[i],xx=x(i),bw=Math.max(.8,Math.min(11,step*.65)),cls=b.close>=b.open?'candle-up':'candle-down';
+   const b=numeric[i],xx=x(i),bw=Math.max(1,Math.min(11,step*.65)),cls=b.close>=b.open?'candle-up':'candle-down';
    const g=svgNode('g',{});g.append(svgNode('title',{},date(bars[i].time)+' IST · O '+bars[i].open+' H '+bars[i].high+' L '+bars[i].low+' C '+bars[i].close+' · volume '+bars[i].volume));
    g.append(svgNode('line',{x1:xx,y1:y(b.high),x2:xx,y2:y(b.low),class:cls}));
    g.append(svgNode('rect',{x:xx-bw/2,y:Math.min(y(b.open),y(b.close)),width:bw,height:Math.max(1,Math.abs(y(b.open)-y(b.close))),class:cls}));
-   g.append(svgNode('rect',{x:xx-bw/2,y:V-b.volume/maxVolume*45,width:bw,height:b.volume/maxVolume*45,class:'volume-bar'}));svg.append(g);
+   g.append(svgNode('rect',{x:xx-bw/2,y:V-b.volume/maxVolume*(V-VT),width:bw,height:b.volume/maxVolume*(V-VT),class:'volume-bar'}));svg.append(g);
   }
-  for(const [key,cls]of [['sma20','indicator-line'],['sma50','indicator-line indicator-long'],['sma200','indicator-line indicator-longest']]){
-   let points=[];const flush=()=>{if(points.length>1)svg.append(svgNode('polyline',{points:points.join(' '),class:cls,fill:'none'}));points=[];};
-   numeric.forEach((b,i)=>{if(bars[i].segment_break)flush();if(b[key]===null)flush();else points.push(x(i)+','+y(b[key]));});flush();
+  function line(key,cls,scale,transform=b=>b[key]){
+   let points=[];const flush=()=>{if(points.length>1)svg.append(svgNode('polyline',{points:points.join(' '),class:cls,fill:'none'}));else if(points.length){const [cx,cy]=points[0].split(',');svg.append(svgNode('circle',{cx,cy,r:2,class:cls}));}points=[];};
+   numeric.forEach((b,i)=>{if(bars[i].segment_break)flush();const value=transform(b);if(value===null||!Number.isFinite(value))flush();else points.push(x(i)+','+scale(value));});flush();
   }
-  const indices=[...new Set([0,Math.floor((bars.length-1)/2),bars.length-1])];
-  for(const i of indices)svg.append(svgNode('text',{x:x(i),y:B,'text-anchor':i===0?'start':i===bars.length-1?'end':'middle',class:'chart-label'},['1d','1w','1mo'].includes(timeframe)?bars[i].session:date(bars[i].time)));
-  el('price-chart').append(svg);
+  for(const [key,cls]of [['sma20','indicator-line'],['sma50','indicator-line indicator-long'],['sma200','indicator-line indicator-longest']])line(key,cls,y);
+  if(atr)for(const sign of [-1,1])line('atr14','chart-atr',y,b=>b.atr14===null?null:b.close+sign*b.atr14);
+  let panelTop=456;
+  if(rsi){
+   const yy=value=>panelTop+95-value/100*80;
+   svg.append(svgNode('text',{x:L,y:panelTop+5,class:'chart-label'},'RSI 14 · 0–100 · reference levels 30 / 70'));
+   for(const value of [0,30,70,100]){svg.append(svgNode('line',{x1:L,y1:yy(value),x2:W-R,y2:yy(value),class:'chart-grid'}));svg.append(svgNode('text',{x:L-9,y:yy(value)+4,'text-anchor':'end',class:'chart-label'},value));}
+   line('rsi14','chart-rsi',yy);if(!numeric.some(b=>b.rsi14!==null&&Number.isFinite(b.rsi14)))svg.append(svgNode('text',{x:L+8,y:panelTop+52,class:'chart-label'},'RSI unavailable: inspect warmup and source coverage below.'));panelTop+=130;
+  }
+  if(macd){
+   const mv=numeric.flatMap(b=>[b.macd,b.macd_signal,b.macd_histogram]).filter(v=>v!==null&&Number.isFinite(v)),bound=Math.max(...mv.map(Math.abs),.000001),yy=value=>panelTop+57-value/bound*40;
+   svg.append(svgNode('text',{x:L,y:panelTop+5,class:'chart-label'},'MACD · blue line / amber signal / histogram bars'));
+   svg.append(svgNode('line',{x1:L,y1:yy(0),x2:W-R,y2:yy(0),class:'chart-grid'}));
+   for(const value of [-bound,0,bound])svg.append(svgNode('text',{x:L-9,y:yy(value)+4,'text-anchor':'end',class:'chart-label'},value.toLocaleString('en-IN',{maximumSignificantDigits:4})));
+   numeric.forEach((b,i)=>{if(b.macd_histogram!==null&&Number.isFinite(b.macd_histogram))svg.append(svgNode('rect',{x:x(i)-Math.min(8,step*.65)/2,y:Math.min(yy(0),yy(b.macd_histogram)),width:Math.min(8,step*.65),height:Math.abs(yy(b.macd_histogram)-yy(0)),class:'chart-histogram'}));});
+   line('macd','chart-macd',yy);line('macd_signal','chart-macd-signal',yy);if(!mv.length)svg.append(svgNode('text',{x:L+8,y:panelTop+80,class:'chart-label'},'MACD unavailable: inspect warmup and source coverage below.'));
+  }
+  const count=Math.min(bars.length,Math.max(3,Math.min(8,Math.floor(width/130)))),indices=[...new Set(Array.from({length:count},(_,i)=>Math.round(i*(bars.length-1)/Math.max(1,count-1))))];
+  for(const i of indices)svg.append(svgNode('text',{x:x(i),y:440,'text-anchor':i===0?'start':i===bars.length-1?'end':'middle',class:'chart-label'},['1d','1w','1mo'].includes(timeframe)?bars[i].session:date(bars[i].time)));
+  const crosshair=svgNode('line',{x1:x(bars.length-1),y1:T,x2:x(bars.length-1),y2:H-12,class:'chart-crosshair'});svg.append(crosshair);
+  inspectCandle=index=>{
+   const i=Math.max(0,Math.min(bars.length-1,Math.round(Number(index)||0))),b=bars[i],detail=date(b.time)+' IST · Open '+b.open+' · High '+b.high+' · Low '+b.low+' · Close '+b.close+' · Volume '+b.volume+' · RSI 14 '+(b.rsi14??'unavailable')+' · MACD '+(b.macd??'unavailable')+' · Signal '+(b.macd_signal??'unavailable')+' · ATR 14 '+(b.atr14??'unavailable');
+   el('chart-inspection').textContent=detail;el('candle-inspector').value=String(i);el('candle-inspector').setAttribute('aria-valuetext','Candle '+(i+1)+' of '+bars.length+'. '+detail);crosshair.setAttribute('x1',x(i));crosshair.setAttribute('x2',x(i));
+  };
+  const hit=svgNode('rect',{x:L,y:T,width,height:H-T-12,class:'chart-hit-area','aria-hidden':'true'});
+  const point=event=>{if(!token||!Number.isFinite(event.clientX)||!svg.getBoundingClientRect)return;const rect=svg.getBoundingClientRect();if(rect.width)inspectCandle(((event.clientX-rect.left)/rect.width*W-L)/step-.5);};
+  hit.addEventListener('pointerdown',point);hit.addEventListener('pointermove',event=>{if(event.pointerType!=='touch')point(event);});svg.append(hit);
+  el('candle-inspector').min='0';el('candle-inspector').max=String(bars.length-1);el('candle-inspector').disabled=false;el('price-chart').append(svg);inspectCandle(bars.length-1);
  }
  function renderResearch(data){
   const research=data.research,states=research?.indicator_status||{},last=data.bars.at(-1),basis=research?.basis||data.source?.price_basis||'Basis not recorded';
@@ -142,7 +174,10 @@ function createAnalysis(doc,win,fetcher){
  el('access').addEventListener('submit',event=>{event.preventDefault();const supplied=el('token').value;if(supplied){lock();token=supplied;el('token').required=false;el('lock').disabled=false;}refresh();});
  el('lock').addEventListener('click',lock);el('open-chart').addEventListener('click',refresh);el('refresh').addEventListener('click',refresh);el('stock').addEventListener('change',refresh);el('timeframe').addEventListener('change',refresh);
  el('stock-search').addEventListener('input',()=>{stockOptions(latest?.symbol);});
+ el('candle-inspector').addEventListener('input',()=>{if(token&&!busy&&inspectCandle)inspectCandle(el('candle-inspector').value);});
+ for(const id of ['show-rsi','show-macd','show-atr'])el(id).addEventListener('change',()=>{if(token&&!busy&&latest){const limit=Number(el('chart-range').value);chart(limit?latest.bars.slice(-limit):latest.bars,latest.symbol,latest.timeframe);}});
  el('chart-range').addEventListener('change',()=>{if(token&&!busy&&latest){renderChart(latest);if(win.AgenticNavigation?.updated)win.AgenticNavigation.updated();}});
+ if(win.ResizeObserver)new win.ResizeObserver(()=>{if(token&&!busy&&latest&&Math.round(el('price-chart').clientWidth||920)!==chartWidth){const limit=Number(el('chart-range').value);chart(limit?latest.bars.slice(-limit):latest.bars,latest.symbol,latest.timeframe);}}).observe(el('price-chart'));
  if(win.addEventListener)win.addEventListener('pagehide',lock);
  if(win.setInterval)win.setInterval(()=>{if(token&&latest&&clock()-lastReceipt>6000){el('state').textContent='Display stale · refresh required';el('quote-state').textContent='Snapshot stale';el('quote-time').textContent=(latest.quote?.exchange_time?'Exchange '+date(latest.quote.exchange_time)+' IST. ':'')+'Snapshot stale; refresh to check current quote usability.';}},1000);
  lock();return{refresh,lock,canNavigate:()=>!busy};

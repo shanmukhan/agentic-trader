@@ -6,21 +6,22 @@ const createDialogs=typeof module!=='undefined'&&module.exports?require('./dialo
 function createPortfolio(doc,win,fetcher){
  const dialogs=createDialogs(doc,win);
  const el=id=>doc.getElementById(id), base='/api/paper/portfolio';
- let token='',generation=0,active=null,busy=false,latest=null,lastReceipt=0,review=null,pending=null,request=null,submitted=false,dynamic=[];
+ let token='',generation=0,active=null,busy=false,latest=null,lastReceipt=0,review=null,request=null,submitted=false,dynamic=[];
  const fields=['symbol','budget','stop','target','reference'];
  const msg=(value,error=false)=>{el('message').textContent=value;el('message').className=error?'error':'';};
  const node=(tag,text)=>{const n=doc.createElement(tag);n.textContent=text;return n;};
  const fresh=()=>latest&&lastReceipt>0&&win.Date.now()-lastReceipt<=6000;
  function buttons(){
+      win.AgenticFeedback?.setBusy(busy);
   const disabled=!token||!latest||busy||!fresh();
   for(const id of ['preview-button','save-plan','new-purchase'])el(id).disabled=disabled;
   for(const b of dynamic)b.disabled=disabled;
   el('submit-purchase').disabled=disabled||!review?.decision.allowed||submitted;
  }
- function clearPreview(){review=null;el('preview').hidden=true;el('preview-summary').textContent='';el('preview-reasons').replaceChildren();buttons();}
+ function clearPreview(){dialogs.cancel(el('confirm'));review=null;el('preview').hidden=true;el('preview-summary').textContent='';el('preview-reasons').replaceChildren();buttons();}
  function lock(){
   if(win.AgenticNavigation)win.AgenticNavigation.locked();
-  generation++;active?.abort();active=null;token='';latest=null;request=null;review=null;pending=null;submitted=false;busy=false;dynamic=[];
+  generation++;active?.abort();active=null;token='';latest=null;request=null;review=null;submitted=false;busy=false;dynamic=[];
   el('token').value='';el('lock').disabled=true;el('token').required=true;
   dialogs.cancel(el('confirm'));
   for(const id of [...fields,'plan-id','plan-symbol','plan-budget','plan-stop','plan-target','plan-dates','plan-reference'])el(id).value='';
@@ -37,6 +38,7 @@ function createPortfolio(doc,win,fetcher){
  }
  async function operation(path,body,success){
   if(!token||busy)return;
+  dialogs.cancel(el('confirm'));
   const version=++generation;active?.abort();const controller=new AbortController();active=controller;busy=true;buttons();
   const timeout=win.setTimeout(()=>controller.abort(),10000);
   try{const data=await call(path,body?'POST':'GET',body,controller.signal);if(version===generation)success(data);}
@@ -79,7 +81,20 @@ function createPortfolio(doc,win,fetcher){
    msg(d.allowed?'Inspect the preview, then explicitly confirm.':'Resolve the listed conditions and calculate another preview.',!d.allowed);buttons();
   });
  }
- function confirm(path,body,title,text){if(!fresh()||busy||el('confirm').open)return;pending={path,body};el('confirm-title').textContent=title;el('confirm-text').textContent=text;if(!dialogs.open(el('confirm'),{cancel:()=>{pending=null;},focus:el('cancel-confirm')}))msg('The confirmation could not be displayed. Reopen Purchases & SIP and review the action again. Nothing was submitted.',true);}
+ function confirm(path,body,title,text){
+  if(!fresh()||busy||el('confirm').open)return;
+  const version=generation;
+  el('confirm-title').textContent=title;el('confirm-text').textContent=text;
+  if(!dialogs.confirmWith(el('confirm'),action=>{
+   if(version!==generation||!token||!fresh()||busy){msg('Refresh and review again before confirming.',true);return;}
+   if(action.path==='/contributions')submitted=true;
+   clearPreview();
+   operation(action.path,action.body,data=>{
+    win.AgenticFeedback?.notify(action.path==='/contributions'?'Paper order '+data.id+' · '+data.state+'. Inspect fills; acceptance is not a fill.':'Plan updated. Refresh to inspect its saved state.');
+    msg(action.path==='/contributions'?'Paper order '+data.id+' · '+data.state+'. Inspect order fills; no automatic retry.':'Plan updated. Refresh the account to inspect its state.');
+   });
+  },{path,body},{focus:el('cancel-confirm')}))msg('The confirmation could not be displayed. Reopen Purchases & SIP and review the action again. Nothing was submitted.',true);
+ }
  el('access').addEventListener('submit',event=>{event.preventDefault();const supplied=el('token').value;if(supplied){lock();token=supplied;el('lock').disabled=false;el('token').required=false;}refresh();});
  el('lock').addEventListener('click',lock);
  el('purchase').addEventListener('submit',event=>{event.preventDefault();if(!request){request={intent_id:'contrib-'+win.crypto.randomUUID(),symbol:el('symbol').value.trim(),budget:el('budget').value.trim(),reference:el('reference').value.trim()};if(el('stop').value.trim()||el('target').value.trim()){request.stop=el('stop').value.trim();request.target=el('target').value.trim();}}getPreview();});
@@ -88,7 +103,7 @@ function createPortfolio(doc,win,fetcher){
  el('submit-purchase').addEventListener('click',()=>{if(review?.decision.allowed&&!submitted)confirm('/contributions',{request,preview_sha256:review.preview_sha256},'Confirm '+review.decision.quantity+' virtual shares of '+request.symbol+'?','Maximum cash debit including buy fees '+money(review.decision.cash_reservation)+'. Fresh later quotes and depth determine fills. This reserves existing virtual cash and preserves existing holding protections.');});
  el('plan-form').addEventListener('submit',event=>{event.preventDefault();const body={plan_id:el('plan-id').value.trim(),symbol:el('plan-symbol').value.trim(),budget:el('plan-budget').value.trim(),stop_pct:el('plan-stop').value.trim(),target_pct:el('plan-target').value.trim(),sessions:el('plan-dates').value.split(',').map(s=>s.trim()),reference:el('plan-reference').value.trim()};confirm('/plans',body,'Save reviewed SIP plan '+body.plan_id+'?','Cash cap '+money(body.budget)+' per date. Each listed exchange session requires a separate preview and confirmation. Missed dates stay missed.');});
  el('cancel-confirm').addEventListener('click',()=>dialogs.cancel(el('confirm')));
- el('confirm-action').addEventListener('click',()=>{const action=pending;pending=null;dialogs.close(el('confirm'));if(!action||!fresh()||busy){msg('Refresh and review again before confirming.',true);return;}if(action.path==='/contributions')submitted=true;clearPreview();operation(action.path,action.body,data=>{msg(action.path==='/contributions'?'Paper order '+data.id+' · '+data.state+'. Inspect order fills; no automatic retry.':'Plan updated. Refresh the account to inspect its state.');});});
+ el('confirm-action').addEventListener('click',()=>dialogs.confirm(el('confirm')));
  doc.addEventListener('visibilitychange',()=>{if(!doc.hidden&&!busy)refresh();});
  win.setInterval(()=>{if(token&&!doc.hidden&&!busy&&!el('confirm').open)refresh();},3000);
  win.setInterval(()=>{if(token&&latest&&!fresh()){el('state').textContent='Display stale · refresh required';buttons();}},1000);

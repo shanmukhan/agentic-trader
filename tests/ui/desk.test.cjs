@@ -159,3 +159,9 @@ test('price-gap and calendar blockers give actions without hiding their safety m
  assert.match(s.nodes.blockers.textContent,/Open Strategies, download current data and review the exchange calendar/);
  assert.doesNotMatch(s.nodes.blockers.textContent,/QUOTE_CANDLE_PRICE_GAP|RESEARCH_CALENDAR_NOT_CURRENT/);
 });
+test('Alt+R focuses proposal review without preview or approval, ignores text entry, and stops after Lock',async()=>{
+ const events={};const d=decision();const s=setup(async()=>ok(status({mode:'approval',blockers:[],decisions:[d]})),false,{addEventListener:(name,fn)=>{events[name]=fn;}});await s.unlock();
+ let focused=0,prevented=0;const first=s.nodes.queue.children[0].children.find(n=>n.textContent==='Review buy proposal');first.focus=()=>focused++;
+ const event={key:'r',altKey:true,target:{tagName:'BODY'},preventDefault(){prevented++;}};events.keydown(event);assert.equal(focused,1);assert.equal(prevented,1);assert.equal(s.calls.length,1);assert.match(s.nodes.message.textContent,/Approval still requires confirmation/);
+ events.keydown({...event,target:{tagName:'INPUT'}});assert.equal(focused,1);s.instance.lock();events.keydown(event);assert.equal(focused,1);assert.equal(s.calls.length,1);
+});

@@ -8,12 +8,13 @@
   const exact = value => value === null || value === undefined ? 'Unavailable' : typeof value === 'object' ? JSON.stringify(value) : String(value);
   function createBacktesting(doc, win, fetcher) {
     const el = id => doc.getElementById(id);
+    const svgNode = (tag, attrs, value) => {const result = doc.createElementNS('http://www.w3.org/2000/svg', tag); for (const [key, item] of Object.entries(attrs)) result.setAttribute(key, String(item)); if (value !== undefined) result.textContent = String(value); return result;};
     const node = (tag, value) => {const result = doc.createElement(tag); if (value !== undefined) result.textContent = String(value); return result;};
     const dialogs = createDialogs(doc, win), reports = new Map();
     let token = '', generation = 0, active = null, busy = false, pending = null, timer = null, delay = 15000;
     let jobButtons = [];
     let resources = [], jobs = [], jobLimits = {}, globalLimitations = [], capability = {available: false}, selectedResource = null, uncertain = null, reconciled = false;
-    const dynamic = ['runner-limits', 'resource-summary', 'resource-limitations', 'jobs', 'report-summary', 'report-provenance', 'report-limitations', 'report-equity', 'report-drawdown', 'report-orders', 'report-fills', 'comparison', 'confirm-summary'];
+    const dynamic = ['runner-limits', 'resource-summary', 'resource-limitations', 'jobs', 'report-summary', 'report-provenance', 'report-limitations', 'report-equity', 'report-equity-chart', 'report-drawdown-chart', 'comparison-chart', 'report-drawdown', 'report-orders', 'report-fills', 'comparison', 'confirm-summary'];
     const privateText = ['resource-state', 'jobs-state', 'submission-state', 'report-state', 'report-metrics', 'comparison-state', 'confirm-text'];
     function definition(container, label, value) {const pair = node('div'); pair.append(node('dt', friendly(label)), node('dd', value)); container.append(pair);}
     function value(key, item) {return monetary.has(key) ? typeof item === 'string' ? money(item) : 'Unavailable (exact decimal not recorded)' : exact(item);}
@@ -21,7 +22,7 @@
     function list(id, items) {el(id).replaceChildren(); for (const item of new Set(items || [])) el(id).append(node('li', item));}
     function message(text, error = false) {el('message').textContent = text; el('message').className = error ? 'error' : '';}
     function options(id, rows, label, selected) {el(id).replaceChildren(); const empty = node('option', label); empty.value = ''; el(id).append(empty); for (const row of rows) {const option = node('option', row.label || row.job_id); option.value = row.resource_id || row.job_id; el(id).append(option);} el(id).value = selected || '';}
-    function controls() {
+    function controls() {win.AgenticFeedback?.setBusy(busy);
       for (const id of ['refresh', 'resource', 'compare-a', 'compare-b']) el(id).disabled = !token || busy || Boolean(pending);
       el('unlock').disabled = busy;
       for (const button of jobButtons) button.disabled = !token || busy || Boolean(pending);
@@ -134,6 +135,7 @@
         if (!data.job?.job_id) throw Error('schema');
         if (review.kind === 'run') {uncertain = null; el('submission-state').textContent = 'Recorded job ' + data.job.job_id + ' · ' + friendly(data.job.state) + '. Inspect its saved outcome; no paper account authority changed.';}
         else message('Cancellation requested for ' + data.job.job_id + '. The saved job record remains visible.');
+        win.AgenticFeedback?.notify(review.kind === 'run' ? el('submission-state').textContent : 'Cancellation requested for ' + data.job.job_id + '. The saved job record remains visible.');
         renderJobs({schema_version: 1, jobs: [data.job, ...jobs.filter(job => job.job_id !== data.job.job_id)]});
       } catch (error) {
         if (version !== generation) return;
@@ -152,6 +154,39 @@
       for (const key of keys) {const th = node('th', friendly(key)); th.setAttribute('scope', 'col'); heading.append(th);} head.append(heading); table.append(head); const body = node('tbody');
       for (const row of data) {const tr = node('tr'); for (const key of keys) tr.append(node('td', value(key, row[key]))); body.append(tr);} table.append(body); target.append(table);
     }
+    function curve(id, title, series, key, drawdown = false) {
+      const target = el(id); target.replaceChildren();
+      // Plot only valuations explicitly recorded as fresh. Browser numbers are coordinates only.
+      const prepared = series.map(item => ({...item, points: item.rows.map(row => ({row, time: Date.parse(row.time), value: row.valuation_fresh === true && typeof row[key] === 'string' && row[key].trim() !== '' && Number.isFinite(Number(row[key])) ? (drawdown ? -Math.abs(Number(row[key])) : Number(row[key])) : null}))}));
+      const valid = prepared.flatMap(item => item.points.filter(point => point.value !== null && Number.isFinite(point.time)));
+      if (!valid.length) {target.append(node('p', title + ' unavailable: no finite, explicitly fresh recorded valuations. Inspect valuation coverage in the exact table.')); return;}
+      const W = 800, H = 260, L = 86, R = 18, T = 24, B = 210;
+      let low = Math.min(...valid.map(point => point.value), ...(drawdown ? [0] : [])), high = Math.max(...valid.map(point => point.value), ...(drawdown ? [0] : []));
+      if (low === high) {const pad = Math.abs(low) * .005 || 1; low -= pad; high += drawdown ? 0 : pad;}
+      const first = Math.min(...valid.map(point => point.time)), last = Math.max(...valid.map(point => point.time));
+      const x = time => L + (last === first ? .5 : (time - first) / (last - first)) * (W - L - R), y = amount => T + (high - amount) / (high - low) * (B - T);
+      const svg = svgNode('svg', {viewBox: '0 0 ' + W + ' ' + H, width: '100%', role: 'img', 'aria-labelledby': id + '-title ' + id + '-description'});
+      svg.append(svgNode('title', {id: id + '-title'}, title));
+      svg.append(svgNode('desc', {id: id + '-description'}, 'Approximate visual coordinates from returned event observations, not daily return cuts. Lines break at stale, incomplete or missing valuations. Exact values and timestamps remain in the tables. ' + (drawdown ? 'Recorded drawdown percentage is drawn below zero as a loss from the recorded running peak.' : series.map(item => item.name).join('; '))));
+      for (let i = 0; i < 5; i++) {const amount = low + (high - low) * i / 4, yy = y(amount); svg.append(svgNode('line', {x1: L, y1: yy, x2: W - R, y2: yy, class: 'chart-grid'})); svg.append(svgNode('text', {x: L - 8, y: yy + 4, 'text-anchor': 'end', class: 'chart-label'}, (Math.abs(amount) >= 1e7 ? amount.toExponential(2) : amount.toLocaleString('en-IN', {maximumFractionDigits: drawdown ? 3 : 2})) + (drawdown ? '%' : '')));}
+      const label = time => new Date(time).toLocaleString('en-IN', {timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false});
+      for (let i = 0; i < (first === last ? 1 : 5); i++) {const time = first + (last - first) * i / 4; svg.append(svgNode('text', {x: x(time), y: B + 24, class: 'chart-label', 'text-anchor': first === last ? 'middle' : i === 0 ? 'start' : i === 4 ? 'end' : 'middle'}, label(time)));}
+      prepared.forEach((item, index) => {
+        const cls = 'research-curve' + (index ? ' secondary' : '');
+        svg.append(svgNode('line', {x1: L + index * 250, y1: 12, x2: L + 24 + index * 250, y2: 12, class: cls}));
+        svg.append(svgNode('text', {x: L + 30 + index * 250, y: 16, class: 'chart-label'}, item.name));
+        let points = [];
+        const flush = () => {
+          if (points.length > 1) {
+            if (drawdown) svg.append(svgNode('polygon', {points: points[0].split(',')[0] + ',' + y(0) + ' ' + points.join(' ') + ' ' + points.at(-1).split(',')[0] + ',' + y(0), class: 'drawdown-area'}));
+            svg.append(svgNode('polyline', {points: points.join(' '), class: cls, fill: 'none'}));
+          } else if (points.length) {const [cx, cy] = points[0].split(','); svg.append(svgNode('circle', {cx, cy, r: 3, class: cls}));}
+          points = [];
+        };
+        for (const point of item.points) {if (point.value === null || !Number.isFinite(point.time)) flush(); else points.push(x(point.time) + ',' + y(point.value));} flush();
+      });
+      target.append(svg, node('p', (drawdown ? 'Drawdown (%) below zero' : 'Equity (INR)') + ' · observation time in IST · fresh valuations only. Missing or stale observations break the line. Charts use approximate coordinates; inspect the exact tables for financial values.'));
+    }
     function validateReport(report) {
       if (report.schema_version !== 1 || !report.summary || Array.isArray(report.summary) || !report.provenance || !/^[a-f0-9]{64}$/.test(report.artifact_sha256 || '') || !['equity_curve', 'drawdown_curve', 'orders', 'fills'].every(key => Array.isArray(report[key]))) throw Error('schema');
       return report;
@@ -163,6 +198,8 @@
       definitions('report-summary', {...report.summary, final_snapshot: report.final_snapshot}); definitions('report-provenance', {...report.provenance, resource_sha256: report.resource_sha256, artifact_sha256: report.artifact_sha256}); list('report-limitations', [...(report.limitations || []), ...(Object.values(report.truncation || {}).some(Boolean) ? ['This bounded response omits some historical rows. Inspect the retained local artifacts for complete curves, orders, fills and trades.'] : [])]);
       el('report-metrics').textContent = 'Annualized return, CAGR, Sharpe, Sortino, monthly returns, benchmark and out-of-sample validation are unavailable unless this report explicitly supplies a supported metric with its methodology. Event observations are not daily return cuts.';
       table('report-equity', 'Equity history and valuation coverage', report.equity_curve, 3000); table('report-drawdown', 'Drawdown history', report.drawdown_curve, 3000); table('report-orders', 'Orders, including unfilled and rejected outcomes', report.orders, 1000); table('report-fills', 'Recorded simulated fills and charged costs', report.fills, 1000);
+      curve('report-equity-chart', 'Recorded equity history', [{name: 'Equity · INR', rows: report.equity_curve}], 'equity');
+      curve('report-drawdown-chart', 'Recorded drawdown history', [{name: 'Drawdown · % below peak', rows: report.drawdown_curve}], 'drawdown_pct', true);
       el('report-panel').hidden = false; win.AgenticNavigation?.updated?.();
     }
     async function reportFor(job) {if (reports.has(job.report_id)) return reports.get(job.report_id); const report = await request('/api/backtests/reports/' + encodeURIComponent(job.report_id)); if (report) reports.set(job.report_id, validateReport(report)); return report;}
@@ -174,13 +211,13 @@
     }
     async function compare() {
       if (!token || busy || pending) return; const a = jobs.find(j => j.job_id === el('compare-a').value), b = jobs.find(j => j.job_id === el('compare-b').value); if (!a?.report_id || !b?.report_id || a.job_id === b.job_id) return;
-      const version = generation; busy = true; controls(); el('comparison').replaceChildren();
+      const version = generation; busy = true; controls(); el('comparison').replaceChildren(); el('comparison-chart').replaceChildren();
       try {
         const left = await reportFor(a); if (!left) return; const right = await reportFor(b); if (!right) return;
         const semantics = report => report.provenance?.semantics || report.provenance?.resource?.semantics;
         if (!left.resource_sha256 || left.resource_sha256 !== right.resource_sha256 || semantics(left) !== 'legacy-offline-v1' || semantics(right) !== 'legacy-offline-v1') {el('comparison-state').textContent = 'Comparison blocked: matching input, strategy, cost, price-basis and source-period identity is not established. This view requires the same registered resource hash and declared legacy offline method.'; return;}
         const rows = [...new Set([...Object.keys(left.summary), ...Object.keys(right.summary)])].map(key => ({metric: friendly(key), [a.job_id]: value(key, left.summary[key]), [b.job_id]: value(key, right.summary[key])}));
-        table('comparison', 'Same-resource recorded results', rows, 200); el('comparison-state').textContent = 'Same registered input, strategy and policy hash; declared legacy offline method. Values are simulated outcomes. Matching methodology does not establish out-of-sample or broker validation.';
+        table('comparison', 'Same-resource recorded results', rows, 200); curve('comparison-chart', 'Same-resource equity comparison', [{name: 'First report · solid', rows: left.equity_curve}, {name: 'Second report · dashed', rows: right.equity_curve}], 'equity'); el('comparison-state').textContent = 'Same registered input, strategy and policy hash; declared legacy offline method. Values are simulated outcomes. Matching methodology does not establish out-of-sample or broker validation.';
       } catch (_) {if (version === generation) el('comparison-state').textContent = 'Comparison unavailable. Both recorded reports must be readable and verifiable; no missing values were replaced.';}
       finally {if (version === generation) {busy = false; controls(); schedule();}}
     }
@@ -188,7 +225,7 @@
     el('lock').addEventListener('click', lock); el('refresh').addEventListener('click', () => refresh()); el('resource').addEventListener('change', renderResource);
     el('review-run').addEventListener('click', () => reviewRun()); el('retry-run').addEventListener('click', () => reviewRun(true));
     el('cancel').addEventListener('click', () => dialogs.cancel(el('confirm'))); el('ack').addEventListener('change', controls); el('confirm-action').addEventListener('click', confirm);
-    for (const id of ['compare-a', 'compare-b']) el(id).addEventListener('change', controls); el('compare').addEventListener('click', compare);
+    for (const id of ['compare-a', 'compare-b']) el(id).addEventListener('change', () => {el('comparison').replaceChildren(); el('comparison-chart').replaceChildren(); el('comparison-state').textContent = 'Selection changed. Check comparison to read these reports.'; controls();}); el('compare').addEventListener('click', compare);
     doc.addEventListener?.('visibilitychange', () => {cancelTimer(); if (!doc.hidden) schedule();}); win.addEventListener?.('pagehide', lock);
     lock(); return {refresh, lock, canNavigate: () => !busy && !pending};
   }
