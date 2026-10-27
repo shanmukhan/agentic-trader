@@ -1,5 +1,20 @@
 # Threat model and security decisions
 
+## Optional shared-domain HTTPS exposure — 25 October 2026
+
+The public Pi profile publishes app routes through the existing TLS vhost while
+keeping both service listeners on loopback. Trader retains operator Bearer checks
+and exact allowed Host/Origin checks; public exposure is opt-in and its prefix does
+not change financial identities or records. Advisor's entire path, including sockets
+and assets, requires browser Basic authentication checked against a restricted copy
+of the existing monitor username/Argon2 hash. No plaintext password/JWT signing
+secret is copied; Apache strips Basic credentials before proxying. Refresh the hash
+snapshot after monitor credential changes. Browser Basic logout requires ending its
+cached login (use/close a private window). Private paths avoid unsanitized access
+logs, and state remains private under separate service accounts. Shared-origin owner
+apps form a common trust boundary; this is not isolation against compromised sibling
+scripts. See [implemented profile and limits](public-browser-access.md).
+
 ## Operator-token generation and local access
 
 The minimum token length validates shape, not randomness. Generate a fresh secret with

@@ -114,19 +114,26 @@ test('connection guide uses keyboard-accessible native disclosure and preserves 
   assert.ok(html.indexOf('id="setup-step-1"')<html.indexOf('Help: which credential'));
   assert.match(html,/Moving between steps does not save settings or approve a trading date/);
 });
-test('session hours default on unlock without saving or attesting and preserve edits across refresh',async()=>{
+test('session hours and NSE reference default on unlock without saving or attesting and preserve edits across refresh',async()=>{
   const s=setup();await s.unlock();
   assert.equal(s.nodes['session-open'].value,'09:15');assert.equal(s.nodes['session-close'].value,'15:30');
-  assert.equal(s.nodes['session-source'].value,'');assert.equal(s.nodes['session-reviewed'].checked,false);
+  assert.equal(s.nodes['session-source'].value,'https://www.nseindia.com/resources/exchange-communication-holidays');assert.equal(s.nodes['session-reviewed'].checked,false);
   assert.equal(s.calls.length,1);assert.equal(s.calls[0].options.method,'GET');
   s.nodes['session-open'].value='09:30';s.nodes['session-close'].value='14:00';
+  s.nodes['session-source'].value='A reviewed specific circular';
   s.nodes['refresh-status'].fire('click');await flush();
   assert.equal(s.nodes['session-open'].value,'09:30');assert.equal(s.nodes['session-close'].value,'14:00');
-  s.nodes['session-open'].value='';s.nodes['refresh-status'].fire('click');await flush();
+  assert.equal(s.nodes['session-source'].value,'A reviewed specific circular');
+  s.nodes['session-open'].value='';s.nodes['session-source'].value='';s.nodes['refresh-status'].fire('click');await flush();
   assert.equal(s.nodes['session-open'].value,'');
-  s.nodes.lock.fire('click');assert.equal(s.nodes['session-close'].value,'');
+  assert.equal(s.nodes['session-source'].value,'');
+  s.nodes.lock.fire('click');assert.equal(s.nodes['session-close'].value,'');assert.equal(s.nodes['session-source'].value,'');
   await s.unlock();assert.equal(s.nodes['session-open'].value,'09:15');assert.equal(s.nodes['session-close'].value,'15:30');
   assert.equal(s.nodes['session-reviewed'].checked,false);
+  assert.equal(s.nodes['session-source'].value,'https://www.nseindia.com/resources/exchange-communication-holidays');
+  const html=readFileSync('src/trading_agent/api/static/setup.html','utf8');
+  assert.match(html,/id="session-source"[^>]+aria-describedby="session-reference-help"/);
+  assert.match(html,/The default is a suggestion; it does not verify or approve this session/);
 });
 test('default session hours appear in the confirmation and only post after explicit review',async()=>{
   const s=setup();await s.unlock();
@@ -137,6 +144,17 @@ test('default session hours appear in the confirmation and only post after expli
   s.nodes.calendar.fire('submit');s.nodes['confirm-action'].fire('click');await flush();
   assert.deepEqual(JSON.parse(s.calls.at(-1).options.body),{date:'2026-10-21',open:'09:15',close:'15:30',source:'invented NSE notice',reviewed:true});
   assert.equal(s.nodes['session-reviewed'].checked,false);
+});
+test('default NSE reference is included only in an explicitly confirmed reviewed-session save',async()=>{
+  const s=setup();await s.unlock();
+  assert.equal(s.nodes['session-reviewed'].checked,false);assert.equal(s.calls.length,1);
+  s.nodes['session-reviewed'].checked=true;s.nodes.calendar.fire('submit');
+  assert.match(s.nodes['confirm-text'].textContent,/https:\/\/www.nseindia.com\/resources\/exchange-communication-holidays/);
+  assert.equal(s.calls.length,1);s.nodes['cancel-confirm'].fire('click');assert.equal(s.calls.length,1);
+  s.nodes.calendar.fire('submit');s.nodes['confirm-action'].fire('click');await flush();
+  const request=JSON.parse(s.calls.at(-1).options.body);
+  assert.equal(request.source,'https://www.nseindia.com/resources/exchange-communication-holidays');
+  assert.equal(request.reviewed,true);assert.equal(s.nodes['session-reviewed'].checked,false);
 });
 test('saved feed list stays distinct from unsaved edits and explains catalog versus streaming',async()=>{
   const s=setup();await s.unlock();

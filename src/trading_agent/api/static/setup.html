@@ -149,11 +149,12 @@
             <p id="calendar-state" class="muted"></p>
             <p class="muted">Review <a href="https://www.nseindia.com/resources/exchange-communication-holidays" target="_blank" rel="noopener noreferrer">NSE holidays and notices</a> before adding a date. No weekday, holiday roll-forward or market opening is assumed. Existing definitions cannot be changed here. Supported hours are within 09:15–15:30 IST.</p>
             <p id="session-hours-help" class="muted">The fields default to 09:15 AM–03:30 PM IST and remain editable. These defaults do not approve a trading date: review holidays and special-session notices before saving. A strategy’s 03:15 PM flatten/cutoff time is separate from the exchange close. Enter exchange hours here, not your current clock time.</p>
+            <p id="session-reference-help" class="muted">Defaults to the official NSE holidays and notices page. Open the link above to check your date and hours. You can replace this reference with a specific circular or review note. The default is a suggestion; it does not verify or approve this session.</p>
             <form id="calendar" class="review-form">
               <label>Date (IST)<input id="session-date" type="date" required></label>
               <label>Reviewed exchange open (IST)<input id="session-open" type="time" min="09:15" max="15:30" aria-describedby="session-hours-help" required></label>
               <label>Reviewed exchange close (IST)<input id="session-close" type="time" min="09:15" max="15:30" aria-describedby="session-hours-help" required></label>
-              <label>NSE notice / review reference<input id="session-source" required minlength="3" maxlength="300" placeholder="Official NSE URL, circular number or review notes"></label>
+              <label>NSE notice / review reference<input id="session-source" required minlength="3" maxlength="300" aria-describedby="session-reference-help" placeholder="Official NSE URL, circular number or review notes"></label>
               <label class="check"><input id="session-reviewed" type="checkbox" required> I reviewed this date and these times against exchange notices.</label>
               <button id="save-session">Save reviewed session</button>
             </form>

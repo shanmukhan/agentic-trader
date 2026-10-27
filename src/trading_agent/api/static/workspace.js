@@ -125,10 +125,10 @@
       finally{win.clearTimeout(timeout);if(version===generation){busy=false;controller=null;el('workspace-refresh').disabled=!token;}}
     }
     async function unlock(){
-      if(busy)return;const supplied=el('workspace-token').value.trim();el('workspace-token').value='';if(!supplied)return;lock('Checking local operator access…');busy=true;el('workspace-submit').disabled=true;
+      if(busy)return;const supplied=el('workspace-token').value.trim();el('workspace-token').value='';if(!supplied)return;lock('Checking operator access for this server…');busy=true;el('workspace-submit').disabled=true;
       const version=generation,active=new AbortController();controller=active;const timeout=win.setTimeout(()=>active.abort(),10000);
       try{const r=await request('/api/workspace',{cache:'no-store',credentials:'omit',redirect:'error',signal:active.signal,headers:{Authorization:'Bearer '+supplied}});const data=await r.json();if(version!==generation)return;
-        if(!r.ok||data.mode!=='paper')throw Error(r.status===401||r.status===403?'Use TRADING_OPERATOR_TOKEN from your local .env. Zerodha tokens do not unlock this workspace.':'Workspace access unavailable. Check the server and local operator configuration.');
+        if(!r.ok||data.mode!=='paper')throw Error(r.status===401||r.status===403?'The operator token does not match this server. Use its configured TRADING_OPERATOR_TOKEN. Workstation .env changes need explicit synchronization to the Pi. Zerodha tokens do not unlock this workspace.':'Workspace access unavailable. Check the server and operator configuration.');
         token=supplied;render(data);el('workspace-access').hidden=true;el('workspace-lock').disabled=false;el('workspace-state').textContent='Unlocked';message('');navigate();renderAlerts();
       }catch(error){if(version===generation){lock();message(error.name==='AbortError'?'Access check timed out. Try again; no trading action was submitted.':String(error.message),true);}}
       finally{win.clearTimeout(timeout);if(version===generation){busy=false;controller=null;el('workspace-submit').disabled=false;el('workspace-refresh').disabled=!token;}}

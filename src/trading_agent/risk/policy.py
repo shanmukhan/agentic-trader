@@ -14,6 +14,8 @@ def policy_values(settings: Settings) -> dict[str, Any]:
             "operator_token",
             "host",
             "port",
+            "public_origin",
+            "public_path",
             "database",
             "calendar",
             "stream_tokens",

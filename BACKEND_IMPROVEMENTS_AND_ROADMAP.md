@@ -45,7 +45,8 @@ A rigorous code-level audit of `src/trading_agent/` reveals key bottlenecks that
      # src/trading_agent/execution/paper_broker.py:747-751
      tx.execute(
          "INSERT INTO quotes VALUES (?,?,?) ON CONFLICT(symbol) DO UPDATE SET "
-         "time=excluded.time,payload=excluded.payload", ...
+         "time=excluded.time,payload=excluded.payload",
+         ...,
      )
      self.db.event(tx, stamp(now), "quote", quote.symbol, quote.model_dump(mode="json"))
      ```
@@ -133,6 +134,7 @@ from abc import ABC, abstractmethod
 from decimal import Decimal
 from typing import Any
 from trading_agent.models import Instrument, Order, OrderRequest, Quote
+
 
 class BrokerGateway(ABC):
     """Abstract gateway implemented by PaperBroker and LiveBroker."""
@@ -260,6 +262,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 import time
 
+
 @dataclass(slots=True)
 class FastQuote:
     symbol: str
@@ -272,14 +275,13 @@ class FastQuote:
     volume: int
     timestamp_ns: int
 
+
 class InMemoryTickCache:
     """Zero-allocation in-memory quote store for sub-millisecond evaluation."""
 
     def __init__(self, symbols: list[str], max_history: int = 1000):
         self._quotes: dict[str, FastQuote] = {}
-        self._history: dict[str, deque[FastQuote]] = {
-            s: deque(maxlen=max_history) for s in symbols
-        }
+        self._history: dict[str, deque[FastQuote]] = {s: deque(maxlen=max_history) for s in symbols}
 
     def update(self, quote: FastQuote) -> None:
         self._quotes[quote.symbol] = quote
@@ -304,7 +306,7 @@ Replaces HTTP polling with an asynchronous WebSocket server in FastAPI:
     "last": "2940.50",
     "bid": "2940.20",
     "ask": "2940.50",
-    "age_ms": 14
+    "age_ms": 14,
 }
 {
     "type": "proposal_created",
@@ -312,14 +314,14 @@ Replaces HTTP polling with an asynchronous WebSocket server in FastAPI:
     "symbol": "NSE:RELIANCE",
     "side": "BUY",
     "price_cap": "2942.00",
-    "expires_in_seconds": 120
+    "expires_in_seconds": 120,
 }
 {
     "type": "order_fill",
     "order_id": "ord-1029",
     "symbol": "NSE:RELIANCE",
     "filled_qty": 2,
-    "fill_price": "2940.50"
+    "fill_price": "2940.50",
 }
 ```
 

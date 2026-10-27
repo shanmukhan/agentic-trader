@@ -1,5 +1,9 @@
 # Agentic Trader — paper only
 
+The optional Raspberry Pi browser profile adds an **Investing** tab to
+<https://shanmukhan.com/#investing>, with Trader and Portfolio Advisor HTTPS links.
+See [browser sign-in, deployment and recovery](docs/public-browser-access.md).
+
 Version **0.18.0** adds separate **investment policy drafts** under Strategies:
 months/years horizons, monthly/quarterly reviews, explicit screening/allocation/exit
 choices, exact preview and immutable private saves. Every choice starts unresolved.
@@ -84,9 +88,12 @@ controls. The [acceptance guide](docs/acceptance.md) covers `preflight --strict`
 private diagnostic evidence and remaining broker/device work. Node 24 is used only
 for JavaScript tests; serving the console needs no Node or frontend build.
 
-Local validation: **582 Python tests and 62 JavaScript tests passed; 92% Python coverage**, with lint/type checks, dependency
-audit and builds passing. Details are in the change log. Sustained real-market strategy/fill acceptance and Raspberry Pi deployment remain
-unverified.
+Latest local validation: **1,387 Python tests and 234 JavaScript tests passed**, with
+Ruff lint/format, mypy and secret-pattern checks passing. Historical coverage,
+dependency-audit and build evidence is recorded in the change log. Sustained real-market strategy/fill acceptance and Pi reboot/power-loss acceptance remain
+unverified. The shared Pi services were deployed on 25 October; see the
+[service deployment and mobile monitoring guide](docs/raspberry-pi.md) for verified
+health/restart/persistence checks, private browser access and pending acceptance.
 
 ```sh
 uv run pytest --cov=trading_agent

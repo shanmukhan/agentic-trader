@@ -490,14 +490,16 @@ class SetupService:
         self.started = False
 
 
-def mount_setup(app: Any, service: SetupService | None, authorized: Callable[..., Any]) -> None:
+def mount_setup(
+    app: Any, service: SetupService | None, authorized: Callable[..., Any], assets: Any = None
+) -> None:
     from importlib.resources import files
 
     from fastapi import Depends, Request
     from fastapi.responses import HTMLResponse, JSONResponse
     from starlette.concurrency import run_in_threadpool
 
-    assets = files("trading_agent.api").joinpath("static")
+    assets = assets or files("trading_agent.api").joinpath("static")
 
     @app.exception_handler(SetupError)
     async def setup_error(request: Request, exc: SetupError) -> JSONResponse:

@@ -7,12 +7,14 @@ from datetime import UTC, datetime
 from importlib.resources import files
 from pathlib import Path
 from typing import TYPE_CHECKING, Annotated, Any
+from urllib.parse import urlsplit
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from trading_agent.api.console import console_snapshot
+from trading_agent.api.public_path import PublicAssets, PublicPathMiddleware
 from trading_agent.api.setup import SetupService, mount_setup
 from trading_agent.execution.delivery import HoldingExit, HoldingReview
 from trading_agent.execution.paper_broker import IntentConflict, PaperBroker
@@ -37,6 +39,7 @@ def create_app(
     backtests: Any = None,
     investment_policies: Any = None,
 ) -> FastAPI:
+    assets = PublicAssets(ASSETS, engine.settings.public_path)
     from trading_agent.desk.api import mount_desk
     from trading_agent.desk.preparation import Preparation, saved_profile
     from trading_agent.desk.service import TradingDesk
@@ -129,7 +132,10 @@ def create_app(
     app.state.preparation = preparation
     app.state.backtests = backtests
     app.state.investment_policies = investment_policies
-    app.add_middleware(TrustedHostMiddleware, allowed_hosts=["127.0.0.1", "localhost", "[::1]"])
+    hosts = ["127.0.0.1", "localhost", "[::1]"]
+    if engine.settings.public_origin:
+        hosts.append(str(urlsplit(engine.settings.public_origin).hostname))
+    app.add_middleware(TrustedHostMiddleware, allowed_hosts=hosts)
 
     @app.middleware("http")
     async def security_headers(request: Request, call_next: Any) -> Any:
@@ -179,11 +185,13 @@ def create_app(
                 f"http://localhost:{engine.settings.port}",
                 f"http://[::1]:{engine.settings.port}",
             }
+            if engine.settings.public_origin:
+                permitted.add(engine.settings.public_origin)
             if origin is not None and origin not in permitted:
                 raise HTTPException(403, "cross-origin controls prohibited")
 
-    mount_setup(app, setup, authorized)
-    mount_desk(app, desk, setup, authorized, ASSETS, clock, preparation)
+    mount_setup(app, setup, authorized, assets=assets)
+    mount_desk(app, desk, setup, authorized, assets, clock, preparation)
     from trading_agent.operations.report import operations_report
     from trading_agent.operations.schedule import ScheduledDownload, scheduled_download
 
@@ -208,10 +216,10 @@ def create_app(
 
     from trading_agent.api.analysis import mount_analysis
 
-    mount_analysis(app, desk, authorized, ASSETS, clock)
+    mount_analysis(app, desk, authorized, assets, clock)
     from trading_agent.api.workspace_views import mount_workspace_views
 
-    mount_workspace_views(app, desk, authorized, ASSETS, clock, setup)
+    mount_workspace_views(app, desk, authorized, assets, clock, setup)
 
     from trading_agent.api.backtests import mount_backtests
 
@@ -222,22 +230,22 @@ def create_app(
 
     @app.get("/investment-policy", response_class=HTMLResponse)
     def investment_policy_page() -> str:
-        return ASSETS.joinpath("investment-policy.html").read_text(encoding="utf-8")
+        return assets.joinpath("investment-policy.html").read_text(encoding="utf-8")
 
     @app.get("/investment-policy.js")
     def investment_policy_script() -> HTMLResponse:
         return HTMLResponse(
-            ASSETS.joinpath("investment-policy.js").read_text(), media_type="application/javascript"
+            assets.joinpath("investment-policy.js").read_text(), media_type="application/javascript"
         )
 
     @app.get("/backtesting", response_class=HTMLResponse)
     def backtesting_page() -> str:
-        return ASSETS.joinpath("backtesting.html").read_text(encoding="utf-8")
+        return assets.joinpath("backtesting.html").read_text(encoding="utf-8")
 
     @app.get("/backtesting.js")
     def backtesting_script() -> HTMLResponse:
         return HTMLResponse(
-            ASSETS.joinpath("backtesting.js").read_text(), media_type="application/javascript"
+            assets.joinpath("backtesting.js").read_text(), media_type="application/javascript"
         )
 
     @app.get("/dashboard", response_class=HTMLResponse)
@@ -246,33 +254,33 @@ def create_app(
     @app.get("/settings", response_class=HTMLResponse)
     @app.get("/learn", response_class=HTMLResponse)
     def investment_page() -> str:
-        return ASSETS.joinpath("investment.html").read_text(encoding="utf-8")
+        return assets.joinpath("investment.html").read_text(encoding="utf-8")
 
     @app.get("/investment.js")
     def investment_script() -> HTMLResponse:
         return HTMLResponse(
-            ASSETS.joinpath("investment.js").read_text(), media_type="application/javascript"
+            assets.joinpath("investment.js").read_text(), media_type="application/javascript"
         )
 
     @app.get("/dialogs.js")
     def dialogs_script() -> HTMLResponse:
         return HTMLResponse(
-            ASSETS.joinpath("dialogs.js").read_text(), media_type="application/javascript"
+            assets.joinpath("dialogs.js").read_text(), media_type="application/javascript"
         )
 
     @app.get("/icons.svg")
     def ui_icons() -> HTMLResponse:
         return HTMLResponse(
-            ASSETS.joinpath("icons.svg").read_text(encoding="utf-8"), media_type="image/svg+xml"
+            assets.joinpath("icons.svg").read_text(encoding="utf-8"), media_type="image/svg+xml"
         )
 
     @app.get("/paper", response_class=HTMLResponse)
     def paper_page() -> str:
-        return ASSETS.joinpath("desk.html").read_text(encoding="utf-8")
+        return assets.joinpath("desk.html").read_text(encoding="utf-8")
 
     @app.get("/strategies", response_class=HTMLResponse)
     def strategies_page() -> str:
-        return ASSETS.joinpath("desk.html").read_text(encoding="utf-8")
+        return assets.joinpath("desk.html").read_text(encoding="utf-8")
 
     @app.exception_handler(Exception)
     async def safe_error(request: Request, exc: Exception) -> JSONResponse:
@@ -288,26 +296,26 @@ def create_app(
 
     @app.get("/", response_class=HTMLResponse)
     def dashboard() -> str:
-        return ASSETS.joinpath("index.html").read_text(encoding="utf-8")
+        return assets.joinpath("index.html").read_text(encoding="utf-8")
 
     @app.get("/console", response_class=HTMLResponse)
     def console_page() -> str:
-        return ASSETS.joinpath("index.html").read_text(encoding="utf-8")
+        return assets.joinpath("index.html").read_text(encoding="utf-8")
 
     @app.get("/workspace", response_class=HTMLResponse)
     def workspace_page() -> str:
-        return ASSETS.joinpath("workspace.html").read_text(encoding="utf-8")
+        return assets.joinpath("workspace.html").read_text(encoding="utf-8")
 
     @app.get("/workspace.js")
     def workspace_script() -> HTMLResponse:
         return HTMLResponse(
-            ASSETS.joinpath("workspace.js").read_text(), media_type="application/javascript"
+            assets.joinpath("workspace.js").read_text(), media_type="application/javascript"
         )
 
     @app.get("/workspace-bridge.js")
     def workspace_bridge() -> HTMLResponse:
         return HTMLResponse(
-            ASSETS.joinpath("workspace-bridge.js").read_text(), media_type="application/javascript"
+            assets.joinpath("workspace-bridge.js").read_text(), media_type="application/javascript"
         )
 
     @app.get("/api/workspace", dependencies=[Depends(authorized)])
@@ -342,30 +350,30 @@ def create_app(
     @app.get("/dashboard.js")
     def javascript() -> HTMLResponse:
         return HTMLResponse(
-            ASSETS.joinpath("dashboard.js").read_text(encoding="utf-8"),
+            assets.joinpath("dashboard.js").read_text(encoding="utf-8"),
             media_type="application/javascript",
         )
 
     @app.get("/dashboard.css")
     def stylesheet() -> HTMLResponse:
         return HTMLResponse(
-            ASSETS.joinpath("dashboard.css").read_text(encoding="utf-8"), media_type="text/css"
+            assets.joinpath("dashboard.css").read_text(encoding="utf-8"), media_type="text/css"
         )
 
     @app.get("/portfolio", response_class=HTMLResponse)
     def portfolio_page() -> str:
-        return ASSETS.joinpath("portfolio.html").read_text(encoding="utf-8")
+        return assets.joinpath("portfolio.html").read_text(encoding="utf-8")
 
     @app.get("/portfolio.js")
     def portfolio_script() -> HTMLResponse:
         return HTMLResponse(
-            ASSETS.joinpath("portfolio.js").read_text(), media_type="application/javascript"
+            assets.joinpath("portfolio.js").read_text(), media_type="application/javascript"
         )
 
     @app.get("/money.js")
     def money_script() -> HTMLResponse:
         return HTMLResponse(
-            ASSETS.joinpath("money.js").read_text(), media_type="application/javascript"
+            assets.joinpath("money.js").read_text(), media_type="application/javascript"
         )
 
     from trading_agent.portfolio import service as portfolio
@@ -554,4 +562,5 @@ def create_app(
             desk.pause(clock(), "OPERATOR_DISARM")
             return automation.status(clock())
 
+    app.add_middleware(PublicPathMiddleware, prefix=engine.settings.public_path)
     return app

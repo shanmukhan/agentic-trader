@@ -316,7 +316,16 @@ def test_calendar_api_requires_explicit_attestation_and_preserves_existing_defin
     assert Decimal(service.engine.snapshot(NOW)["cash"]) == Decimal("25000.00")
 
 
-def test_standard_hours_are_only_saved_with_review_and_do_not_change_accounting(setup_client):
+@pytest.mark.parametrize(
+    "source",
+    [
+        "invented standard-hours review",
+        "https://www.nseindia.com/resources/exchange-communication-holidays",
+    ],
+)
+def test_standard_hours_are_only_saved_with_review_and_do_not_change_accounting(
+    setup_client, source
+):
     client, service = setup_client
     service.engine.calendar.sources = {
         day: "invented existing session" for day in service.engine.calendar.sessions
@@ -326,7 +335,7 @@ def test_standard_hours_are_only_saved_with_review_and_do_not_change_accounting(
         "date": "2026-10-22",
         "open": "09:15",
         "close": "15:30",
-        "source": "invented standard-hours review",
+        "source": source,
         "reviewed": False,
     }
 

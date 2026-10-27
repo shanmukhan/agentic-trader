@@ -64,7 +64,24 @@ explicitly, then install while disconnected in Manual. No model, financial appro
 or executable quote is created by connecting or installing.
 
 In setup step 5, **NSE notice / review reference** means the official URL/circular or
-review notes used to check the selected date and hours. For a reviewed normal cash-equity
+review notes used to check the selected date and hours. On unlock it now defaults to
+`https://www.nseindia.com/resources/exchange-communication-holidays`. Open the linked
+NSE page and review the chosen date; keep the URL or replace it with a specific
+circular/review note. Refresh preserves an edited or deliberately cleared reference;
+Lock clears it and the next unlock restores the default. The accessible field help
+makes clear that prefilling does not fetch/verify a notice or approve a session.
+The review checkbox starts unchecked. A blank reference still fails required-field/
+server validation; review, tick and explicitly confirm Save to persist a session.
+No existing calendar row, trading mode or financial record changes from this default.
+If the reference is deliberately cleared, enter a reference before saving. If this
+date already has a different saved reference or hours, the server refuses an overwrite;
+inspect the saved row or choose a new reviewed date. The default does not replace
+previously recorded review evidence.
+The Pi browser assets were published on 27 October without restarting the service.
+Reload the workspace and reopen Broker & Data to load this update; unlocking then
+initializes the suggestion. Existing unsaved form edits should be recorded before a
+full browser reload. No date is reviewed or saved by publication.
+ For a reviewed normal cash-equity
 session use 09:15 AM–03:30 PM IST; the app rejects evening times. Check the actual
 holiday/special notices and tick the review box only after that review. The preparation
 wizard can propose a larger calendar from downloaded sources, but still requires your

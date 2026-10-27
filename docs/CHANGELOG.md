@@ -1,5 +1,147 @@
 # Change log
 
+## 27 October 2026 — default NSE review-reference URL
+
+Pre-commit validation for the complete Pi/browser/token/default-reference change:
+**1,387 Python tests and 234 Node UI tests passed**, plus Ruff lint/format, mypy,
+secret-pattern and whitespace checks. Normalized Python examples in the existing
+backend roadmap to satisfy the repository's required formatting check; no example
+behavior was changed. Advisor's 42 tests and six Pi-setup infrastructure tests also
+passed, with all Apache templates rendering successfully.
+
+Broker & Data → step 5 now prefills the reference with the official NSE holidays/
+exchange-notices URL on the first successful unlock, alongside the existing normal
+hours. The reference remains editable; refresh preserves edits and intentional
+clearing. Lock clears the field and a fresh unlock restores the suggestion. Its
+accessible help explains that a URL is a starting reference, not a calendar check.
+The review checkbox stays unchecked; the existing confirmation and server-side
+attestation guard remain required. No session is saved simply by unlocking, refreshing
+or showing the suggested URL.
+
+Validation: **234 Node UI tests and 33 focused Python functional tests passed**.
+Checks cover initial defaults, edit/clear preservation, Lock/unlock, confirmation/
+cancellation and the submitted default reference. Functional tests reject unchecked
+review and independently verify exact ₹25,000.00 cash/full SQLite state remains
+unchanged while the reviewed calendar stores the reference. These are synthetic
+workflow tests, not a real-date/NSE calendar approval. Published on the Pi at 20:54:06 IST without a service restart (PID 26035 unchanged).
+Public asset checks passed, no calendar/account files were written and independent
+financial-state hashes were unchanged. Private rollback copies and separate
+base-release patch metadata are recorded in the [browser runbook](public-browser-access.md).
+
+## 26 October 2026 — recover service startup after a weak operator token
+
+Diagnosed the real Pi startup loop as the Settings token minimum: both local and
+Pi values were 11 characters. The app requires at least 32; the helper's URL-safe
+validation correctly rejected the local input before sending it. Retained that
+requirement and added explicit `--generate` to create a 43-character cryptographic
+replacement, privately back up/update local `.env`, and sync only the token to the Pi.
+Changed or inactive units now have their failed-start limit reset before restart;
+a matching healthy unit remains running. No generated token is printed or put on argv.
+
+Recovered the actual Pi service and authenticated HTTPS read (200). Both credential
+files have the strong replacement, with private local/Pi backups. Independent SQLite
+integrity and before/after financial state checks passed; a healthy repeat was a no-op.
+**42 focused tests passed**, covering generation/CLI secret boundaries, local-config
+preservation, reset-before-restart and inactive-unit recovery, old-value repair and
+exact persisted cash/ledger checks. See [commands, paths, retries and limits](public-browser-access.md).
+Startup/access validation does not establish broker/market/handset acceptance.
+
+## 25 October 2026 — allow valid token replacement when the Pi value is invalid
+
+Fixed a sync failure after incoming-token validation: the old Pi value was also
+being subjected to the new-token URL-safe/length restriction. A single existing
+assignment can now be replaced even when its old value is empty, short, contains
+punctuation or has broken quoting; its original bytes remain in a root-private
+backup. Invalid new values, duplicate/missing target assignments and symlinks are
+still refused. Remote update failures and CLI SSH failures now produce concise
+messages instead of dumping a traceback and embedded remote source.
+
+Validation: **38 focused tests passed**, including separate-process execution of
+the generated remote program against five old-value cases, private backup and
+unrelated-config preservation, duplicate refusal, secret transport and isolated CLI
+failure. Repaired the actual Pi credential using the user's current `.env` value;
+authenticated public read returned **200**. Independent SQLite integrity and financial
+state hashes remained unchanged. See [usage, recovery and private evidence paths](public-browser-access.md).
+This validates access, not broker/market/handset/power-loss acceptance.
+
+## 25 October 2026 — correct Pi operator-token mismatch and guidance
+
+Confirmed the workstation `.env` and Pi env contained different operator tokens:
+local token returned HTTP 401 while the running Pi token returned 200. Explicitly
+synchronized only the workstation operator token over SSH stdin, preserved a private
+backup and restarted Trader. Authenticated public workspace read then returned 200.
+No broker credentials or account data were copied.
+
+Added `deployment/rpi/sync_operator_token.py` for an explicit, validated token-only
+workflow with private atomic replacement, idempotent file handling and HTTPS read
+verification. The workspace label, help and rejection message now identify the
+hosting server instead of suggesting any workstation `.env` must work remotely.
+See [usage and failure/recovery behavior](public-browser-access.md#operator-token-belongs-to-the-server-hosting-the-page).
+
+Validation: 32 focused token-sync/public-hosting tests and all 233 Node UI tests
+passed; checks cover parsing/rejection, backup permissions, unrelated configuration
+preservation, secret-free argv, remote-script compilation, token reload rejection
+and independent SQLite/Decimal cash/ledger invariance. Real Pi authentication was
+verified without displaying either token; a repeated sync returned a no-op and 200.
+Deployed release `20261025T173439-293e424fcefc` serves the corrected help. Independent
+before/after financial-state hashes and DB integrity remained unchanged/passing. This is access validation, not broker,
+real-market or physical-device acceptance.
+
+## 25 October 2026 — shanmukhan.com Investing browser profile
+
+Implemented an Investing home-page tab and exact HTTPS paths for Trader and Advisor
+through the existing shared Apache vhost. Trader gains validated optional public
+host/origin/prefix settings, bundled known-route asset URL adaptation and loopback-only
+forwarded-header trust. Transport fields are excluded from economic fingerprints;
+Bearer/Origin guards remain. Advisor uses its Streamlit base path, explicit origin
+and host checks, WebSocket proxy support, and browser Basic login checked against
+an Argon2-only snapshot of the existing monitor identity. Credential headers are
+removed before proxying; private path access-log suppression and web rollback preserve
+existing routes and account state. The normal app installer preserves public settings
+and uses the correct prefixed Advisor health URL. Reviewed new Trader source modules
+can now be bundled before commit, while account/sample state stays excluded.
+
+Local validation: **1,364 Python tests**, **232 existing Node UI tests plus one new
+prefixed controller test**, six infrastructure/auth/navigation/environment checks, Ruff, mypy
+on 126 source files and shell syntax checks passed. Financial checks independently
+inspect SQLite using Decimal and assert unchanged policy identities. Public deployment completed with valid Apache/systemd configuration, expected HTTPS
+pages/login challenges and a synthetic isolated authenticated WebSocket upgrade.
+Independent database-state hashes stayed unchanged; the existing home/monitor
+routes and the two requested app services passed. A separate pre-publish Netrava
+identity/relay failure is recorded in the browser runbook. The initial multiple-value environment parsing issue was
+corrected with native whitespace-separated values and a regression check. Exact
+backups, checks and acceptance limits are in [the browser runbook](public-browser-access.md);
+synthetic checks do not establish broker, handset, power-loss or profitability acceptance.
+
+## 25 October 2026 — deployed Raspberry Pi services and mobile monitoring
+
+Added code-only, hash-manifest packaging and a shared release installer for
+Agentic Trader plus the confirmed sibling Portfolio Advisor project. Both run as
+dedicated users with root-owned code, persistent private state, localhost:8010/8501,
+boot enablement and restart-on-failure. Preparation precedes downtime; failed health
+or monitor updates restore prior code/units/monitor configuration while retaining
+financial state. Existing monitor mappings are extended using the deployed renderer
+and exact polkit grants; no local unrelated monitor edits, public routes or
+workstation credentials/accounts are deployed. Advisor supports a private persistent
+`ADVISOR_ENV_FILE`; its lockfile no longer embeds a Mac editable path.
+
+Validation: **28 focused Trader tests and all 42 Advisor tests passed**, including
+code-only bundle hashes/secret exclusion, monitor conflicts/partial-write recovery,
+separate account processes and independent persisted SQLite/Decimal checks. Ruff,
+shell syntax and whitespace checks passed. Deployed release
+`20261025T151902-a2cbb050bbd8` is enabled and healthy on the real aarch64 Pi; systemd
+unit verification and an actual controlled app restart passed. Trader retained
+**₹25,000.00 virtual cash**, no orders/fills/positions; Advisor retained one demo
+report and no purchases. Both independent DB integrity checks passed. Deployed
+monitor service-list provider and its unprivileged polkit start permission checks
+passed. Pi-side Advisor UI harness rendered without errors using **demo data**.
+
+Trader readiness remains 503 pending explicit broker/session/calendar setup. Mobile
+entries need refresh, no rebuild; the current service buttons act immediately without
+separate confirmation. Physical phone taps, reboot/power-loss and real-market/broker
+acceptance remain unperformed. See [commands, private access, exact device evidence,
+limitations and recovery](raspberry-pi.md). Existing Streamlit width deprecations remain.
+
 ## 25 October 2026 — audit fixes and clearer paper workflows
 
 Reviewed every numbered finding in `PROJECT_AUDIT_2026-10-25.md`; the

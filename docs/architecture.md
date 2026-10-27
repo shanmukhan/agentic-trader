@@ -1,5 +1,52 @@
 # Architecture and invariants
 
+**26 October token/startup recovery:** a nonempty operator token shorter than 32
+characters prevents startup. The sync command's `--generate` option creates a strong
+replacement without printing it, privately backs up/updates local `.env` and sends
+only that credential over SSH. It clears systemd's failed-start limit before
+restarting changed/inactive Trader; a matching healthy service is left running.
+The strong-token requirement and accounting policy remain unchanged. See
+[generation, retry and recovery details](public-browser-access.md#operator-token-belongs-to-the-server-hosting-the-page).
+
+Operator-token repair now separates incoming-value validation from replacement of
+an existing credential. An invalid old value does not block a valid new value;
+exactly one target assignment, symlink protection, private backup and atomic 0600
+replacement remain required. A malformed old backup should be reviewed before
+restoration. See [token synchronization failures and recovery](public-browser-access.md#operator-token-belongs-to-the-server-hosting-the-page).
+
+## Explicit operator-token synchronization
+
+Local development and the Pi keep independent credential files. The token-only
+sync command validates one literal value without executing `.env`, sends it through
+SSH stdin, writes a root-private backup and atomically updates only the Pi token.
+It preserves owner/0600 access and unrelated configuration, restarts Trader on a
+changed file and verifies public authentication. Bearer/Origin/Host checks remain
+unchanged; no alternate token or authentication bypass is accepted. Browser guidance
+now identifies the hosting server. See [token lifecycle and recovery](public-browser-access.md#operator-token-belongs-to-the-server-hosting-the-page).
+
+## Explicit HTTPS browser profile — 25 October 2026
+
+The optional shanmukhan.com profile adds exact HTTPS-host/origin configuration and
+one validated app prefix, without changing loopback binding, economic fingerprints
+or operator authority. ASGI strips the configured prefix and bundled known-route
+URL literals receive that prefix; API/user/financial data are never rewritten.
+Uvicorn trusts forwarded headers only from loopback in this explicit profile. The
+existing Apache HTTPS vhost includes two app routes, with Streamlit's base path and
+WebSocket support. Advisor uses pipe-based Argon2 verification of a minimal monitor
+identity snapshot; Basic credentials are removed before proxying. Trader retains its
+Bearer operator checks. See [configuration and boundaries](public-browser-access.md).
+
+## Shared Raspberry Pi services (25 October 2026)
+
+`deployment/rpi/` owns code-only packaging, release installation and exact RPi Monitor
+allowlist integration for Trader and Portfolio Advisor. Root-owned release code is
+separate from per-user `/var/lib` state. Trader uses localhost:8010, preserving the
+monitor backend's :8000; Advisor uses localhost:8501 with a persistent credential-file
+override. Neither gets a public proxy route. Systemd grants writes only to each
+service's own state directory. Source preparation precedes downtime; health failures
+restore code/units while retaining financial state. See [deployment, authority and
+recovery contracts](raspberry-pi.md). Process liveness is separate from market readiness.
+
 ## Frame persistence and operator reads (24 October 2026)
 
 `QuoteStream` can deliver a bounded decoded frame to `PaperBroker.ingest_batch`.

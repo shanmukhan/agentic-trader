@@ -1,5 +1,16 @@
 # Operator API and command contracts
 
+## Public HTTPS transport profile — 25 October 2026
+
+The exact `TRADING_PUBLIC_ORIGIN` and `TRADING_PUBLIC_PATH` configuration enables
+an existing operator API under `https://shanmukhan.com/agentic-trader/`. All API paths
+and payloads retain their contracts after stripping the prefix. Bearer authorization
+remains required for private reads and financial controls; public POST Origin checks
+accept only that exact origin plus existing local origins. Hosts outside the explicit
+allowlist fail. Empty settings retain local serving. These transport fields do not
+change financial-policy identity. See [public browser usage](public-browser-access.md)
+for static assets/iframes, broker redirect and proxy trust/rollback details.
+
 ## Lightweight feed observation
 
 `GET /api/feed/status` requires the operator bearer token and returns a no-store

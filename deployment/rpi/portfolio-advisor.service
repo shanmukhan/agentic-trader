@@ -1,0 +1,29 @@
+[Unit]
+Description=Portfolio Advisor read-only research dashboard
+After=network-online.target time-sync.target
+Wants=network-online.target time-sync.target
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=portfolio-advisor
+Group=portfolio-advisor
+WorkingDirectory=/opt/portfolio-advisor/current
+Environment=ADVISOR_ENV_FILE=/var/lib/portfolio-advisor/config/.env
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/opt/portfolio-advisor/current/.venv/bin/streamlit run app.py --server.address=127.0.0.1 --server.port=8501 --server.headless=true --server.fileWatcherType=none --browser.gatherUsageStats=false --server.enableCORS=true --server.enableXsrfProtection=true
+Restart=on-failure
+RestartSec=10
+TimeoutStopSec=30
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/portfolio-advisor
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

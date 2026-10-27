@@ -1,5 +1,11 @@
 # One workspace, one unlock, clear next steps
 
+Broker & Data → step 5 suggests the official NSE holidays/notices reference on unlock.
+The editable suggestion follows the existing session-hour defaults and never ticks
+the review checkbox, saves a calendar or enables trading. Edits/clearing survive
+status refresh; Lock clears them and re-unlock restores the default. See
+[review/save and failure behavior](ui-setup.md).
+
 Version **0.19.0** adds consistent local icons beside all twelve menu labels and
 selected actions/headings. Text labels and visible keyboard focus remain; color and
 icons do not carry action meaning alone. The compact header retains paper identity,

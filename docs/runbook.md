@@ -1,5 +1,40 @@
 # Operator runbook
 
+**26 October token/startup recovery:** a nonempty operator token shorter than 32
+characters prevents startup. The sync command's `--generate` option creates a strong
+replacement without printing it, privately backs up/updates local `.env` and sends
+only that credential over SSH. It clears systemd's failed-start limit before
+restarting changed/inactive Trader; a matching healthy service is left running.
+The strong-token requirement and accounting policy remain unchanged. See
+[generation, retry and recovery details](public-browser-access.md#operator-token-belongs-to-the-server-hosting-the-page).
+
+Operator-token repair now separates incoming-value validation from replacement of
+an existing credential. An invalid old value does not block a valid new value;
+exactly one target assignment, symlink protection, private backup and atomic 0600
+replacement remain required. A malformed old backup should be reviewed before
+restoration. See [token synchronization failures and recovery](public-browser-access.md#operator-token-belongs-to-the-server-hosting-the-page).
+
+## Workstation token rejected on the Pi
+
+A 401 can mean the copied workstation token differs from the separately generated
+Pi token. Do not change risk/data settings or use broker credentials to unlock.
+Follow [explicit token synchronization](public-browser-access.md#operator-token-belongs-to-the-server-hosting-the-page)
+for the single-value SSH-stdin command, private backup, Trader restart, authenticated
+read verification and credential rollback. A changed Pi file needs a process restart;
+refresh/unlock the browser after successful verification. Broker/account state is
+not transferred by this operation.
+
+## shanmukhan.com browser publishing — 25 October 2026
+
+Use [the public browser runbook](public-browser-access.md) to add/update the Investing
+tab and the two HTTPS app routes alongside existing site/monitor purposes. First
+install current app source, then run `bash deployment/rpi/publish-web.sh
+lipi@192.168.1.13 ../rpi-setup`. Authenticate sudo privately before running these
+commands. Apache configuration is tested before graceful reload; failures restore
+prior web/app configuration without restoring financial databases. Re-publish after
+monitor credential changes to refresh the Advisor authentication snapshot. Browser
+operation uses the canonical HTTPS URLs; the SSH tunnel remains a recovery option.
+
 Use [operations automation](operations-automation.md) for the independent local
 monitor (`./scripts/start_operations.sh`), audited `daily-report`, optional scheduled
 acquisition and `operations-backup` / `operations-restore-drill`. The new stopped-owner
@@ -79,22 +114,21 @@ deployment still requires actual storage/power-loss rehearsal on the target hard
 
 ## Raspberry Pi systemd deployment
 
-Use a 64-bit OS, patched Python and the locked broker environment. The supplied unit
-assumes `/opt/agentic-trader`, dedicated user/group `trading-agent`, data/log directories
-owned by that user, and a root-managed private `/etc/agentic-trader.env` containing
-the variables in `.env.example`. Create these with the machine administrator; the
-setup script does not create accounts or modify system services automatically.
-Create `data` and `logs` before starting: systemd restricts writes to these paths.
-Keep the virtual environment and source readable/executable by the service user.
+Use the [shared Pi service guide](raspberry-pi.md) and
+`bash deployment/rpi/deploy.sh lipi@192.168.1.13 ../portfolio-advisor` for this host.
+It installs the two loopback services, persistent state, private operator access,
+code/monitor rollback and the mobile service allowlist. Trader uses port 8010 because
+RPi Monitor owns 8000; no streaming or automation is requested at startup. Health and
+readiness are distinct. Follow that guide for exact paths, SSH browser access,
+credential/session setup, safe updates, logs and recovery.
 
-After adapting and reviewing `deployment/systemd/trading-agent.service`, install it
-under `/etc/systemd/system/`, run `systemctl daemon-reload`, then
-`systemctl enable --now trading-agent`. Check `systemctl status trading-agent` and
-`journalctl -u trading-agent`. The template requests streaming, so valid credentials,
-tokens and catalog are needed. To run offline, remove `--stream` in your local unit.
-Restart after manual session renewal. Test a controlled reboot and verify preserved
-paper cash/positions, connectivity reset and durable kill behavior. Do not install
-a Python interpreter under `/tmp`; systemd uses `PrivateTmp`.
+The older `deployment/systemd/trading-agent.service`, `trading-operations.service`
+and `scripts/setup_pi.sh` remain generic manual templates; they are not the installed
+shared-host profile. In particular, the old trading unit requests streaming and port
+8000 defaults conflict with RPi Monitor. Do not install both Trader unit variants
+against the same database. The independent operations watcher is not installed by
+the new command. Physical reboot, storage/power-loss and sustained broker/feed
+acceptance require separate controlled checks and exact account reconciliation.
 
 ## macOS launchd deployment
 

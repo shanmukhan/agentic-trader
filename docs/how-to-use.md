@@ -1,5 +1,46 @@
 # How to use Agentic Trader
 
+**NSE session reference:** Broker & Data → step 5 now suggests the official NSE
+holidays/notices URL after unlock. Keep it after reviewing that source, or replace it
+with a specific circular/review note. Refresh preserves your edits; Lock then unlock
+restores the default. You still need to review the date/hours, tick the checkbox and
+confirm Save. No calendar entry is created automatically. See [session setup](ui-setup.md).
+
+**Token too short / Pi service will not start:** the app requires at least 32
+characters. To generate a strong replacement and save it privately on both machines,
+run `.venv/bin/python deployment/rpi/sync_operator_token.py lipi@192.168.1.13 --generate`
+after private sudo authentication. The command also clears a failed-start limit and
+recovers an inactive service. Read the generated value from your local `.env`, reload
+and unlock. For a retry after an SSH failure, omit `--generate` to keep the same value.
+See [generation, private backups and recovery](public-browser-access.md#operator-token-belongs-to-the-server-hosting-the-page).
+
+The operator-token sync helper can now replace an invalid existing Pi token
+(short/empty/punctuation/broken quoting) with a valid token from your workstation
+`.env`. The new token still requires 32–1024 URL-safe characters, and the Pi file
+must have exactly one assignment. The helper preserves a private backup and reports
+concise failures. See [token update and recovery](public-browser-access.md#operator-token-belongs-to-the-server-hosting-the-page).
+
+**Operator access:** use the token configured on the server hosting the page. Local
+`.env` and Pi `/etc/agentic-trader.env` start with independent tokens. To deliberately
+use this project's `.env` token on the Pi, run
+`.venv/bin/python deployment/rpi/sync_operator_token.py lipi@192.168.1.13` after
+private sudo authentication. Reload and paste the value only. The command changes
+one credential and verifies HTTPS access; see [inputs, restart effects and recovery](public-browser-access.md#operator-token-belongs-to-the-server-hosting-the-page).
+
+For direct Pi browser access, use the **Investing** tab at
+<https://shanmukhan.com/#investing>. Trader uses its operator token; Advisor prompts
+for your existing RPi Monitor username/password. See [public browser setup, broker
+callback and recovery](public-browser-access.md). Services run automatically; opening
+an app does not connect a broker or submit an order.
+
+For the shared Raspberry Pi service setup, use the [Pi deployment and mobile-monitor guide](raspberry-pi.md).
+`bash deployment/rpi/deploy.sh lipi@192.168.1.13 ../portfolio-advisor` installs both
+boot-enabled services with persistent private state. The recovery SSH
+tunnel uses Trader port **8010** and Advisor port **8501**; RPi Monitor's Services list
+provides status and service controls. Fresh Trader is paper/manual and Advisor is
+demo; existing local accounts and broker credentials are not copied. Follow the guide
+for unlocking, setup, expected readiness failures, updates and recovery.
+
 The [25 October audit fixes](audit-2026-10-25-resolution.md) improve chart inspection, portfolio summaries, feedback and recovery. Restart the owning server with `./scripts/start_ui.sh`, reload `/workspace`, and unlock once for all sections.
 
 - In **Stock Analysis**, select saved stock/interval/range, then tap a candle or use the candle slider and arrow keys. Toggle saved RSI, MACD or close ± ATR panels; gaps/warmup remain unavailable.

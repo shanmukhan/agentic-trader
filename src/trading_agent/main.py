@@ -741,7 +741,8 @@ def execute(args: argparse.Namespace) -> Any:
                 port=settings.port,
                 workers=1,
                 access_log=False,
-                proxy_headers=False,
+                proxy_headers=bool(settings.public_origin),
+                forwarded_allow_ips="127.0.0.1,::1",
                 log_config=None,
             )
             return None

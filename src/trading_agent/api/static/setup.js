@@ -101,6 +101,7 @@
       if (firstStatus) {
         el('session-open').value = '09:15';
         el('session-close').value = '15:30';
+        el('session-source').value = 'https://www.nseindia.com/resources/exchange-communication-holidays';
       }
       latest = data;
       selectionCapacity(data);

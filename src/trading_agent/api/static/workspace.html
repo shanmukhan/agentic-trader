@@ -85,16 +85,16 @@
             <p class="eyebrow">PRIVATE PAPER WORKSPACE</p>
           </div>
           <h2>Welcome to your workspace</h2>
-          <p class="muted">Unlock to view your portfolio, research stocks and manage paper trading. Use your local operator token for this tab.</p>
+          <p class="muted">Unlock to view your portfolio, research stocks and manage paper trading. Use the operator token configured for the server hosting this page.</p>
           <form id="workspace-unlock" class="controls" autocomplete="off">
-            <label for="workspace-token">Local operator token</label>
+            <label for="workspace-token">Operator token for this server</label>
             <input id="workspace-token" type="password" autocomplete="off" spellcheck="false" aria-describedby="workspace-token-help" required>
             <button id="workspace-submit"><svg class="icon" aria-hidden="true" focusable="false" width="20" height="20"><use href="/icons.svg#unlock"/></svg>Unlock workspace</button>
           </form>
           <p id="workspace-token-help" class="muted">This is the app’s operator token, separate from your Zerodha credentials.</p>
           <details class="access-help">
             <summary>Where do I find my token?</summary>
-            <p class="muted">Use <code>TRADING_OPERATOR_TOKEN</code> from your private <code>.env</code>. It unlocks all menu sections in this browser tab. Zerodha request/access tokens do not unlock the app.</p>
+            <p class="muted">Use the value of <code>TRADING_OPERATOR_TOKEN</code>, without quotes or the variable name. A local server reads your private <code>.env</code>; the Raspberry Pi service reads <code>/etc/agentic-trader.env</code>. A workstation token works on the Pi only after explicit synchronization. Zerodha request/access tokens and the RPi Monitor password do not unlock this app.</p>
             <p class="muted">Your token stays in this tab’s memory. Menu navigation keeps access in memory. Reloading, opening another workspace tab or closing this tab requires unlocking again. Switching to another browser tab does not intentionally lock this workspace.</p>
           </details>
         </section>

@@ -1,0 +1,29 @@
+[Unit]
+Description=Agentic Trader paper workspace (manual feed setup)
+After=network-online.target time-sync.target
+Wants=network-online.target time-sync.target
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=trading-agent
+Group=trading-agent
+WorkingDirectory=/opt/agentic-trader/current
+EnvironmentFile=/etc/agentic-trader.env
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/opt/agentic-trader/current/.venv/bin/trading-agent serve
+Restart=on-failure
+RestartSec=10
+TimeoutStopSec=30
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/agentic-trader
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

@@ -6,6 +6,7 @@ from datetime import time
 from decimal import Decimal
 from pathlib import Path
 from typing import Annotated, Literal
+from urllib.parse import urlsplit
 
 from pydantic import BaseModel, ConfigDict, Field, SecretStr, model_validator
 
@@ -18,6 +19,8 @@ class Settings(BaseModel):
     database: Path = Path("data/paper.sqlite3")
     host: Literal["127.0.0.1", "::1"] = "127.0.0.1"
     port: int = Field(default=8000, ge=1024, le=65535)
+    public_origin: str = ""
+    public_path: str = Field(default="", pattern=r"^(?:/[a-z][a-z0-9-]*)?$")
     starting_cash: Decimal = Field(default=Decimal("25000"), gt=0, le=10000000)
     max_trade_risk: Decimal = Field(default=Decimal("62.50"), gt=0)
     daily_loss_limit: Decimal = Field(default=Decimal("250"), gt=0)
@@ -40,6 +43,26 @@ class Settings(BaseModel):
 
     @model_validator(mode="after")
     def validate_policy(self) -> "Settings":
+        if self.public_origin:
+            origin = urlsplit(self.public_origin)
+            if (
+                origin.scheme != "https"
+                or not origin.hostname
+                or origin.username is not None
+                or origin.password is not None
+                or origin.path
+                or origin.query
+                or origin.fragment
+                or origin.netloc != origin.hostname
+                or self.public_origin != "https://" + origin.hostname
+                or not origin.hostname.isascii()
+                or not all(c.isalnum() or c in ".-" for c in origin.hostname)
+            ):
+                raise ValueError(
+                    "public_origin must be an exact HTTPS hostname without path or port"
+                )
+        if self.public_path and not self.public_origin:
+            raise ValueError("public_path requires an explicit HTTPS public_origin")
         values = (
             self.starting_cash,
             self.max_trade_risk,
@@ -84,4 +107,7 @@ class Settings(BaseModel):
             values = tomllib.load(file)
         values["mode"] = os.environ.get("TRADING_MODE", values.get("mode", "paper"))
         values["operator_token"] = os.environ.get("TRADING_OPERATOR_TOKEN", "")
+        for name in ("public_origin", "public_path"):
+            if os.environ.get("TRADING_" + name.upper()):
+                values[name] = os.environ["TRADING_" + name.upper()]
         return cls.model_validate(values)
