@@ -167,6 +167,7 @@ def test_download_cancellation_and_restart_do_not_replay_partial_jobs(
     preparation_factory, monkeypatch
 ):
     s = preparation_factory()
+    s.setup.check_profile()
     entered, release = threading.Event(), threading.Event()
     original = s.broker.get_daily_history
 
@@ -198,6 +199,7 @@ def test_download_cancellation_and_restart_do_not_replay_partial_jobs(
 
 def test_external_errors_are_sanitized_and_never_authorize_a_mode(preparation_factory, monkeypatch):
     s = preparation_factory()
+    s.setup.check_profile()
 
     def fail(*args, **kwargs):
         raise RuntimeError("SECRET_SESSION and provider details")
@@ -211,6 +213,107 @@ def test_external_errors_are_sanitized_and_never_authorize_a_mode(preparation_fa
     view = s.prep.view()
     assert view["job"]["state"] == "failed" and "SECRET" not in json.dumps(view)
     assert s.desk.mode == "manual" and not s.engine.orders()
+
+
+def test_broker_verification_stage_precedes_official_source_reads(preparation_factory, monkeypatch):
+    s = preparation_factory()
+    s.setup.check_profile()
+    entered, release = threading.Event(), threading.Event()
+
+    def profile():
+        entered.set()
+        assert release.wait(3)
+        return {"authenticated": True}
+
+    monkeypatch.setattr(s.broker, "get_profile", profile)
+    read = sources.public_read
+    stages = []
+
+    def source_read(*args, **kwargs):
+        stages.append(s.prep.view()["job"]["stage"])
+        return read(*args, **kwargs)
+
+    monkeypatch.setattr(sources, "public_read", source_read)
+    s.prep.start(
+        DownloadRequest(
+            universe="nifty100", request_id="d" * 32, revision=s.desk.revision, acknowledged=True
+        )
+    )
+    try:
+        assert entered.wait(3)
+        assert s.prep.view()["job"]["stage"] == "broker_session"
+        assert not s.requests and not s.broker.calls
+    finally:
+        release.set()
+        s.prep.thread.join(5)
+    assert not s.prep.thread.is_alive()
+    assert stages == ["official_sources"] * 3
+    assert s.prep.view()["job"]["state"] == "ready_for_review"
+
+
+@pytest.mark.parametrize("missing", ["unverified", "previous_day", "future", "token", "catalog"])
+def test_download_prerequisites_refuse_before_creating_job_or_reading_sources(
+    preparation_factory, missing
+):
+    s = preparation_factory()
+    if missing != "unverified":
+        s.setup.check_profile()
+    if missing == "previous_day":
+        s.clock[0] += timedelta(days=1)
+    elif missing == "future":
+        s.setup.verified_at += timedelta(seconds=1)
+    elif missing == "token":
+        s.setup.values["access_token"] = ""
+    elif missing == "catalog":
+        with s.engine.db.transaction() as tx:
+            tx.execute("UPDATE instruments SET token=token*256+2")
+    prerequisites = s.prep.view()["download_prerequisites"]
+    assert prerequisites["ready"] is False
+    assert prerequisites["session_verified"] is (missing == "catalog")
+    with pytest.raises(SetupError, match="NSE catalog|prerequisite incomplete"):
+        s.prep.start(
+            DownloadRequest(
+                universe="nifty100",
+                request_id="a" * 32,
+                revision=s.desk.revision,
+                acknowledged=True,
+            )
+        )
+    assert s.prep.state is None and s.prep.thread is None and not s.prep.root.exists()
+    assert not s.requests and not s.broker.calls and s.desk.research is None
+
+
+def test_old_download_profile_failure_cannot_clear_new_session_verification(
+    preparation_factory, monkeypatch
+):
+    s = preparation_factory()
+    s.setup.check_profile()
+    entered, release = threading.Event(), threading.Event()
+    original = s.broker.get_profile
+
+    def blocked_failure():
+        entered.set()
+        assert release.wait(3)
+        raise RuntimeError("INVENTED old session failed")
+
+    monkeypatch.setattr(s.broker, "get_profile", blocked_failure)
+    s.prep.start(
+        DownloadRequest(
+            universe="nifty100",
+            request_id="a" * 32,
+            revision=s.desk.revision,
+            acknowledged=True,
+        )
+    )
+    try:
+        assert entered.wait(3)
+        monkeypatch.setattr(s.broker, "get_profile", original)
+        s.setup.check_profile()
+    finally:
+        release.set()
+        s.prep.thread.join(5)
+    assert s.prep.view()["job"]["error"] == "BROKER_SESSION_UNAVAILABLE"
+    assert s.prep.view()["download_prerequisites"]["session_verified"] is True
 
 
 def test_daily_history_strict_completion_duplicates_and_no_early_availability(monkeypatch):
@@ -469,6 +572,7 @@ def test_calendar_usage_during_validation_prevents_correction(preparation_factor
 
 def test_midnight_during_download_requires_fresh_sources(preparation_factory, monkeypatch):
     s = preparation_factory()
+    s.setup.check_profile()
     original = s.broker.get_daily_history
 
     def history(*args, **kwargs):

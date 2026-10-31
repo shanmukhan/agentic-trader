@@ -127,7 +127,7 @@ def test_configured_maximum_selection_exceeds_old_body_limit_without_relaxing_se
     client, service = setup_client
     service.engine.settings = service.engine.settings.model_copy(update={"stream_limit": 3000})
     service.config.write_text(
-        service.config.read_text().replace("stream_limit = 10", "stream_limit = 3000")
+        service.config.read_text().replace("stream_limit = 50", "stream_limit = 3000")
     )
     catalog = [(f"NSE:CAPACITY{index:022d}", 513 + 256 * index, ".05") for index in range(3000)]
     with service.engine.db.transaction() as tx:

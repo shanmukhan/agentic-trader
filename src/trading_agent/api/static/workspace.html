@@ -22,6 +22,7 @@
         <div class="workspace-nav-group">
           <p class="nav-caption">Research</p>
           <a id="nav-discovery" href="#discovery"><svg class="icon" aria-hidden="true" focusable="false" width="20" height="20"><use href="/icons.svg#compass"/></svg>Stock Discovery</a>
+          <a id="nav-watchlist" href="#watchlist"><svg class="icon" aria-hidden="true" focusable="false" width="20" height="20"><use href="/icons.svg#list"/></svg>Watchlist</a>
           <a id="nav-analysis" href="#analysis"><svg class="icon" aria-hidden="true" focusable="false" width="20" height="20"><use href="/icons.svg#chart"/></svg>Stock Analysis</a>
         </div>
         <div class="workspace-nav-group">
@@ -86,12 +87,14 @@
           </div>
           <h2>Welcome to your workspace</h2>
           <p class="muted">Unlock to view your portfolio, research stocks and manage paper trading. Use the operator token configured for the server hosting this page.</p>
-          <form id="workspace-unlock" class="controls" autocomplete="off">
+          <form id="workspace-unlock" class="controls" autocomplete="on">
+            <input type="hidden" name="username" value="operator" autocomplete="username">
             <label for="workspace-token">Operator token for this server</label>
-            <input id="workspace-token" type="password" autocomplete="off" spellcheck="false" aria-describedby="workspace-token-help" required>
+            <input id="workspace-token" name="password" type="password" autocomplete="current-password" spellcheck="false" aria-describedby="workspace-token-help" required>
             <button id="workspace-submit"><svg class="icon" aria-hidden="true" focusable="false" width="20" height="20"><use href="/icons.svg#unlock"/></svg>Unlock workspace</button>
           </form>
-          <p id="workspace-token-help" class="muted">This is the app’s operator token, separate from your Zerodha credentials.</p>
+          <p id="workspace-token-help" class="muted">This is the app’s operator token, separate from your Zerodha credentials. Save it in your phone or browser password manager for this site (username: operator), then autofill to unlock.</p>
+          <p><a href="/android">Get the native Android app · pair once, then use biometrics →</a></p>
           <details class="access-help">
             <summary>Where do I find my token?</summary>
             <p class="muted">Use the value of <code>TRADING_OPERATOR_TOKEN</code>, without quotes or the variable name. A local server reads your private <code>.env</code>; the Raspberry Pi service reads <code>/etc/agentic-trader.env</code>. A workstation token works on the Pi only after explicit synchronization. Zerodha request/access tokens and the RPi Monitor password do not unlock this app.</p>

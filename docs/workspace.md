@@ -1,5 +1,32 @@
 # One workspace, one unlock, clear next steps
 
+## Watchlist destination (0.21.0)
+
+The Research menu includes **Watchlist** (`/workspace#watchlist`). It uses the existing
+private frame handoff, locking, accessible controls and guarded confirmation dialog.
+Search the saved NSE catalog, review exact replacement permissions, and explicitly
+acknowledge changes. Unsaved edits guard navigation; requests/confirmations prevent
+section changes. A lost mutation response requires reading saved state without an
+automatic retry. Lock clears private list and safety values; late reads are ignored.
+Catalog timestamps, unmonitored selected stocks, exit-only holdings, stale valuation,
+entry slots, drawdown and daily lockouts are explained. See [the usage guide](watchlist-safety.md).
+Browser/native checks were added but not run on this change.
+
+Backend **0.20.0** also supports the native Android **1.0.0** companion. The workspace
+links to `/android` for its signed installer. Pair once, unlock with strong biometrics
+and use native research/policy/backtest/account screens. The browser remains available;
+phone access has a separate revocable credential. See [Android guide](android-app.md)
+and [API authority, callback and installer component](mobile-api.md).
+
+Version **0.19.2** lets the unlock field use your phone/browser password manager.
+Save an entry for the hosted workspace with username **operator** and the full server
+operator token as its password; autofill it to unlock. Token access in the app remains
+in tab memory and Lock/reload still clears it. Save prompts depend on your browser;
+manual password-manager entry is supported. See [mobile unlock and redirect setup](ui-setup.md#mobile-unlock-and-the-hosted-kite-redirect).
+Broker & Data's connection result now updates automatically while its visible,
+unlocked page has a requested feed, with stale-state and failure recovery beside the
+buttons. Download prerequisites in Strategies also display before its disabled action.
+
 Broker & Data → step 5 suggests the official NSE holidays/notices reference on unlock.
 The editable suggestion follows the existing session-hour defaults and never ticks
 the review checkbox, saves a calendar or enables trading. Edits/clearing survive

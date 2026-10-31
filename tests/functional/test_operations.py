@@ -3,6 +3,7 @@
 import hashlib
 import json
 import sqlite3
+from contextlib import closing
 from datetime import datetime, timedelta
 from decimal import Decimal
 
@@ -33,6 +34,50 @@ def app_for(s):
     return create_app(
         s.engine, clock=lambda: s.clock[0], setup=s.setup, desk=s.desk, background=False
     )
+
+
+def test_five_minute_old_history_requires_explicit_audit_and_read_checks_do_not_redownload(
+    preparation_factory,
+):
+    from preparation_support import download
+
+    s = preparation_factory("long_term")
+    download(s)
+    identity = s.prep.state["job_id"]
+    s.clock[0] += timedelta(minutes=5)
+    calls, source_reads = list(s.broker.calls), list(s.requests)
+
+    def persisted():
+        with closing(sqlite3.connect(s.engine.settings.database)) as db:
+            assert db.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
+            assert Decimal(
+                db.execute("SELECT value FROM meta WHERE key='cash'").fetchone()[0]
+            ) == Decimal("25000.00")
+            return list(db.iterdump())
+
+    before = persisted()
+    saved = {p.name: p.read_bytes() for p in (s.prep.root / identity).iterdir() if p.is_file()}
+    with TestClient(app_for(s), base_url="http://127.0.0.1") as client:
+        lightweight = client.get("/api/operations", headers=AUTH).json()
+        assert lightweight["source_validation"] is None
+        assert (
+            next(c for c in lightweight["checks"] if c["id"] == "strategy_data")["reason_code"]
+            == "SOURCE_AUDIT_NOT_RUN"
+        )
+        for _ in range(2):
+            audited = client.get("/api/operations?audit=true", headers=AUTH).json()
+            assert audited["preparation"]["job_id"] == identity
+            assert audited["preparation"]["universe"] == "nifty100"
+            assert all(
+                audited["source_validation"][key]
+                for key in ("hashes_valid", "same_ist_date", "coverage_valid")
+            )
+            assert audited["decision_mode"] == "manual" and s.desk.research is None
+    assert s.broker.calls == calls and s.requests == source_reads
+    assert s.prep.state["job_id"] == identity and persisted() == before
+    assert saved == {
+        p.name: p.read_bytes() for p in (s.prep.root / identity).iterdir() if p.is_file()
+    }
 
 
 def test_operations_report_is_read_only_authenticated_and_independently_reconciled(
@@ -312,3 +357,62 @@ def test_scheduled_download_refuses_pending_orders_without_cancelling_them(prepa
         )
         assert response.status_code == 409
         assert rows(s.engine) == before and not s.broker.calls
+
+
+def test_source_only_audit_is_private_read_only_and_never_runs_ledger_audit(
+    preparation_factory, monkeypatch
+):
+    from preparation_support import download
+
+    import trading_agent.operations.report as report_module
+
+    s = preparation_factory("long_term")
+    download(s, "nifty50")
+    with closing(sqlite3.connect(s.engine.settings.database)) as db:
+        before = list(db.iterdump())
+    broker_calls, source_reads = list(s.broker.calls), list(s.requests)
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("UI source validation must never run full accounting")
+
+    monkeypatch.setattr(report_module, "_account", forbidden)
+    with TestClient(app_for(s), base_url="http://127.0.0.1") as client:
+        assert client.get("/api/desk/preparation/audit").status_code == 401
+        response = client.get("/api/desk/preparation/audit", headers=AUTH)
+        assert response.status_code == 200
+        result = response.json()
+        assert result["schema_version"] == 1 and result["source_error"] is None
+        assert result["preparation"]["job_id"] == s.prep.state["job_id"]
+        assert result["preparation"]["universe"] == "nifty50"
+        assert all(
+            result["source_validation"][k]
+            for k in ("hashes_valid", "same_ist_date", "coverage_valid")
+        )
+        assert "ledger_audit" not in result and "account" not in result
+        assert result["trading_authorization"] == "NOT AUTHORIZED BY THIS CHECK"
+        source = s.prep.root / s.prep.state["job_id"] / "constituents.csv"
+        source.write_text(source.read_text() + "\nchanged")
+        invalid = client.get("/api/desk/preparation/audit", headers=AUTH).json()
+        assert invalid["source_validation"] is None
+        assert invalid["source_error"] == "SOURCE_INVALID_OR_UNAVAILABLE"
+    assert s.broker.calls == broker_calls and s.requests == source_reads
+    with closing(sqlite3.connect(s.engine.settings.database)) as db:
+        assert db.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
+        assert list(db.iterdump()) == before
+
+
+def test_operations_basket_resolution_is_bounded_independently_of_catalog_size(
+    preparation_factory, monkeypatch
+):
+    from unittest.mock import PropertyMock
+
+    s = preparation_factory("long_term")
+    token = PropertyMock(return_value=(257,))
+    monkeypatch.setattr(type(s.desk), "execution_tokens", token)
+    before = rows(s.engine)
+    with TestClient(app_for(s), base_url="http://127.0.0.1") as client:
+        result = client.get("/api/operations", headers=AUTH)
+        assert result.status_code == 200
+    # Resolve once for report selection plus bounded readiness checks, never per catalog row.
+    assert token.call_count <= 6
+    assert rows(s.engine) == before

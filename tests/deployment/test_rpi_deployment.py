@@ -8,6 +8,7 @@ import sqlite3
 import subprocess
 import sys
 import tarfile
+import tomllib
 import types
 from contextlib import closing
 from decimal import Decimal
@@ -16,6 +17,15 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
+
+
+def test_backend_release_version_matches_project_and_lock():
+    from trading_agent import __version__
+
+    project = tomllib.loads((ROOT / "pyproject.toml").read_text())
+    lock = tomllib.loads((ROOT / "uv.lock").read_text())
+    locked = next(p for p in lock["package"] if p["name"] == "agentic-trader")
+    assert project["project"]["version"] == locked["version"] == __version__
 
 
 def module(name):
@@ -96,6 +106,7 @@ def test_bundle_contains_reviewable_hashes_but_no_private_state(tmp_path):
     tracked_project(
         trader,
         {
+            "pyproject.toml": '[project]\nversion="0.19.1"\n',
             "uv.lock": "locked",
             "src/trading_agent/main.py": "code",
             "config/paper.toml": 'mode="paper"',
@@ -107,6 +118,7 @@ def test_bundle_contains_reviewable_hashes_but_no_private_state(tmp_path):
     tracked_project(
         advisor,
         {
+            "pyproject.toml": '[project]\nversion="1.0.0"\n',
             "app.py": "code",
             "advisor/config.py": "code",
             "data/demo_holdings.csv": "demo",
@@ -132,11 +144,139 @@ def test_bundle_contains_reviewable_hashes_but_no_private_state(tmp_path):
             for name in names
         )
         manifest = json.load(archive.extractfile("manifest.json"))
+        assert manifest["versions"] == {"trader": "0.19.1", "advisor": "1.0.0"}
         for name, expected in manifest["sha256"].items():
             assert hashlib.sha256(archive.extractfile(name).read()).hexdigest() == expected
     # Working-tree changes to tracked source are packaged and identified by their hash.
     (advisor / "app.py").write_text("updated code")
     assert Path("app.py") in module("bundle").sources(advisor, "advisor")
+
+
+def test_trader_only_versioned_bundle_excludes_advisor_and_rejects_unsafe_version(tmp_path):
+    trader = tmp_path / "trader"
+    tracked_project(
+        trader,
+        {
+            "pyproject.toml": '[project]\nversion="0.19.1"\n',
+            "uv.lock": "locked",
+            "src/trading_agent/__init__.py": '__version__="0.19.1"\n',
+        },
+    )
+    output = tmp_path / "trader.tar.gz"
+    module("bundle").build(trader, None, output)
+    with tarfile.open(output) as archive:
+        manifest = json.load(archive.extractfile("manifest.json"))
+        assert set(manifest["projects"]) == {"trader"}
+        assert manifest["versions"] == {"trader": "0.19.1"}
+        assert not any(name.startswith("advisor/") for name in archive.getnames())
+        for name, expected in manifest["sha256"].items():
+            assert hashlib.sha256(archive.extractfile(name).read()).hexdigest() == expected
+    (trader / "pyproject.toml").write_text('[project]\nversion="../../unsafe"\n')
+    with pytest.raises(ValueError, match="release version"):
+        module("bundle").build(trader, None, output)
+
+
+def test_android_bundle_includes_only_verified_public_installer_and_metadata(tmp_path):
+    from fastapi import HTTPException
+
+    project, release = tmp_path / "project", tmp_path / "release"
+    tracked_project(
+        project,
+        {
+            "pyproject.toml": '[project]\nversion="0.20.0"\n',
+            "uv.lock": "locked",
+            "src/trading_agent/main.py": "code",
+        },
+    )
+    release.mkdir()
+    apk = release / "agentic-trader.apk"
+    apk.write_bytes(b"INVENTED packaging fixture; not a signed APK")
+    value = {
+        "version": "1.0.0",
+        "version_code": 1,
+        "package_name": "com.shanmukhan.agentictrader",
+        "build_type": "productionRelease",
+        "sha256": hashlib.sha256(apk.read_bytes()).hexdigest(),
+        "certificate_sha256": "a" * 64,
+    }
+    metadata = release / "android-release.json"
+    metadata.write_text(json.dumps(value))
+    (release / "private-signing-key.p12").write_text("INVENTED private fixture")
+    (release / "identity.json").write_text("INVENTED private fixture")
+    output = tmp_path / "signed-bundle.tar.gz"
+    module("bundle").build(project, None, output, apk)
+    with tarfile.open(output) as archive:
+        names = archive.getnames()
+        assert {n for n in names if n.startswith("trader/downloads/")} == {
+            "trader/downloads/agentic-trader.apk",
+            "trader/downloads/android-release.json",
+        }
+        assert not any("signing" in n or "identity.json" in n for n in names)
+        manifest = json.load(archive.extractfile("manifest.json"))
+        assert manifest["android"]["sha256"] == value["sha256"]
+        for name, expected in manifest["sha256"].items():
+            assert hashlib.sha256(archive.extractfile(name).read()).hexdigest() == expected
+    apk.write_bytes(b"tampered")
+    with pytest.raises(HTTPException) as error:
+        module("bundle").build(project, None, output, apk)
+    assert error.value.status_code == 503
+    metadata.unlink()
+    metadata.symlink_to(release / "identity.json")
+    with pytest.raises(HTTPException):
+        module("bundle").build(project, None, output, apk)
+
+
+def test_trader_only_deploy_cli_sends_only_versioned_trader_bundle(tmp_path):
+    project = tmp_path / "project"
+    tracked_project(
+        project,
+        {
+            "pyproject.toml": '[project]\nversion="0.19.1"\n',
+            "uv.lock": "locked",
+            "src/trading_agent/__init__.py": '__version__="0.19.1"\n',
+        },
+    )
+    deployment = project / "deployment/rpi"
+    deployment.mkdir(parents=True)
+    for name in ("bundle.py", "deploy.sh", "install.sh"):
+        (deployment / name).write_bytes((ROOT / "deployment/rpi" / name).read_bytes())
+    commands = tmp_path / "commands"
+    commands.mkdir()
+    log, captured = tmp_path / "commands.jsonl", tmp_path / "sent.tar.gz"
+    for name in ("ssh", "scp"):
+        path = commands / name
+        path.write_text(
+            f"#!{sys.executable}\n"
+            "import json,os,pathlib,shutil,sys\n"
+            "with open(os.environ['DEPLOY_TEST_LOG'],'a') as out:\n"
+            " out.write(json.dumps([pathlib.Path(sys.argv[0]).name,*sys.argv[1:]])+'\\n')\n"
+            "if pathlib.Path(sys.argv[0]).name=='scp':\n"
+            " shutil.copyfile(sys.argv[-2],os.environ['DEPLOY_TEST_CAPTURE'])\n"
+            "elif 'mktemp -d' in sys.argv[-1]:\n"
+            " print('/tmp/trading-services.TEST123')\n"
+        )
+        path.chmod(0o700)
+    subprocess.run(
+        ["bash", str(deployment / "deploy.sh"), "test@invented.invalid", "--trader-only"],
+        check=True,
+        capture_output=True,
+        text=True,
+        env={
+            **os.environ,
+            "PATH": str(commands) + os.pathsep + os.environ["PATH"],
+            "DEPLOY_PYTHON": sys.executable,
+            "DEPLOY_TEST_LOG": str(log),
+            "DEPLOY_TEST_CAPTURE": str(captured),
+        },
+    )
+    with tarfile.open(captured) as archive:
+        manifest = json.load(archive.extractfile("manifest.json"))
+        assert manifest["versions"] == {"trader": "0.19.1"}
+        assert set(manifest["projects"]) == {"trader"}
+    calls = [json.loads(line) for line in log.read_text().splitlines()]
+    assert sum(call[0] == "scp" for call in calls) == 1
+    assert any("sudo -n bash" in call[-1] for call in calls)
+    assert calls[-1][-1] == "rm -rf '/tmp/trading-services.TEST123'"
 
 
 def test_bundle_rejects_symlink_to_private_file(tmp_path):

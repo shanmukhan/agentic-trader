@@ -94,11 +94,39 @@ class TradingDesk:
 
     @property
     def execution_tokens(self) -> tuple[int, ...]:
-        return (
-            tuple(i.token for i in self.automation.catalog.values())
-            if self.automation
-            else self.engine.settings.stream_tokens
-        )
+        with self.engine.db.read_snapshot() as tx:
+            safety = self.engine.safety.state(tx)
+            if safety is not None:
+                allowed = set(safety["symbols"]) | {
+                    r[0] for r in tx.execute("SELECT symbol FROM positions")
+                }
+                tokens = (
+                    tuple(i.token for i in self.automation.catalog.values())
+                    if self.automation
+                    else self.engine.settings.stream_tokens
+                )
+                if self.research and self.engine.settings.automatic_universe == "nifty50":
+                    allowed &= {s.symbol for s in self.research.profile.shares} | {
+                        r[0] for r in tx.execute("SELECT symbol FROM positions")
+                    }
+                return tuple(
+                    r[0]
+                    for r in tx.execute("SELECT token,symbol FROM instruments")
+                    if r[0] in tokens and r[1] in allowed
+                )
+        if self.automation:
+            return tuple(i.token for i in self.automation.catalog.values())
+        tokens = self.engine.settings.stream_tokens
+        if self.research and self.engine.settings.automatic_universe == "nifty50":
+            reviewed = {s.symbol for s in self.research.profile.shares}
+            with self.engine.db.read_snapshot() as tx:
+                held = {r[0] for r in tx.execute("SELECT symbol FROM positions")}
+                return tuple(
+                    r[0]
+                    for r in tx.execute("SELECT token,symbol FROM instruments")
+                    if r[0] in tokens and r[1] in reviewed | held
+                )
+        return tokens
 
     def _save(self, tx: Any, record: dict[str, Any], now: datetime) -> None:
         record["updated_at"] = stamp(now)
@@ -140,6 +168,7 @@ class TradingDesk:
         if e.snapshot(now)["kill"]:
             reasons.append("KILL_SWITCH")
         with e.lock, e.db.transaction() as tx:
+            reasons.extend(e.safety.reasons(tx, now))
             selected_symbols = (
                 [
                     r[0]
@@ -286,6 +315,9 @@ class TradingDesk:
                             "NO_FRESH_EXECUTION_QUOTES",
                             "ML_MODEL_NOT_CURRENT",
                             "UNSUPPORTED_HELD_ASSET_CLASS",
+                            "SAFETY_PAUSED",
+                            "DATA_QUALITY_DAY_BLOCK",
+                            "WATCHLIST_EMPTY",
                         }
                     ]
                 if pause_causes:
@@ -315,6 +347,10 @@ class TradingDesk:
             symbol = candidate.symbol if candidate else symbol
             if not symbol or side not in ("BUY", "SELL"):
                 raise DeskError("Invalid internal trade proposal.")
+            if side == "BUY":
+                with self.engine.db.read_snapshot() as tx:
+                    if not self.engine.safety.allows(tx, symbol):
+                        return None
             identity = digest(
                 [
                     self.identity,
@@ -385,6 +421,8 @@ class TradingDesk:
     ) -> tuple[Candidate | None, Any, RiskDecision, dict[str, Any]]:
         e, symbol = self.engine, record["symbol"]
         reasons = []
+        if record["side"] == "BUY" and not e.safety.allows(tx, symbol):
+            reasons.append("SYMBOL_OUTSIDE_WATCHLIST")
         if (
             record["profile"] != self.identity
             or record["revision"] != self.revision
@@ -705,6 +743,11 @@ class TradingDesk:
                 if tokens
                 else []
             )
+            monitored = [
+                dict(r)
+                for r in tx.execute("SELECT symbol,token FROM instruments")
+                if r["token"] in self.engine.settings.stream_tokens
+            ]
             shortlist = self.shortlist(tx)
             records = [
                 json.loads(r[0])
@@ -714,6 +757,9 @@ class TradingDesk:
             ]
         # Snapshot opens another transaction; do not nest it in the view transaction.
         result = self.research.result if self.research else None
+        history_covered = (
+            {s.symbol for s in self.research.profile.shares} if self.research else set()
+        )
         blockers = self.blockers(now)
         daily_signal_summary = None
         if self.research and self.engine.long_term:
@@ -754,6 +800,21 @@ class TradingDesk:
             "blockers": blockers,
             "readiness": readiness(self, now, blockers),
             "selected": selected,
+            "monitoring": {
+                "universe": self.engine.settings.automatic_universe,
+                "monitored_count": len(monitored),
+                "execution_covered_count": sum(
+                    row["symbol"] in history_covered for row in monitored
+                ),
+                "members": [
+                    {"symbol": row["symbol"], "history_covered": row["symbol"] in history_covered}
+                    for row in monitored
+                ],
+                "source": "https://www.niftyindices.com/IndexConstituent/ind_nifty50list.csv"
+                if self.engine.settings.automatic_universe == "nifty50"
+                else None,
+            },
+            "analysis_status": getattr(self, "intraday_status", None),
             "decisions": records,
             "decisions_limit": 100,
             "daily_signal_summary": daily_signal_summary,
@@ -788,12 +849,34 @@ class TradingDesk:
         matched_symbols = {r["symbol"] for r in matched}
         held = {r[0] for r in tx.execute("SELECT symbol FROM positions")}
         symbols = sorted(held)
+        if (
+            self.engine.settings.automatic_universe == "nifty50"
+            and self.research.automatic_universe != "nifty50"
+        ):
+            matched = [
+                {"symbol": symbol}
+                for symbol, token in catalog.items()
+                if token in self.engine.settings.stream_tokens
+            ]
+        if self.research.automatic_universe == "nifty50":
+            matched = [
+                {"symbol": m.symbol}
+                for m in self.research.dataset.manifest.universe
+                if m.symbol in catalog and catalog[m.symbol] & 255 == 1
+            ]
+        matched = [r for r in matched if self.engine.safety.allows(tx, r["symbol"])]
         for row in matched:
             if (
                 row["symbol"] in catalog
                 and catalog[row["symbol"]] & 255 == 1
                 and row["symbol"] not in symbols
-                and len(symbols) < 10
+                and (
+                    (
+                        self.research.automatic_universe == "nifty50"
+                        or self.engine.settings.automatic_universe == "nifty50"
+                    )
+                    or len(symbols) < self.engine.settings.stream_limit
+                )
             ):
                 symbols.append(row["symbol"])
         plan = {

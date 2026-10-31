@@ -59,7 +59,10 @@ def make_preparation(tmp_path, monkeypatch, factory):
     def read(url, params=None):
         requests.append((url, params))
         if url in sources.UNIVERSES.values():
-            return output.getvalue().encode()
+            value = output.getvalue()
+            if url == sources.UNIVERSES["nifty50"]:
+                value = "\n".join(value.splitlines()[:51]) + "\n"
+            return value.encode()
         if url == sources.HOLIDAYS:
             return holidays
         return json.dumps(
@@ -120,9 +123,10 @@ def make_preparation(tmp_path, monkeypatch, factory):
     )
 
 
-def download(s):
+def download(s, universe="nifty100"):
+    s.setup.check_profile()
     request = DownloadRequest(
-        universe="nifty100", request_id="b" * 32, revision=s.desk.revision, acknowledged=True
+        universe=universe, request_id="b" * 32, revision=s.desk.revision, acknowledged=True
     )
     s.prep.start(request)
     s.prep.thread.join(timeout=5)

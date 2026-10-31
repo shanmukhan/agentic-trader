@@ -20,6 +20,7 @@ from trading_agent.operations.schedule import ScheduledDownload
 @pytest.fixture
 def downloaded(preparation_factory):
     s = preparation_factory()
+    s.setup.check_profile()
     s.prep.start(
         DownloadRequest(
             universe="nifty100", request_id="d" * 32, revision=s.desk.revision, acknowledged=True

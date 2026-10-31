@@ -54,6 +54,8 @@ def private_write(path: Path, content: str) -> None:
 
 
 class SetupService:
+    uses_persisted_candles = True
+
     def __init__(
         self,
         engine: PaperBroker,
@@ -68,6 +70,7 @@ class SetupService:
         self.connection_observer: Callable[[bool], None] | None = None
         self.verified = False
         self.verified_at: datetime | None = None
+        self.profile_revision = 0
         self.nonce: tuple[str, float] | None = None
         self.values = {
             "api_key": os.environ.get("KITE_API_KEY", ""),
@@ -103,7 +106,12 @@ class SetupService:
         # The path is server-selected, never supplied by a browser. Preserve comments.
         if self.config.is_symlink():
             raise SetupError("Refusing a symbolic-link account config.")
-        if not updates or set(updates) - {"stream_tokens", "calendar"}:
+        if not updates or set(updates) - {
+            "stream_tokens",
+            "calendar",
+            "stream_limit",
+            "automatic_universe",
+        }:
             raise SetupError("Setup can only change the reviewed calendar and feed selection.")
         try:
             document = tomlkit.parse(self.config.read_text())
@@ -159,6 +167,7 @@ class SetupService:
                 "feed_diagnostics": self.stream.diagnostics() if self.stream else None,
                 "catalog_count": tx.execute("SELECT count(*) FROM instruments").fetchone()[0],
                 "stream_limit": self.engine.settings.stream_limit,
+                "automatic_universe": self.engine.settings.automatic_universe,
                 "selected": selected,
                 "today": day.isoformat(),
                 "sessions": [
@@ -189,6 +198,7 @@ class SetupService:
             self._save_values({**body, "access_token": ""})
             self.verified = False
             self.verified_at = None
+            self.profile_revision += 1
             self.nonce = None
 
     def begin_login(self) -> dict[str, str]:
@@ -241,12 +251,14 @@ class SetupService:
             self._save_values({**self.values, "access_token": token})
             self.verified = True
             self.verified_at = self.clock()
+            self.profile_revision += 1
 
     def broker(self) -> ReadOnlyKite:
         return ReadOnlyKite(self.values["api_key"], self.values["access_token"])
 
     def check_profile(self) -> None:
         with self.lock:
+            self.profile_revision += 1
             try:
                 self.broker().get_profile()
             except Exception:
@@ -267,6 +279,8 @@ class SetupService:
             try:
                 catalog = self.broker().get_instruments()
                 self.engine.register(catalog)
+                with self.engine.lock, self.engine.db.transaction() as tx:
+                    self.engine.db.set(tx, "nse_catalog_imported_at", stamp(self.clock()))
             except Exception:
                 raise SetupError(
                     "Catalog import failed or a mapping changed. Preserve the account and "
@@ -274,11 +288,15 @@ class SetupService:
                 ) from None
             return len(catalog)
 
-    def select_symbols(self, body: dict[str, Any]) -> None:
+    def select_symbols(self, body: dict[str, Any], *, automatic_nifty50: bool = False) -> None:
         with self.lock, self.engine.lock:
             self._manual()
             raw = body.get("symbols")
-            limit = self.engine.settings.stream_limit
+            limit = (
+                max(50, len(raw) if isinstance(raw, list) else 0, self.engine.settings.stream_limit)
+                if automatic_nifty50
+                else self.engine.settings.stream_limit
+            )
             if set(body) != {"symbols"} or not isinstance(raw, list) or not 1 <= len(raw) <= limit:
                 raise SetupError(f"Select one to {limit} distinct catalog symbols.")
             if any(not isinstance(s, str) or len(s) > 34 for s in raw):
@@ -304,10 +322,56 @@ class SetupService:
                     if row is None:
                         raise SetupError("A selected symbol is missing from the imported catalog.")
                     tokens.append(row[0])
-            self._persist_config(stream_tokens=tokens)
+            updates: dict[str, Any] = {"stream_tokens": tokens}
+            if automatic_nifty50:
+                updates.update(stream_limit=limit, automatic_universe="nifty50")
+            else:
+                updates["automatic_universe"] = "custom"
+            self._persist_config(**updates)
             self.engine.settings = self.engine.settings.model_copy(
-                update={"stream_tokens": tuple(tokens)}
+                update={**updates, "stream_tokens": tuple(tokens)}
             )
+
+    def select_official_nifty50(self, guard: Callable[[], None]) -> dict[str, Any]:
+        """Choose the whole official basket; clients never supply its stock names."""
+        from trading_agent.desk import sources
+
+        raw = sources.public_read(sources.UNIVERSES["nifty50"])
+        exclusions: list[dict[str, str]] = []
+        members = sources.constituents(raw, "nifty50", exclusions=exclusions)
+        if exclusions:
+            raise SetupError(
+                "The official basket includes an unsupported constituent. "
+                "Review source coverage before changing the universe."
+            )
+        with self.lock, self.engine.lock:
+            guard()
+            with self.engine.db.read_snapshot() as tx:
+                catalog = {r[0]: r[1] for r in tx.execute("SELECT symbol,token FROM instruments")}
+                held = {r[0] for r in tx.execute("SELECT symbol FROM positions")}
+            missing = [
+                m["symbol"]
+                for m in members
+                if m["symbol"] not in catalog or catalog[m["symbol"]] & 255 != 1
+            ]
+            if missing:
+                raise SetupError(
+                    "Official Nifty 50 members are missing from the NSE equity catalog. "
+                    "Import the catalog before applying the basket."
+                )
+            symbols = sorted({m["symbol"] for m in members} | held)
+            self.select_symbols({"symbols": symbols}, automatic_nifty50=True)
+            source = self.path.with_suffix(".nifty50.csv")
+            private_write(source, raw.decode("utf-8"))
+            return {
+                "universe": "nifty50",
+                "members": len(members),
+                "monitored": len(symbols),
+                "held_symbols_retained": sorted(held),
+                "source": sources.UNIVERSES["nifty50"],
+                "source_sha256": hashlib.sha256(raw).hexdigest(),
+                "selected_at": stamp(self.clock()),
+            }
 
     def add_session(self, body: dict[str, Any]) -> None:
         with self.lock, self.engine.lock:

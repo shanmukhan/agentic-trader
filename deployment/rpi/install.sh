@@ -11,10 +11,14 @@ monitor=/opt/rpi-monitor/backend
 rule=/etc/polkit-1/rules.d/10-rpi-monitor-systemctl.rules
 [[ -f $monitor/.env && -f $rule ]] || { echo 'Existing RPi Monitor setup required.' >&2; exit 1; }
 python3 - "$stage" <<'PY'
-import hashlib, json, sys
+import hashlib, json, re, sys
 from pathlib import Path
 root = Path(sys.argv[1])
 manifest = json.loads((root / 'manifest.json').read_text())
+if set(manifest['projects']) not in ({'trader'}, {'trader', 'advisor'}):
+    raise SystemExit('Unsupported deployment projects')
+if not re.fullmatch(r'\d+\.\d+\.\d+', manifest['versions']['trader']):
+    raise SystemExit('Invalid Trader release version')
 for name, expected in manifest['sha256'].items():
     path = root / name
     if not path.resolve().is_relative_to(root) or path.is_symlink():
@@ -25,13 +29,26 @@ print('Bundle checksums verified')
 PY
 command -v curl >/dev/null
 python3.13 --version
-release=$(date -u +%Y%m%dT%H%M%S)-$(sha256sum "$stage/manifest.json" | cut -c1-12)
+version=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["versions"]["trader"])' "$stage/manifest.json")
+apps=(agentic-trader)
+if python3 -c 'import json,sys; sys.exit("advisor" not in json.load(open(sys.argv[1]))["projects"])' "$stage/manifest.json"; then
+    apps+=(portfolio-advisor)
+fi
+trader_only=0
+if [[ ${#apps[@]} -eq 1 ]]; then
+    trader_only=1
+    [[ -L /opt/agentic-trader/current && -f /etc/agentic-trader.env ]] || {
+        echo 'Trader-only updates require an existing installed Trader service.' >&2
+        exit 1
+    }
+fi
+release=v$version-$(date -u +%Y%m%dT%H%M%S)-$(sha256sum "$stage/manifest.json" | cut -c1-12)
 backup=/var/backups/trading-services-$release
 install -d -m 700 "$backup"
 cp -a "$monitor/.env" "$backup/monitor.env"
 cp -a "$rule" "$backup/monitor.rules"
 cp "$stage/manifest.json" "$backup/manifest.json"
-for app in agentic-trader portfolio-advisor; do
+for app in "${apps[@]}"; do
     [[ $app == agentic-trader ]] && account=trading-agent || account=portfolio-advisor
     id "$account" >/dev/null 2>&1 || useradd --system --home-dir "/var/lib/$app" --no-create-home --shell /usr/sbin/nologin "$account"
     install -d -m 755 "/opt/$app" "/opt/$app/releases"
@@ -53,22 +70,26 @@ if [[ ! -x /opt/trading-deploy-tools/bin/uv ]]; then
 fi
 trader=/opt/agentic-trader/releases/$release
 advisor=/opt/portfolio-advisor/releases/$release
-mkdir "$trader" "$advisor"
+mkdir "$trader"
 cp -a "$stage/trader/." "$trader/"
-cp -a "$stage/advisor/." "$advisor/"
-chmod -R u=rwX,go=rX "$trader" "$advisor"
+chmod -R u=rwX,go=rX "$trader"
 cp "$stage/manifest.json" "$trader/deployment-manifest.json"
-cp "$stage/manifest.json" "$advisor/deployment-manifest.json"
 (
     cd "$trader"
     UV_CACHE_DIR=/var/cache/trading-deploy /opt/trading-deploy-tools/bin/uv sync \
         --python /usr/bin/python3.13 --frozen --no-dev --extra broker --extra ml --no-editable
 )
-python3.13 -m venv "$advisor/.venv"
-UV_CACHE_DIR=/var/cache/trading-deploy /opt/trading-deploy-tools/bin/uv pip install \
-    --python "$advisor/.venv/bin/python" --requirement "$advisor/requirements.lock"
-"$advisor/.venv/bin/pip" check
-chmod -R u=rwX,go=rX "$trader" "$advisor"
+if [[ $trader_only -eq 0 ]]; then
+    mkdir "$advisor"
+    cp -a "$stage/advisor/." "$advisor/"
+    cp "$stage/manifest.json" "$advisor/deployment-manifest.json"
+    python3.13 -m venv "$advisor/.venv"
+    UV_CACHE_DIR=/var/cache/trading-deploy /opt/trading-deploy-tools/bin/uv pip install \
+        --python "$advisor/.venv/bin/python" --requirement "$advisor/requirements.lock"
+    "$advisor/.venv/bin/pip" check
+    chmod -R u=rwX,go=rX "$advisor"
+fi
+chmod -R u=rwX,go=rX "$trader"
 # Code is immutable to the service; config/database/credential writes use /var/lib.
 ln -s /var/lib/agentic-trader/data "$trader/data"
 ln -s /var/lib/agentic-trader/logs "$trader/logs"
@@ -81,8 +102,8 @@ rollback() {
         trap - EXIT
         set +e
         echo "Deployment failed; restoring service links/units and monitor config. Backup: $backup" >&2
-        systemctl stop agentic-trader portfolio-advisor
-        for app in agentic-trader portfolio-advisor; do
+        systemctl stop "${apps[@]}"
+        for app in "${apps[@]}"; do
             previous=$(cat "$backup/$app.previous")
             if [[ -n $previous && -d $previous ]]; then
                 ln -sfn "$previous" "/opt/$app/current"
@@ -102,7 +123,7 @@ rollback() {
             systemctl restart polkit rpi-monitor
         fi
         systemctl daemon-reload
-        for app in agentic-trader portfolio-advisor; do
+        for app in "${apps[@]}"; do
             if [[ $(cat "$backup/$app.enabled") != enabled ]]; then systemctl disable "$app"; fi
             if [[ $(cat "$backup/$app.active") == active ]]; then systemctl start "$app"; fi
         done
@@ -112,9 +133,9 @@ rollback() {
 }
 trap rollback EXIT
 changed=1
-systemctl stop agentic-trader portfolio-advisor || true
-# Both owning services are now stopped: capture consistent private state before startup.
-tar -C /var/lib -cpf "$backup/state.tar" agentic-trader portfolio-advisor
+systemctl stop "${apps[@]}"
+# Selected owning services are stopped: capture consistent private state before startup.
+tar -C /var/lib -cpf "$backup/state.tar" "${apps[@]}"
 
 if [[ ! -f /var/lib/agentic-trader/config/paper.toml ]]; then
     "$trader/.venv/bin/python" - "$trader/config/paper.toml" <<'PY'
@@ -141,7 +162,7 @@ Path('/etc/agentic-trader.env').write_text(
 PY
     chmod 600 /etc/agentic-trader.env
 fi
-if [[ ! -f /var/lib/portfolio-advisor/config/.env ]]; then
+if [[ $trader_only -eq 0 && ! -f /var/lib/portfolio-advisor/config/.env ]]; then
     cat > /var/lib/portfolio-advisor/config/.env <<'ENV'
 ADVISOR_MODE=demo
 ADVISOR_DB=/var/lib/portfolio-advisor/data/advisor.sqlite3
@@ -150,22 +171,27 @@ KITE_API_SECRET=
 KITE_ACCESS_TOKEN=
 ENV
 fi
-chown -R trading-agent:trading-agent /var/lib/agentic-trader
-chown -R portfolio-advisor:portfolio-advisor /var/lib/portfolio-advisor
-find /var/lib/agentic-trader /var/lib/portfolio-advisor -type f -exec chmod 600 {} +
-for app in agentic-trader portfolio-advisor; do
+for app in "${apps[@]}"; do
+    [[ $app == agentic-trader ]] && account=trading-agent || account=portfolio-advisor
+    chown -R "$account:$account" "/var/lib/$app"
+    find "/var/lib/$app" -type f -exec chmod 600 {} +
+done
+for app in "${apps[@]}"; do
     [[ $app == agentic-trader ]] && next=$trader || next=$advisor
     ln -s "$next" "/opt/$app/.current-$release"
     mv -Tf "/opt/$app/.current-$release" "/opt/$app/current"
     install -m 644 "$stage/rpi/$app.service" "/etc/systemd/system/$app.service"
 done
 systemctl daemon-reload
-systemctl enable --now agentic-trader portfolio-advisor
+systemctl reset-failed "${apps[@]}"
+systemctl enable --now "${apps[@]}"
 advisor_health=http://127.0.0.1:8501/_stcore/health
 if systemctl show portfolio-advisor --property=Environment --value | grep -q 'STREAMLIT_SERVER_BASE_URL_PATH=portfolio-advisor'; then
     advisor_health=http://127.0.0.1:8501/portfolio-advisor/_stcore/health
 fi
-for endpoint in http://127.0.0.1:8010/health "$advisor_health"; do
+endpoints=(http://127.0.0.1:8010/health)
+if [[ $trader_only -eq 0 ]]; then endpoints+=("$advisor_health"); fi
+for endpoint in "${endpoints[@]}"; do
     healthy=0
     for attempt in {1..30}; do
         if curl -fsS --max-time 2 "$endpoint" >/dev/null; then healthy=1; break; fi
@@ -173,14 +199,17 @@ for endpoint in http://127.0.0.1:8010/health "$advisor_health"; do
     done
     [[ $healthy -eq 1 ]] || { echo "Health check failed: $endpoint" >&2; exit 1; }
 done
+curl -fsS --max-time 5 http://127.0.0.1:8010/health | python3 -c 'import json,sys; assert json.load(sys.stdin)["version"] == sys.argv[1], "Backend version mismatch"' "$version"
 # Set before calling the helper so a partial failure/restart restores both backups.
-monitor_changed=1
-"$monitor/.venv/bin/python" "$stage/rpi/register_monitor.py" "$monitor" "$rule"
-if cmp -s "$backup/monitor.env" "$monitor/.env" && cmp -s "$backup/monitor.rules" "$rule"; then
-    monitor_changed=0
-else
-    systemctl restart polkit
-    systemctl restart rpi-monitor
+if [[ $trader_only -eq 0 ]]; then
+    monitor_changed=1
+    "$monitor/.venv/bin/python" "$stage/rpi/register_monitor.py" "$monitor" "$rule"
+    if cmp -s "$backup/monitor.env" "$monitor/.env" && cmp -s "$backup/monitor.rules" "$rule"; then
+        monitor_changed=0
+    else
+        systemctl restart polkit
+        systemctl restart rpi-monitor
+    fi
 fi
 systemctl is-active --quiet rpi-monitor
 for attempt in {1..30}; do
@@ -188,7 +217,7 @@ for attempt in {1..30}; do
     sleep 1
 done
 curl -fsS --max-time 2 http://127.0.0.1:8000/health >/dev/null
-systemctl is-active agentic-trader portfolio-advisor
+systemctl is-active "${apps[@]}"
 echo "Deployed $release; private backup: $backup"
 echo 'Browser access: ssh -N -L 8010:127.0.0.1:8010 -L 8501:127.0.0.1:8501 USER@PI'
 changed=0

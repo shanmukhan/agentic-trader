@@ -1,7 +1,7 @@
 (function () {
 'use strict';
 const errors={
- BROKER_SESSION_UNAVAILABLE:'The saved Kite session could not be verified. Check it in Broker & data; complete a fresh login if expired.',
+ BROKER_SESSION_UNAVAILABLE:'Download stopped before reading official sources or stock history: the saved Kite session could not be verified. In Broker & Data, step 3, select Check saved broker session. Check connectivity and retry; if expired, disconnect any requested feed in step 6, complete a fresh login and token exchange, then return here and retry the download.',
  OFFICIAL_SOURCE_UNAVAILABLE:'An official source could not be read. Keep the existing account unchanged; retry later. No fallback data or calendar was assumed.',
  UNIVERSE_RESPONSE_INVALID:'The constituent file failed the expected equity-share/ISIN/size checks. No universe was installed.',
  CALENDAR_RESPONSE_INVALID_OR_TOO_SHORT:'The current-year holiday source is invalid or does not cover enough completed sessions. A reviewed cross-year bundle is required early in the year.',
@@ -19,12 +19,13 @@ function createPreparation(doc,win,api,refresh,confirm,getLatest){
  const el=id=>doc.getElementById(id),node=(tag,text)=>{const n=doc.createElement(tag);if(text!==undefined)n.textContent=String(text);return n;};
  let latest=null,jobId=null,downloadId=null,busy=false,unlocked=false,guidedSupported=false,review=null,generation=0;
  const istDay=value=>{const parsed=new Date(value);return value&&Number.isFinite(parsed.getTime())?new Date(parsed.getTime()+19800000).toISOString().slice(0,10):'';};
+ const textIfChanged=(id,text)=>{if(el(id).textContent!==text)el(id).textContent=text;};
  function currentReviewReady(ignoreBusy=false){const data=getLatest(),job=latest?.job;
   return Boolean(unlocked&&(ignoreBusy||!busy)&&guidedSupported&&latest?.available&&!latest.profile_override&&data?.mode==='manual'&&data.blockers?.includes('LONG_TERM_REVIEW_REQUIRED')&&['ready_for_review','installed'].includes(job?.state)&&istDay(job.snapshot_at)&&istDay(job.snapshot_at)===istDay(data.observed_at)&&(['rules','rules_ml'].includes(el('prep-policy').value)||['rules','rules_ml'].includes(data.strategy_mode)));
  }
  function controls(isBusy=busy,isUnlocked=unlocked){busy=isBusy;unlocked=isUnlocked;const data=getLatest(),job=latest?.job;
   const available=unlocked&&latest?.available&&data?.mode==='manual';
-  el('prep-download').disabled=busy||!available||job?.state==='downloading';
+  el('prep-download').disabled=busy||!available||latest?.download_prerequisites?.ready!==true||job?.state==='downloading';
   el('prep-cancel').disabled=busy||!unlocked||job?.state!=='downloading'||Boolean(job?.cancel_requested);
   el('prep-install').disabled=busy||!available||latest?.profile_override||job?.state!=='ready_for_review';
   for(const id of ['prep-calendar','prep-reference','prep-calendar-reviewed','prep-basis-reviewed','prep-policy-reviewed'])el(id).disabled=busy||!available||latest?.profile_override||job?.state!=='ready_for_review';
@@ -39,23 +40,47 @@ function createPreparation(doc,win,api,refresh,confirm,getLatest){
   el('daily-review-download').hidden=currentReviewReady(true);
   el('daily-review-message').textContent=!needsReview?'':data.mode!=='manual'?'Choose Manual before reviewing today’s setup.':latest?.profile_override||!guidedSupported||!latest?.available?'Use Advanced controls for today’s price-basis reviews; the combined review is unavailable for this account.':currentReviewReady(true)?'Today’s data is ready. Open the setup summary, inspect the sources/calendar/stocks, then acknowledge and select Confirm and prepare. This applies the displayed shortlist and eligible daily reviews and requests reconnection; Manual stays selected. Restarting or opening the summary does not approve the review.':'Today’s price-basis approval is still missing. Open data preparation below and download current-day sources/history if needed, then choose a policy. Yesterday’s download/review and a restart cannot approve today’s prices.';
  }
+ function stale(){if(!unlocked||!latest)return;latest={...latest,download_prerequisites:undefined};
+  textIfChanged('prep-prerequisites-title','Prerequisite status unavailable');
+  textIfChanged('prep-session-status','Could not refresh prerequisites. Checking again automatically; downloading is paused.');
+  textIfChanged('prep-catalog-status','');el('prep-prerequisites').className='preparation-prerequisites';controls();
+ }
  function clear(){generation++;latest=null;jobId=null;downloadId=null;unlocked=false;review=null;guidedSupported=false;
   dialogs.cancel(el('guided-dialog'));el('guided-ack').checked=false;el('guided-summary').replaceChildren();el('guided-sources').replaceChildren();el('guided-calendar').textContent='';el('guided-result').textContent='';
   for(const id of ['prep-progress','prep-error','prep-result','prep-availability','prep-model-help','prep-calendar-conflicts'])el(id).textContent='';
+  for(const id of ['prep-session-status','prep-catalog-status'])el(id).textContent='';
+  el('prep-prerequisites').hidden=true;
   for(const id of ['prep-sources','prep-exclusions'])el(id).replaceChildren();
   for(const id of ['prep-calendar','prep-policy','prep-reference'])el(id).value='';
   for(const id of ['prep-calendar-reviewed','prep-basis-reviewed','prep-policy-reviewed'])el(id).checked=false;
   el('prep-calendar-correction').checked=false;el('prep-correction-label').hidden=true;
-  el('prep-progress-bar').value=0;el('prep-state').textContent='Not prepared';controls(false,false);
+  el('prep-progress-bar').value=0;el('prep-progress-bar').hidden=true;el('prep-failure').hidden=true;el('prep-recovery').hidden=true;el('prep-download').textContent='Download strategy data';el('prep-state').textContent='Not prepared';controls(false,false);
  }
  function render(value,guided){latest=value||null;unlocked=true;guidedSupported=guided!==undefined;const data=getLatest(),job=value?.job;
+  const prerequisites=value?.download_prerequisites;
+  el('prep-prerequisites').hidden=false;
+  el('prep-prerequisites').className='preparation-prerequisites'+(prerequisites?.ready===true?' is-ready':'');
+  textIfChanged('prep-prerequisites-title',prerequisites?.ready===true?'Download prerequisites complete':'Finish setup before downloading');
+  textIfChanged('prep-session-status',!prerequisites?'Kite session: prerequisite status unavailable. Refresh status or update the server.':prerequisites.session_verified?'Kite session: verified today in this server run.':'Kite session: verification required. In Broker & Data, step 3, select Check saved broker session or complete a fresh login.');
+  textIfChanged('prep-catalog-status',!prerequisites?'NSE catalog: prerequisite status unavailable.':prerequisites.catalog_count>0?'NSE catalog: '+prerequisites.catalog_count+' supported instruments available.':'NSE catalog: import required. In Broker & Data, step 4, select Download / validate catalog.');
+  el('prep-session-link').hidden=prerequisites?.session_verified===true;
+  el('prep-catalog-link').hidden=prerequisites?.catalog_count>0;
   if(!value){el('prep-state').textContent='Server restart required';el('prep-availability').textContent='Stop the older server in its owning terminal with Ctrl+C, run ./scripts/start_ui.sh and unlock again. Reloading a page cannot update Python routes.';controls();return;}
   el('prep-availability').textContent=!value?.available?'Preparation is available on the manual account with Broker & data setup. Bound legacy controllers keep their existing workflow.':value?.profile_override?'A custom TRADING_ANALYSIS_PROFILE is set. Clear it and restart before installing a UI-managed strategy; it would otherwise override the saved selection.':data?.mode!=='manual'?'Choose Manual before preparing or replacing a strategy.':'Begin with a verified broker session and imported NSE catalog. Download once, choose a policy and review the combined setup. The confirmed flow handles disconnection and reconnection.';
   el('prep-model-help').textContent=value?.ml_configured?'A server-selected model directory is configured. Installation must still pass horizon, policy, integrity and chronological validation; there is no rules fallback.':'No validated ML model is configured. Choose Rules only explicitly to paper-test the declared hypothesis, or have a matching validated model installed with TRADING_PREPARATION_MODEL. Downloading daily history alone cannot validate ML.';
   el('prep-state').textContent=({downloading:'Downloading',ready_for_review:'Review required',installed:'Strategy installed',failed:'Download failed',cancelled:'Cancelled',interrupted:'Interrupted'})[job?.state]||'Not prepared';
-  el('prep-error').textContent=job?.error?(errors[job.error]||'Preparation is unavailable. Review the local data and retry.') : '';
-  el('prep-progress').textContent=job?((job.cancel_requested&&job.state==='downloading'?'Cancellation requested; waiting for the current bounded network read. ':'')+(job.stage==='official_sources'?'Reading official constituent, holiday and action sources. ': '')+(job.total?job.completed+' / '+job.total+' stocks downloaded; '+job.eligible+' with complete eligible history. ':'')+(job.history_start?'History '+job.history_start+' to '+job.history_end+'. ':'')+(job.elapsed_seconds!==undefined?'Elapsed '+Math.round(job.elapsed_seconds)+' seconds. ':'')+(job.state==='ready_for_review'?'Ready for your source/calendar/policy review.':'')):'No download started. Your current watchlist and account remain in place.';
-  el('prep-progress-bar').max=job?.total||100;el('prep-progress-bar').value=job?.completed||0;
+  const errorText=job?.error?(errors[job.error]||'Preparation is unavailable. Review the local data and retry.') : '';
+  if(el('prep-error').textContent!==errorText)el('prep-error').textContent=errorText;
+  el('prep-failure').hidden=!job?.error;
+  const running=job?.state==='downloading',stopped=['failed','cancelled','interrupted'].includes(job?.state);
+  const phase=running?(job.cancel_requested?'Cancellation requested; waiting for the current bounded network read. ':job.stage==='broker_session'?'Checking the saved Kite session. ':job.stage==='official_sources'?'Reading official constituent, holiday and action sources. ':'Downloading completed daily stock history. '):({failed:'Download failed. No strategy was installed by this download. ',cancelled:'Download cancelled. ',interrupted:'Download interrupted. '})[job?.state]||'';
+  el('prep-progress').textContent=job?(phase+(job.total?job.completed+' / '+job.total+' stocks downloaded; '+job.eligible+' with complete eligible history. ':'')+(job.history_start?'History '+job.history_start+' to '+job.history_end+'. ':'')+(job.elapsed_seconds!==undefined?'Elapsed '+Math.round(job.elapsed_seconds)+' seconds. ':'')+(job.state==='ready_for_review'?'Ready for your source/calendar/policy review.':'')):'No download started. Your current watchlist and account remain in place.';
+  el('prep-download').textContent=stopped?'Retry strategy data download':'Download strategy data';
+  el('prep-recovery').hidden=!['BROKER_SESSION_UNAVAILABLE','BROKER_DAILY_HISTORY_UNAVAILABLE'].includes(job?.error);
+  el('prep-progress-bar').hidden=!running;
+  if(running&&!job.total)el('prep-progress-bar').removeAttribute('value');
+  else el('prep-progress-bar').value=job?.completed||0;
+  el('prep-progress-bar').max=job?.total||100;
   const conflicts=value.calendar_conflicts||[];el('prep-calendar-conflicts').textContent=conflicts.length?'Saved account hours differ from the proposal: '+conflicts.map(c=>c.date+' saved '+c.existing+' / proposed '+c.proposed+' IST').join('; ')+'. '+(value.can_correct_unused_calendar?'This account has no quote/review/execution usage. Review and explicitly approve any correction below.':'This account already has usage evidence; preserve its session definitions and review locally.') : '';
   el('prep-correction-label').hidden=!conflicts.length||!value.can_correct_unused_calendar;
   if(job?.job_id!==jobId){jobId=job?.job_id||null;if(job?.universe)el('prep-universe').value=job.universe;for(const id of ['prep-calendar','prep-policy','prep-reference'])el(id).value='';for(const id of ['prep-calendar-reviewed','prep-basis-reviewed','prep-policy-reviewed','prep-calendar-correction'])el(id).checked=false;}
@@ -98,7 +123,7 @@ function createPreparation(doc,win,api,refresh,confirm,getLatest){
  const closeReview=()=>{review=null;el('guided-ack').checked=false;dialogs.close(el('guided-dialog'));controls();};
  el('guided-cancel').addEventListener('click',()=>dialogs.cancel(el('guided-dialog')));
  el('guided-confirm').addEventListener('click',async()=>{if(!review||!unlocked||busy||!el('guided-ack').checked)return;const body={preview_sha256:review.preview_sha256,acknowledged:true};closeReview();el('guided-result').textContent='Preparing the confirmed setup. Keep this tab open; no trading mode is being activated.';const result=await api('/api/desk/preparation/guided/confirm',body);if(result&&unlocked)el('guided-result').textContent=result.message;await refresh();});
- el('prep-download').addEventListener('click',()=>{const data=getLatest();if(!data||busy)return;const universe=el('prep-universe').value;
+ el('prep-download').addEventListener('click',()=>{const data=getLatest();if(!data||busy||!unlocked||latest?.download_prerequisites?.ready!==true)return;const universe=el('prep-universe').value;
   if(!downloadId||latest?.job?.state!=='downloading')downloadId=Array.from(win.crypto.getRandomValues(new Uint8Array(16)),v=>v.toString(16).padStart(2,'0')).join('');
   const body={universe,request_id:downloadId,revision:data.revision,acknowledged:true};
   confirm('Download genuine strategy data?',universe+' constituents, official holiday/action sources and completed daily Kite history will be read. This may take several minutes. It does not change your mode, feed selection or virtual cash. No orders are submitted.',async()=>{const result=await api('/api/desk/preparation/download',body);if(result){render(result);await refresh();}});
@@ -110,7 +135,7 @@ function createPreparation(doc,win,api,refresh,confirm,getLatest){
   confirm('Install this reviewed paper strategy?',job.symbols.length+' equity shares; '+job.completed_sessions+' completed sessions; '+(body.strategy_mode==='rules'?'EXPERIMENTAL RULES ONLY, without an ML filter.':'rules + the matching validated ML model, subject to validation. ')+' Your edited session calendar and source reviews will be saved.'+(body.correct_unused_calendar?' You also approve correcting the displayed saved hours; the server will recheck that no account history has used them.':'')+' Review reference: '+body.reference+'. Manual stays selected. The feed must be disconnected and pending orders resolved; current holdings are retained. Today’s execution-basis reviews remain separate.',async()=>{const result=await api('/api/desk/preparation/install',body);if(result){render(result);await refresh();}});
  });
  win.addEventListener?.('pagehide',clear);
- clear();return{render,controls,clear,reviewCurrent,currentReviewReady,canNavigate:()=>!el('guided-dialog').open};
+ clear();return{render,controls,clear,stale,reviewCurrent,currentReviewReady,openDailyReview:policy=>{el('prep-policy').value=policy;return openReview(true);},canNavigate:()=>!el('guided-dialog').open};
 }
 if(typeof module!=='undefined'&&module.exports)module.exports={createPreparation};
 if(typeof window!=='undefined')window.AgenticPreparation=createPreparation;

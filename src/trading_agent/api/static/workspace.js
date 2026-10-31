@@ -2,8 +2,8 @@
   'use strict';
   function createWorkspace(doc, win, request) {
     const el=id=>doc.getElementById(id),frame=el('workspace-frame');
-    const routes={dashboard:'/dashboard',discovery:'/discovery',analysis:'/analysis',strategies:'/strategies',backtesting:'/backtesting',paper:'/paper',portfolio:'/holdings',history:'/activity',risk:'/console',broker:'/setup',settings:'/settings',learn:'/learn'};
-    const titles={dashboard:'Dashboard',discovery:'Stock Discovery',analysis:'Stock Analysis',strategies:'Strategies',backtesting:'Backtesting',paper:'Paper Trading',portfolio:'Portfolio',history:'Trade History',risk:'Risk Management',broker:'Broker & Data',settings:'Settings',learn:'Learning Center'};
+    const routes={dashboard:'/dashboard',discovery:'/discovery',watchlist:'/watchlist',analysis:'/analysis',strategies:'/strategies',backtesting:'/backtesting',paper:'/paper',portfolio:'/holdings',history:'/activity',risk:'/console',broker:'/setup',settings:'/settings',learn:'/learn'};
+    const titles={dashboard:'Dashboard',discovery:'Stock Discovery',watchlist:'Watchlist',analysis:'Stock Analysis',strategies:'Strategies',backtesting:'Backtesting',paper:'Paper Trading',portfolio:'Portfolio',history:'Trade History',risk:'Risk Management',broker:'Broker & Data',settings:'Settings',learn:'Learning Center'};
     const aliases={desk:'dashboard',activity:'history',console:'risk',setup:'broker',overview:'learn'};
     const purchaseAnchors=new Set(['purchases','purchase','holdings-heading','buy-heading','preview-heading','plans-heading','purchase-orders-heading','lots-heading']);
     const cleanAnchor=value=>typeof value==='string'&&/^[A-Za-z][A-Za-z0-9_-]{0,99}$/.test(value)?value:'';

@@ -1,5 +1,22 @@
 # Paper risk and accounting policy
 
+## Connected-account operator overlay (0.21.0)
+
+[Watchlist and safety](watchlist-safety.md) specifies the additional runtime limits:
+permit buys only for durable NSE watchlist members, size fee-inclusive order debit
+at no more than 25% of fresh net liquidation equity, admit five accepted entry
+intents per IST day, latch a 25% observed-peak drawdown pause and lock entries for
+the IST day after deterministic price-integrity incidents. Exits remain available.
+
+The additive SQLite metadata overlay is independent of the existing bound economic
+policy fingerprint and only narrows authority. CLI/API accounts enable it empty;
+restarts retain it and missing/corrupt required metadata fails closed. Historical
+research accounts retain their own declared policy and are not represented as
+simulating this overlay. External deposits/withdrawals are unsupported; a future
+funding workflow must supply audited flow-adjusted high-water accounting first.
+Tests include independent persisted money/state checks and were not executed by
+explicit operator request. No market acceptance is claimed.
+
 The table below describes the default intraday profile. The LT1 section specifies
 the separate long-term policy. All balances are virtual. These engineering defaults are not evidence that a strategy
 will make money. Limits are planned constraints; gaps, unavailable quotes and outages

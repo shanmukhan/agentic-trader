@@ -24,3 +24,10 @@ backups/
 .DS_Store
 coverage.xml
 benchmark.json
+android/.gradle/
+android/.kotlin/
+android/**/build/
+android/local.properties
+android/.signing/
+*.jks
+*.keystore

@@ -20,6 +20,7 @@ def policy_values(settings: Settings) -> dict[str, Any]:
             "calendar",
             "stream_tokens",
             "stream_limit",
+            "automatic_universe",
         },
     )
     # Preserve every existing intraday account/model identity byte for byte.

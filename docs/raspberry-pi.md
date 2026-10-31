@@ -1,5 +1,80 @@
 # Raspberry Pi services and mobile monitoring
 
+## Verified 0.20.9 / Android 1.0.9 publication
+
+Published **backend 0.20.9 / Android 1.0.9** on 29 October 2026. Release
+`/opt/agentic-trader/releases/v0.20.9-20261029T170852-8e34e6bec934`, Trader PID 47194;
+previous 0.20.8 code retained. Local/public health, manifest/installed-source hashes,
+public daily-flow asset, installer metadata/certificate and downloaded APK hash match.
+Other service PIDs remain 1193/1194. The official Nifty 50 scope is preserved.
+
+Live timings: local account **0.163 s**, source-only check **0.073 s**, full accounting
+report **0.787 s** (previously exceeded 55 seconds); public account **0.537 s**, source
+check **0.250 s**. These are individual live acceptance measurements, not a load-test SLA.
+The previously requested feed is connected with zero connection failures, broker profile
+verified and Manual still selected. Current guidance is waiting for the next reviewed
+entry, **30 October, 09:30 IST**. No trading mode or purchase was submitted by deployment.
+
+Strict independent full SQLite comparisons pass: **both databases entirely unchanged**.
+Broker credentials, phone registry, economic/risk configuration and other configuration
+files are unchanged. The sole configuration difference is the installed-calendar file
+reference; its reviewed file contents are byte-for-byte identical to the private baseline.
+This difference is recorded separately, not represented as an unchanged whole-config hash.
+Both strict unchanged-database assertions were retained and passed. No financial database
+was restored.
+
+Signed production **Android 1.0.9 / code 10** installed in place on Moto g52; cold launch
+282 ms. Retained pairing and the already-authenticated production Discover screen were
+verified using fixed-label navigation and boolean observations only. Two samples showed
+saved research visible, no progress indicator, no Discover loading label and no network
+error. No biometric was bypassed and no private screenshot or financial values were saved.
+This is live phone/API navigation acceptance, distinct from the 33 invented offline UI
+workflows. Temporary demo/test packages were removed. Actual market signals/fills and a
+new sensor-authentication event were not asserted by this check.
+
+Private evidence:
+`/var/backups/trading-services-v0.20.9-20261029T170852-8e34e6bec934/acceptance.json`,
+`latency-acceptance.json`, `feed-status.json` and `configuration-comparison.json` in the
+same directory. Baseline:
+`/var/backups/trader-v0.20.9-preflight-20261029T170828Z.json`.
+
+## 0.20.8 native daily-flow release
+
+Published **backend 0.20.8 / Android 1.0.8** on 29 October 2026. Fresh release
+`/opt/agentic-trader/releases/v0.20.8-20261029T122533-c74cc8f8668b`, Trader PID 43484;
+previous 0.20.7 code retained. Local/public health, manifest/installed-source hashes,
+Paper-only capabilities, public installer metadata, certificate and downloaded APK hash
+are verified. Other services retain PIDs 1193/1194. Independent full logical comparisons
+show **both SQLite databases entirely unchanged**; configuration, broker credentials and
+mobile pairing registry hashes are unchanged. No financial database was restored.
+
+Existing official Nifty 50 monitoring remains intact. The previously requested feed was
+restored after a successful read-only broker profile check; it is connected and **Manual
+remains selected**. No paper mode or purchase was armed/submitted. Production guidance
+still requests current data and gives the next reviewed entry as **30 October, 09:30 IST**;
+this UI release does not fabricate fresh history or guarantee a signal/fill.
+
+Signed production **1.0.8 / code 9** installed in place on Moto g52; cold launch succeeded
+(442 ms), package/version and retained biometric-unlock entry verified. Temporary demo/
+test packages were removed. Production screenshots were not recorded and biometrics were
+not bypassed. Authenticated production use of the new daily flow remains separate from
+the 30 fully simulated offline UI workflows.
+
+Private deployment evidence:
+`/var/backups/trading-services-v0.20.8-20261029T122533-c74cc8f8668b/acceptance.json`
+and `connection-acceptance.json` in the same directory. Preflight:
+`/var/backups/trader-v0.20.8-preflight-20261029T122408Z.json`.
+
+Backend **0.20.0** adds native Android **1.0.0** access. Build the signed installer with
+`.venv/bin/python scripts/build_android.py --java-home PATH_TO_JDK_21`, then deploy
+`bash deployment/rpi/deploy.sh lipi@192.168.1.13 --trader-only --android-apk dist/android/agentic-trader.apk`.
+Only the fixed public APK/metadata files join the versioned code bundle; signing keys
+and workstation state are excluded. Include the APK on later releases to retain its
+download. Verify `/health`, `/android`, `/api/mobile/release` and downloaded bytes.
+Phone pairing hashes use a private `.mobile.json` beside the DB; restart expires
+sessions but retains pairings. Owner-token rotation invalidates all pairings. See
+[build/install/recovery details](android-app.md) and [component contract](mobile-api.md).
+
 **26 October token/startup recovery:** a nonempty operator token shorter than 32
 characters prevents startup. The sync command's `--generate` option creates a strong
 replacement without printing it, privately backs up/updates local `.env` and sends
@@ -7,6 +82,33 @@ only that credential over SSH. It clears systemd's failed-start limit before
 restarting changed/inactive Trader; a matching healthy service is left running.
 The strong-token requirement and accounting policy remain unchanged. See
 [generation, retry and recovery details](public-browser-access.md#operator-token-belongs-to-the-server-hosting-the-page).
+
+## Current Trader release — 29 October 2026
+
+Trader **0.20.7** runs at
+`/opt/agentic-trader/releases/v0.20.7-20261029T105213-a74ff224ca49`.
+Signed Android **1.0.7 / code 8** is installed on Moto g52 and published at
+<https://shanmukhan.com/agentic-trader/android>. The official Nifty 50 basket has been
+applied: **50 members monitored, 50 discovery rows, feed capacity 50**. Manual stock
+names and the hard-coded ten-stock cuts are removed from the main native flow.
+Current history coverage is separate: 14 corporate-action exclusions, 36 reviewed
+cached histories that require the newest completed session. The app reports preparation
+needs; coverage is not permission or a promise to buy.
+
+Verified source/installed/APK hashes, local/public health, official CSV membership and
+restored broker feed. Saved broker credentials/profile are valid. Only Trader restarted
+(PID 41760); Advisor/Monitor retain PIDs 1193/1194. Both full SQLite DBs remain unchanged,
+including all financial rows. Economic configuration is unchanged; basket/capacity fields
+were deliberately updated. No mode or purchase was triggered by migration; Manual remains.
+
+Private acceptance/rollback directory:
+`/var/backups/trading-services-v0.20.7-20261029T105213-a74ff224ca49` contains
+`acceptance.json`, `nifty50-acceptance.json` and `final-state.json`.
+Preflight: `/var/backups/trader-v0.20.7-preflight-20261029T105201Z.json`.
+Scope baseline: `/var/backups/trader-v0.20.7-universe-baseline-20261029T105145Z.json`.
+Previous code: `/opt/agentic-trader/releases/v0.20.6-20261029T063226-ce5c7f2eee46`.
+Use code-only rollback and preserve current private state; no DB restoration was performed.
+Actual next-cycle candles/signals/fills are not established by the simulated test suite.
 
 ## Using the workstation operator token deliberately
 
@@ -19,6 +121,44 @@ The workstation deploy command provisions Agentic Trader and the sibling
 `portfolio-advisor` project on the existing 64-bit Raspberry Pi. The owner confirmed
 that `portfolio-advisor` is the project referred to as portfolio-analyzer.
 Source lives in each project; the shared installer lives in `deployment/rpi/` here.
+
+## Versioned backend updates
+
+Use a new application version for each backend release. Keep `pyproject.toml`,
+`src/trading_agent/__init__.py` and Trader's `uv.lock` package version equal.
+Version 0.19.1 added the running version to `/health`. Bundle manifests record
+`versions`, Git bases and file SHA-256 hashes, including reviewed working-tree
+changes. A new root-owned release directory is named
+`vVERSION-UTC_TIMESTAMP-MANIFEST_HASH`; `current` selects the active release.
+
+For an existing installation, update only Trader with:
+
+```sh
+bash deployment/rpi/deploy.sh lipi@192.168.1.13 --trader-only
+ssh lipi@192.168.1.13 'curl -fsS http://127.0.0.1:8010/health'
+```
+
+Expected health for this release:
+`{"status":"alive","mode":"paper","version":"0.19.2"}`.
+This command requires an existing Trader `current` link and private env file;
+first-time installs use the combined command below. A Trader-only bundle has no
+Advisor source, dependencies or state. Only Trader is stopped/restarted; monitor
+registration is skipped. Existing Pi credentials, calendar and account files are
+retained. Dependencies are prepared while the old service runs, then private state
+is backed up after stopping Trader. The installer validates file hashes and the
+running health version; failures after switching restore prior code/service links.
+The restart drops browser access and trading authority: unlock again and inspect
+readiness before any separately confirmed mode activation. No broker login, source
+review or automatic trading is performed by deployment.
+
+The installer prints the full release ID and root-private `/var/backups/trading-services-RELEASE`
+path. Inspect those and the service journal if a deploy result is uncertain; compare
+`readlink -f /opt/agentic-trader/current` and `/health` before retrying. For manual
+rollback, stop Trader, restore `current` to the reviewed previous release recorded
+in `agentic-trader.previous` in that backup, and start Trader. Preserve the current
+private account/config data; never restore a financial database to undo code.
+The version check only proves the loaded software version, not strategy readiness,
+broker entitlement or real-market/device acceptance.
 
 ## Deploy and update
 

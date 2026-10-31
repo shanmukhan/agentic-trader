@@ -129,6 +129,9 @@ class Database:
         self.connection.execute(
             "CREATE INDEX IF NOT EXISTS events_kind_time ON events(kind,time,seq)"
         )
+        self.connection.execute(
+            "CREATE INDEX IF NOT EXISTS entry_day_count ON orders(side,created) WHERE quantity>0"
+        )
         with self.transaction() as tx:
             defaults = {
                 "cash": str(starting_cash),

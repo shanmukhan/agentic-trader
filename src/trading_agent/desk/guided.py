@@ -186,7 +186,7 @@ class GuidedSetup:
             positions = [dict(r) for r in tx.execute("SELECT * FROM positions ORDER BY symbol")]
             held = sorted(r["symbol"] for r in positions)
             eligible = {m["symbol"] for m in draft["eligible"]}
-            if not set(held) <= eligible or len(held) > 10:
+            if not set(held) <= eligible:
                 raise SetupError(
                     "Held symbols lack this run’s supported source coverage. Use Advanced review; "
                     "holdings will be preserved."
@@ -194,7 +194,25 @@ class GuidedSetup:
             catalog = [dict(r) for r in tx.execute("SELECT * FROM instruments ORDER BY symbol")]
             tokens = {r["symbol"]: r["token"] for r in catalog}
             matched = [s for s in ranked if s in tokens and tokens[s] & 255 == 1]
-            symbols = held + [s for s in matched if s not in held][: 10 - len(held)]
+            if draft["universe"] == "nifty50":
+                matched = [
+                    m["symbol"]
+                    for m in draft.get("members", draft["eligible"])
+                    if m["symbol"] in tokens and tokens[m["symbol"]] & 255 == 1
+                ]
+                if len(matched) != len(draft.get("members", draft["eligible"])):
+                    raise SetupError(
+                        "A Nifty 50 constituent is missing from the equity catalog. "
+                        "Import the catalog before applying the automatic basket."
+                    )
+                symbols = held + [s for s in matched if s not in held]
+            else:
+                symbols = (
+                    held
+                    + [s for s in matched if s not in held][
+                        : max(0, e.settings.stream_limit - len(held))
+                    ]
+                )
             if not matched or not symbols:
                 raise SetupError(
                     "No stocks pass the reviewed screening rules. Nothing was changed; "
@@ -202,7 +220,11 @@ class GuidedSetup:
                 )
             reviews, manual = [], []
             for symbol in symbols:
-                if not e.long_term or e.long_term.reviewed(tx, symbol, now):
+                if (
+                    symbol not in eligible
+                    or not e.long_term
+                    or e.long_term.reviewed(tx, symbol, now)
+                ):
                     continue
                 q = e._quote(tx, symbol)
                 quarantined = tx.execute(
@@ -251,6 +273,7 @@ class GuidedSetup:
             )
             plan = {
                 "job_id": p.state["job_id"],
+                "universe": draft["universe"],
                 "strategy_mode": body.strategy_mode,
                 "symbols": symbols,
                 "held_symbols": held,
@@ -353,7 +376,10 @@ class GuidedSetup:
                         raise SetupError(
                             "The installed shortlist differs. Review again before selecting stocks."
                         )
-                self.setup.select_symbols({"symbols": plan["symbols"]})
+                self.setup.select_symbols(
+                    {"symbols": plan["symbols"]},
+                    automatic_nifty50=plan.get("universe") == "nifty50",
+                )
                 self._save(phase="Saving today’s explicitly confirmed price-basis reviews")
                 with e.lock:
                     p._manual(revision)

@@ -9,7 +9,9 @@ from typing import Any
 from trading_agent.backtesting.dataset import Session
 from trading_agent.models import Symbol
 
+UNIVERSE_SIZES = {"nifty50": 50, "nifty100": 100, "nifty500": 500}
 UNIVERSES = {
+    "nifty50": "https://www.niftyindices.com/IndexConstituent/ind_nifty50list.csv",
     "nifty100": "https://www.niftyindices.com/IndexConstituent/ind_nifty100list.csv",
     "nifty500": "https://www.niftyindices.com/IndexConstituent/ind_nifty500list.csv",
 }
@@ -57,7 +59,7 @@ def constituents(
 
     try:
         rows = list(csv.DictReader(io.StringIO(raw.decode("utf-8-sig"))))
-        limit = 100 if universe == "nifty100" else 500
+        limit = UNIVERSE_SIZES[universe]
         # Temporary demerger constituents can take the official file above its named count.
         if not limit * 0.9 <= len(rows) <= limit * 1.1:
             raise ValueError

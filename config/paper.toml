@@ -20,5 +20,5 @@ flatten_at = "15:15"
 # No dates are assumed to be exchange sessions. Import a reviewed calendar first.
 calendar = "config/sessions.csv"
 # Explicit transport capacity; increase only after reviewing the intended feed workload.
-stream_limit = 10
+stream_limit = 50
 stream_tokens = []

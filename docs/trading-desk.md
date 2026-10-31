@@ -1,5 +1,86 @@
 # Dashboard, strategies, approval modes and paper activity
 
+## NSE watchlist and safety (0.21.0)
+
+The dedicated [Watchlist](watchlist-safety.md) grants purchase permission independently
+of market-data subscriptions and research ranking. Start with an empty permitted
+list, select from the imported NSE catalog, and review/confirm its replacement.
+Saving cancels pending buys and pauses decisions. New manual/automatic/approval
+entries are restricted to saved symbols; held stocks outside it remain available
+for exits. Review feed selection/freshness and explicitly rearm afterwards.
+
+PaperBroker applies fee-inclusive 25% equity sizing, five accepted entry intents
+per IST day, a durable 25% observed-peak pause and same-day price-integrity lockouts.
+Watchlist shows reasons and explicit drawdown-reference recovery. Existing tighter
+loss, asset review and ledger safeguards remain. Read the linked guide for exact
+counting, recovery and external funding limitations. Regression cases are added
+but deliberately not run in this change.
+
+## Shared daily UI and quiet status (0.20.9)
+
+Browser Dashboard/Strategies now have the Android-style Access/Data/Review/Trade card.
+Only incomplete work is offered, with policy reuse, audited-data reuse, catalog automation
+and download-follow-through to one review. Reconnection remains reviewed because fills/
+protective exits can resume; mode activation is still explicit in Paper Trading. Status
+polls stay quiet and do not change control availability merely because a read is underway.
+An interrupted quiet read cannot overwrite a newer request/confirmation. Missing or failed
+source validation is shown separately from a fresh account; stale account reads still
+warn the operator. No financial or signal strategy semantics change.
+
+## Native Home → Trade (Android 1.0.8)
+
+Daily preparation stays on Home through Access, Data, Review and Trade. Read-only checks
+and existing-download tracking are automatic; current reviewed setup skips installation.
+The final step displays connection progress, current readiness and next reviewed entry.
+When ready, Approval/Automatic can be selected and explicitly reviewed on Home. Connecting
+requires a review because pending fills/protective exits may resume; mode changes remain
+separate explicit confirmations. Failed connection links to Broker & data. Waiting or
+leaving the phone locked never schedules a future activation. Trade retains full proposals,
+monitoring/analysis diagnostics and readiness; unknown writes retain inspection recovery.
+
+## Full automatic basket and live intraday decisions — 0.20.7
+
+The ten-stock cuts in `TradingDesk.shortlist` and guided setup are removed. Official
+Nifty 50 selection monitors all current supported constituents plus retained holdings;
+only members with reviewed execution history enter the strategy pipeline. The active
+research view is scoped to those subscriptions and keeps missing-data rows visible.
+No manual stock-name prompt is required in the Android main flow. Broader custom
+research uses configured feed capacity, not a fixed ten. Default capacity is 50.
+
+Intraday production now consumes completed 5-minute candles already persisted by the
+validated live feed. One bounded daemon reads official historical warm-up off the
+signal path and shares the existing global read quota. History seeds indicators with
+entries disabled and complete/contiguous coverage; it cannot replay a missed order.
+Source/selection/revision changes discard old work; bad live bars trigger re-seeding.
+Fresh-candle and quote checks remain five seconds at actual evaluation/execution time.
+Per-stock status explains warm-up, data unavailability, stale candles and filter waits.
+Synthetic accepted-order/fill tests still enforce exact fees/cash and max positions.
+Actual next-market-cycle acceptance remains separate from simulated evidence.
+
+## Android Trade guidance — 1.0.6 / backend 0.20.6
+
+The native **Trade** mode card names current readiness and the next reviewed entry
+start. Its **Your next step** section distinguishes time/quote waits from setup work,
+shows completed checks and links to the relevant broker, strategy or risk screen.
+Tap Approval/Automatic to recheck and see reasons even when business gates are blocked;
+it opens help instead of an unexplained disabled button. The dialog updates automatically
+and offers review only once ready. Confirming still requires acknowledgement and fresh
+server gates. Neither waiting nor clearing the last blocker activates a mode.
+See [phone instructions and recovery](android-app.md#trade-tells-you-what-is-pending).
+The browser's existing UI is unchanged; its desk API includes the additive guidance.
+
+Version **0.19.2** adds a prerequisite panel before the download buttons. Download
+stays disabled until the saved Kite session is explicitly verified today in this
+server run and an NSE catalog exists. API requests enforce this before starting a job;
+stale status disables the action. See [prerequisites](strategy-preparation.md#download-prerequisites).
+
+Strategy-download failures now have a prominent inline **Download failed — action
+needed** alert beneath the download buttons, with reason, recovery link and an explicit
+confirmed retry. The small header badge is secondary. Stopped jobs hide active progress
+and retain partial counts; active jobs distinguish session verification from official
+source reads. See [download failure/retry](strategy-preparation.md#download-failure-and-retry).
+This feedback cannot repair a broker session or activate a strategy or trading mode.
+
 Version **0.15.0** separates the saved summary at **Dashboard** (`#dashboard`)
 from **Paper Trading** (`#paper`, page `/paper`), which contains readiness, quote
 warnings, modes and proposals. **Strategies** retains preparation and shortlist

@@ -89,6 +89,7 @@ def test_one_setup_confirmation_then_separate_mode_choice_and_later_accounted_fi
         s.engine, clock=lambda: s.clock[0], setup=s.setup, desk=s.desk, background=False
     )
     with TestClient(app, base_url="http://127.0.0.1") as c:
+        assert c.post("/api/setup/profile", headers=AUTH, json={}).status_code == 200
         revision = c.get("/api/desk", headers=AUTH).json()["revision"]
         r = c.post(
             "/api/desk/preparation/download",

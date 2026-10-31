@@ -57,6 +57,13 @@ class AnalysisWorker:
         self.refreshed: datetime | None = None
         self.boundary: datetime | None = None
         self.attempt: datetime | None = None
+        from trading_agent.desk.live_intraday import LiveIntraday
+
+        self.live = (
+            LiveIntraday(desk, setup, clock, self.stop)
+            if getattr(setup, "uses_persisted_candles", False) is True
+            else None
+        )
 
     def start(self) -> None:
         self.thread = threading.Thread(target=self._run, name="paper-analysis", daemon=True)
@@ -77,6 +84,8 @@ class AnalysisWorker:
         self.stop.set()
         if self.thread:
             self.thread.join(timeout=12)
+        if self.live:
+            self.live.close()
 
     def evaluate(self, now: datetime) -> None:
         d, e, research = self.desk, self.desk.engine, self.desk.research
@@ -87,22 +96,42 @@ class AnalysisWorker:
             research.refresh(now)  # Parsing/hashing/ranking outside the execution lock.
             self.refreshed = now
             d.last_analysis, d.analysis_error = stamp(now), None
+        if self.live and not e.long_term:
+            with e.lock:
+                if not e.connected or not e.calendar.is_open(now):
+                    return
+                execution_tokens = set(d.execution_tokens)
+                with e.db.transaction() as tx:
+                    selected = [
+                        Instrument(symbol=r["symbol"], token=r["token"], tick_size=r["tick"])
+                        for r in tx.execute("SELECT * FROM instruments")
+                        if r["token"] in execution_tokens
+                    ]
+                allow_entries = d.mode != "manual" and not any(
+                    reason != "INTRADAY_HISTORY_UNAVAILABLE" for reason in d.blockers(now)
+                )
+            self.live.evaluate(now, selected, revision, allow_entries=allow_entries)
+            return
         with e.lock:
             if d.mode == "manual" or any(
                 reason != "INTRADAY_HISTORY_UNAVAILABLE" for reason in d.blockers(now)
             ):
                 return
+            execution_tokens = set(d.execution_tokens)
             with e.db.transaction() as tx:
                 selected = [
                     Instrument(symbol=r["symbol"], token=r["token"], tick_size=r["tick"])
                     for r in tx.execute("SELECT * FROM instruments")
-                    if r["token"] in e.settings.stream_tokens
+                    if r["token"] in execution_tokens
                 ]
         if e.long_term:
             research.ensure_symbols({i.symbol for i in selected}, now)
             self.daily(now, selected, revision)
         elif self.setup:
-            self.intraday(now, selected, revision)
+            if self.live:
+                self.live.evaluate(now, selected, revision)
+            else:
+                self.intraday(now, selected, revision)
 
     def daily(self, now: datetime, selected: list[Instrument], revision: str) -> None:
         d, e, research = self.desk, self.desk.engine, self.desk.research

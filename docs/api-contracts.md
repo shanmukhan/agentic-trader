@@ -1,5 +1,23 @@
 # Operator API and command contracts
 
+## Watchlist and operator safety (0.21.0)
+
+- `GET /api/desk/watchlist`: schema 1 saved symbols, revision, catalog metadata,
+  feed-selection gaps, held exit-only symbols and exact safety monetary strings.
+- `GET /api/desk/watchlist/catalog?q=RELIANCE&limit=100`: literal case-insensitive
+  NSE substring search, supported catalog tokens, total matches and at most 100 rows.
+- `POST /api/desk/watchlist`: canonical `symbols` (0–3000), integer `revision`,
+  strict boolean `acknowledged:true`. Replaces permissions, cancels pending buys,
+  and returns desk mode to manual. Unknown/duplicate symbols or stale revisions: 409.
+- `POST /api/desk/safety/resume`: current integer `revision`, strict boolean
+  `acknowledged:true`; manual mode, latched pause and positive current reconciled
+  equity required. Resets the peak reference without clearing other safety gates.
+
+Existing operator/phone authentication and supplied-Origin validation apply.
+Reads cannot enable entries or change financial state. Paper snapshots add nullable
+`operator_safety` (null only in isolated accounts without the overlay). See
+[watchlist-safety.md](watchlist-safety.md) for fields, examples and recovery.
+
 ## Public HTTPS transport profile — 25 October 2026
 
 The exact `TRADING_PUBLIC_ORIGIN` and `TRADING_PUBLIC_PATH` configuration enables

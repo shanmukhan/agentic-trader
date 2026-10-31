@@ -1,5 +1,67 @@
 # Start, unlock and configure the paper app in your browser
 
+## Follow the daily card (0.20.9)
+
+After workspace unlock, Dashboard/Strategies show Access → Data → Review → Trade.
+Use the highlighted next action; routine access/source checks update automatically and
+normal polls do not flash a loading bar. **Prepare & continue** reuses current Nifty 50
+data or follows/prepares the required history and catalog. Missing broker sign-in links
+to the existing secure setup flow. Return afterward to continue. The requested download
+advances to a single review when a policy is available. First policy selection, source/
+calendar/basis/feed confirmation and trading-mode confirmation remain yours. Advanced
+controls remain expandable. Unknown outcomes need inspection rather than repeated clicks.
+
+Android users can install the [native light-mode app](android-app.md) and pair once
+instead of autofilling the long token each visit. **Prepare today's account** checks
+profile/catalog/history automatically, opens external Zerodha login when necessary
+and resumes after biometric unlock. Factual reviews and trading-mode choices remain
+explicit. Existing browser prerequisites/autorefresh continue to work independently.
+
+## Mobile unlock and the hosted Kite redirect
+
+Save a password-manager entry for `https://shanmukhan.com/agentic-trader/workspace`:
+username **operator**, password = the full server's `TRADING_OPERATOR_TOKEN`. Use your
+phone/browser's password autofill when unlocking. Apple Passwords, Google Password
+Manager or another installed password manager can hold the entry. The workspace
+form permits password autofill; whether a save/autofill prompt appears depends on
+your browser/OS. If no prompt appears, add the entry manually in that password manager.
+The app does not save the token in localStorage, cookies or URLs. Lock/reload still
+requires unlocking; autofill avoids typing or memorizing the token. Browser storage
+and physical handset autofill have not been acceptance-tested here.
+
+For the public deployment, open [Kite developer apps](https://developers.kite.trade/apps),
+select the existing app and edit its Redirect URL to exactly:
+
+```text
+https://shanmukhan.com/agentic-trader/
+```
+
+Save the app settings, then start a fresh login in Broker & Data step 3 and complete
+the normal request-token exchange. The trailing slash and `/agentic-trader/` path
+belong to this hosted callback. A separately running loopback app needs its own exact
+local redirect. The API base `https://api.kite.trade` is the broker endpoint, not this
+app's callback. See [Kite's official login flow](https://kite.trade/docs/connect/v3/user/).
+
+## Automatic market-data connection status
+
+After a confirmed Connect, leave Broker & Data open. The page checks the local
+`GET /api/setup` every **three seconds** while a stream is requested and the tab is
+visible/unlocked. Connecting/retrying text updates automatically to a green connected
+message or a red failure message with the cause and recovery. A connected WebSocket
+still needs fresh, usable quotes and independent trading readiness checks.
+**Refresh setup status** remains an optional immediate check.
+
+Polls skip open confirmations, busy requests and hidden/locked pages, never overlap,
+and stop once no stream is requested. A status timeout/network error marks displayed
+connection state stale; later checks can recover without reconnecting. An uncertain
+Connect response is reconciled by a status GET; it is never repeated automatically.
+Input edits (including deliberate clearing), open steps and session-check results are
+preserved. Lock/pagehide clears private data and rejects late replies. Polling reads
+server status only: it does not login, exchange credentials, start/retry a connection,
+review a calendar or create orders. The streaming worker retains its separate bounded
+reconnection policy. Terminal failure still needs the displayed explicit Disconnect/
+Connect recovery after resolving its cause.
+
 ## Safe account configuration updates
 
 Saving the reviewed feed selection or session calendar updates only `stream_tokens`
@@ -297,11 +359,12 @@ account: retain its exact `paper-init`/`--automate`/model policy from [paper-fee
 Open <http://127.0.0.1:8004/setup> for the current workspace or follow the console's
 **Kite login, feed selection and session setup** link. Unlock with your operator
 token once in the shared workspace; menu navigation retains that local access.
-No private setup API is accessed before unlocking. Refresh setup status is
-explicit, not automatic background login or credential probing.
+No private setup API is accessed before unlocking. Connection status refreshes automatically while a feed is requested. Broker profile
+checks, login and credential exchange remain explicit actions.
 
 1. **Register your Kite app externally.** Use the developer-console link. Set the
-   redirect URL to the exact loopback root shown on Setup, including the port. The
+   redirect URL to the exact address shown on Setup (the hosted callback above, or
+   the loopback root including its port when running locally). The
    optional postback is unused. App creation, account onboarding, subscription
    purchase, login and 2FA stay on Zerodha's site. Check current market-data
    entitlement/billing there; profile success alone does not prove it.
@@ -368,7 +431,7 @@ explicit, not automatic background login or credential probing.
    confirmation that new quotes can resume existing pending fills/protective exits.
    This verifies the broker profile and starts the
    full-mode stream for the selected catalog. A requested/connected socket does
-   not prove fresh usable quotes. Refresh setup status, then inspect readiness in
+   not prove fresh usable quotes. Status updates automatically; inspect readiness in
    Paper Trading or Risk Management. The connect button never arms automation or submits a new order intent.
 8. **Complete long-term price-basis reviews separately.** Risk Management's existing
    per-symbol current-session review is still required. A calendar entry does not

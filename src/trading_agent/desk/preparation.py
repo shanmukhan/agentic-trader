@@ -25,7 +25,7 @@ from trading_agent.models import DomainModel, Instrument, stamp
 
 
 class DownloadRequest(DomainModel):
-    universe: Literal["nifty100", "nifty500"]
+    universe: Literal["nifty50", "nifty100", "nifty500"] = "nifty50"
     request_id: str = Field(pattern=r"^[a-f0-9]{32}$")
     revision: str = Field(pattern=r"^[a-f0-9]{32}$")
     acknowledged: bool = Field(strict=True)
@@ -182,6 +182,7 @@ class Preparation:
                 can_correct = bool(conflicts) and unused_calendar(tx)
         return {
             "available": self.setup is not None and self.desk.automation is None,
+            "download_prerequisites": self.download_prerequisites(),
             "ml_configured": bool(self.model_path),
             "profile_override": self.profile_override,
             "calendar_conflicts": conflicts,
@@ -189,12 +190,42 @@ class Preparation:
             "job": job,
             "sources": {
                 "universe": "https://www.niftyindices.com/indices/equity/broad-based-indices/"
-                + ("nifty-100" if job and job.get("universe") == "nifty100" else "nifty-500"),
+                + {"nifty50": "nifty--50", "nifty100": "nifty-100", "nifty500": "nifty-500"}.get(
+                    str((job or {}).get("universe", "")), "nifty--50"
+                ),
                 "calendar": sources.HOLIDAY_PAGE,
                 "hours": sources.HOURS,
                 "actions": sources.ACTION_PAGE,
                 "history": "https://kite.trade/docs/connect/v3/historical/",
             },
+        }
+
+    def _session_verified(self) -> bool:
+        setup, now = self.setup, self.clock()
+        return bool(
+            setup
+            and setup.values["api_key"]
+            and setup.values["access_token"]
+            and setup.verified
+            and setup.verified_at
+            and setup.verified_at <= now
+            and setup.verified_at.astimezone(IST).date() == now.astimezone(IST).date()
+        )
+
+    def download_prerequisites(self) -> dict[str, Any]:
+        """Saved local evidence only: status polling never probes or logs in to Kite."""
+        verified = False
+        if self.setup is not None:
+            with self.setup.lock:
+                verified = self._session_verified()
+        with self.desk.engine.db.read_snapshot() as tx:
+            count = tx.execute("SELECT count(*) FROM instruments WHERE (token & 255)=1").fetchone()[
+                0
+            ]
+        return {
+            "ready": verified and count > 0,
+            "session_verified": verified,
+            "catalog_count": count,
         }
 
     def _manual(self, revision: str) -> None:
@@ -228,8 +259,12 @@ class Preparation:
                 raise SetupError("A download is already running. Wait or cancel it first.")
             assert self.setup is not None
             with self.setup.lock:
-                if not self.setup.values["access_token"]:
-                    raise SetupError("Verify a saved broker session in Broker & data first.")
+                if not self._session_verified():
+                    raise SetupError(
+                        "Download prerequisite incomplete: verify your saved Kite session "
+                        "in Broker & Data, step 3, for today before downloading."
+                    )
+                profile_revision = self.setup.profile_revision
                 broker = (
                     self.setup.broker()
                 )  # Freeze this run's read session outside account locks.
@@ -244,7 +279,7 @@ class Preparation:
                 "request_id": body.request_id,
                 "universe": body.universe,
                 "state": "downloading",
-                "stage": "official_sources",
+                "stage": "broker_session",
                 "completed": 0,
                 "total": 0,
                 "eligible": 0,
@@ -255,7 +290,7 @@ class Preparation:
             self._persist()
             self.thread = threading.Thread(
                 target=self._run,
-                args=(directory, broker, catalog, body.universe),
+                args=(directory, broker, catalog, body.universe, profile_revision),
                 name="history-preparation",
                 daemon=True,
             )
@@ -263,11 +298,22 @@ class Preparation:
             return self.view()
 
     def _run(
-        self, directory: Path, broker: Any, catalog: dict[str, Instrument], universe: str
+        self,
+        directory: Path,
+        broker: Any,
+        catalog: dict[str, Instrument],
+        universe: str,
+        profile_revision: int,
     ) -> None:
         try:
             self._download(directory, broker, catalog, universe)
         except sources.SourceUnavailable as error:
+            if str(error) == "BROKER_SESSION_UNAVAILABLE" and self.setup is not None:
+                with self.setup.lock:
+                    if self.setup.profile_revision == profile_revision:
+                        self.setup.verified = False
+                        self.setup.verified_at = None
+                        self.setup.profile_revision += 1
             self._persist(state="failed", error=str(error))
         except Exception:
             self._persist(state="failed", error="HISTORY_OR_PREPARATION_FAILED")
@@ -281,6 +327,7 @@ class Preparation:
             broker.get_profile()
         except Exception:
             raise sources.SourceUnavailable("BROKER_SESSION_UNAVAILABLE") from None
+        self._persist(stage="official_sources")
         raw_universe = sources.public_read(sources.UNIVERSES[universe])
         class_exclusions: list[dict[str, str]] = []
         members = sources.constituents(raw_universe, universe, exclusions=class_exclusions)
@@ -388,6 +435,7 @@ class Preparation:
         draft = {
             "sessions": [s.model_dump(mode="json") for s in sessions],
             "eligible": eligible,
+            "members": members,
             "records": sorted(records, key=lambda r: (r["session"], r["symbol"])),
             "universe": universe,
             "known_at": stamp(self.clock()),
@@ -562,7 +610,11 @@ class Preparation:
                         known_at=draft["known_at"],
                         reference=sources.UNIVERSES[draft["universe"]],
                     )
-                    for m in draft["eligible"]
+                    for m in (
+                        draft.get("members", draft["eligible"])
+                        if draft["universe"] == "nifty50"
+                        else draft["eligible"]
+                    )
                 ),
             )
             private_write(bundle / "manifest.json", manifest.model_dump_json(indent=2) + "\n")

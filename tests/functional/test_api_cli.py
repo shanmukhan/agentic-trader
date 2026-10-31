@@ -16,7 +16,13 @@ def test_authenticated_operator_flow(engine):
     current = [NOW]
     app = create_app(engine, clock=lambda: current[0], background=False)
     with TestClient(app, base_url="http://127.0.0.1") as client:
-        assert client.get("/health").json() == {"status": "alive", "mode": "paper"}
+        from trading_agent import __version__
+
+        assert client.get("/health").json() == {
+            "status": "alive",
+            "mode": "paper",
+            "version": __version__,
+        }
         assert client.get("/ready").status_code == 200
         assert client.get("/api/status").status_code == 401
         response = client.post(

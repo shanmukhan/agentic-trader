@@ -1,5 +1,69 @@
 # Architecture and invariants
 
+## Watchlist and safety runtime boundary (0.21.0)
+
+`risk/operator_safety.py` stores the required durable overlay in account SQLite meta.
+Live CLI/API entry points enable it; isolated historical runners do not. PaperBroker
+checks permissions at submission and every buy fill, sizes against the fee-inclusive
+quarter-equity budget, and serializes daily accepted-entry quota with reservations.
+The watchdog/quote path persists fresh observed peaks and latched drawdown stops.
+Price-integrity errors record a daily lockout even when an invalid frame transaction
+rolls back. Missing/corrupt required metadata raises a runtime fault. Ledger faults
+retain existing fail-closed behavior. Saved permissions cancel pending buys and revoke
+desk authority under the engine lock; held exits remain independent.
+
+`api/watchlist.py`, browser `watchlist.*` and native `WatchlistScreen.kt` expose the
+same authenticated permission/recovery semantics with revision checks and explicit
+confirmation. Read APIs use SQLite read snapshots. No broker execution transport,
+external funding workflow or automatic resume is introduced. See [the detailed guide](watchlist-safety.md).
+
+## 0.20.9: isolate routine source reads from full operations audits
+
+A live report exceeded 55 seconds: `operations_report` recomputed `execution_tokens`
+for every catalog row. Under automatic Nifty 50 each resolution scans catalog/held
+coverage, causing quadratic work while holding setup/engine locks. Cache that set once
+per report. A new authenticated source-only endpoint snapshots preparation identity under
+its own lock and validates immutable files afterward; it never acquires quote/risk/setup
+locks or scans accounting. Full reports still perform their exact independent ledger
+audit. UI source readiness cannot authorize financial instructions.
+
+Android initial loading now excludes routine daily checks; quiet source failures have
+separate invalidation/recovery and cancellation does not poison the audit cache. Browser
+quiet reads have per-request controller/serial ownership: old timers/replies cannot abort
+or commit a newer foreground request. Routine polling does not set global busy state.
+The browser daily flow has only in-memory evidence/choices and generation guards, retains
+explicit confirmations and never retries an uncertain write or activates a future mode.
+
+## Native daily progress and authority (0.20.8)
+
+Android 1.0.8 derives Access/Data/Review/Trade progress from server evidence. It caches
+only a memory-resident audited job result, keyed by IST day, reviewed/proposed close boundaries,
+job state/identity/source preview and installed policy. Current data needs all three
+independent source audit flags. Installation needs an installed job plus a ready strategy
+check; an unfinished matching guided receipt blocks completion. This progress calculation
+never grants order authority. It composes existing endpoints, retains explicit guided/feed/
+mode reviews and server readiness/revision checks. Automatic read-only checks are bounded;
+requested downloads continue to a preview only on daily pages without dirty forms or
+other reviews. Lock clears private state. Nonfinancial policy reuse does not acknowledge
+new financial/configuration effects. Backend 0.20.8 changes release identity only.
+
+## Automatic universe and intraday live-candle path — 0.20.7
+
+Official constituent selection is a server-controlled operational scope, not a phone
+watchlist or a financial-policy override. The complete Nifty 50 feed includes retained
+holdings; execution uses its reviewed supported subset. Current discovery is scoped
+to that basket with missing-data members retained. Feed capacity defaults to 50 and
+can accommodate supported additions/held names within the existing 3,000-token ceiling.
+
+`desk.live_intraday.LiveIntraday` separates bounded historical indicator seeding from
+new-signal decisions. One daemon/500-slot queue shares the broker read limiter; context
+includes session, revision, profile, selection and broker-profile revision. Late results
+from another context are ignored. History never emits entries. Contiguous valid live
+candles from the existing feed repository advance rules; missing/partial bars re-seed.
+Actual-clock freshness, authorization revision and independent risk still gate offers.
+No locks covering risk/quotes are held across historical HTTP calls. Diagnostics are
+bounded in memory; financial outcomes use the existing durable decision/order journal.
+
 **26 October token/startup recovery:** a nonempty operator token shorter than 32
 characters prevents startup. The sync command's `--generate` option creates a strong
 replacement without printing it, privately backs up/updates local `.env` and sends

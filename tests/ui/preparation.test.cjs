@@ -3,10 +3,11 @@ const {test}=require('node:test'), assert=require('node:assert/strict'),{readFil
 const {createPreparation}=require('../../src/trading_agent/api/static/preparation.js');
 class Element{
  constructor(){this.events={};this.children=[];this.value='';this.disabled=false;this.checked=false;this.style={};}
- set textContent(v){this.text=String(v);this.children=[];}get textContent(){return(this.text||'')+this.children.map(n=>n.textContent).join('');}
+ set textContent(v){this.text=String(v);this.children=[];this.textUpdates=(this.textUpdates||0)+1;}get textContent(){return(this.text||'')+this.children.map(n=>n.textContent).join('');}
  set innerHTML(_){throw Error('unsafe HTML');}append(...items){this.children.push(...items);}replaceChildren(...items){this.text='';this.children=items;}
  addEventListener(name,fn){this.events[name]=fn;}fire(name){if(!this.disabled&&this.events[name])this.events[name]({preventDefault(){}});}
  showModal(){this.open=true;}close(){this.open=false;}focus(){this.focused=true;}
+ removeAttribute(name){delete this[name];}
 }
 const flush=()=>new Promise(r=>setImmediate(r));
 const job=(extra={})=>({job_id:'a'.repeat(32),state:'ready_for_review',stage:'review',total:98,completed:98,eligible:97,completed_sessions:60,symbols:['NSE:A000'],calendar_csv:'date,open,close\n2026-10-21,09:15,15:30\n',preview_sha256:'b'.repeat(64),excluded:[{symbol:'NSE:DIV',reason:'CORPORATE_ACTION_IN_HISTORY'}],...extra});
@@ -15,7 +16,7 @@ function setup(response,windowOptions={}){
  const calls=[],dialogs=[];let refreshes=0;
  const data={mode:'manual',revision:'c'.repeat(32)},doc={getElementById:id=>{assert.ok(nodes[id],id);return nodes[id];},createElement:()=>new Element()};
  const ui=createPreparation(doc,{crypto:{getRandomValues:a=>a.fill(9)},...windowOptions},async(path,body)=>{calls.push({path,body});return response?await response(path,body):{available:true,ml_configured:false,job:job({state:'installed'})};},async()=>{refreshes++;},(title,text,action)=>dialogs.push({title,text,action}),()=>data);
- const view={available:true,ml_configured:false,job:job(),sources:{actions:'https://www.nseindia.com/companies-listing/corporate-filings-actions'}};
+ const view={available:true,download_prerequisites:{ready:true,session_verified:true,catalog_count:99},ml_configured:false,job:job(),sources:{actions:'https://www.nseindia.com/companies-listing/corporate-filings-actions'}};
  return{nodes,ui,calls,dialogs,data,view,get refreshes(){return refreshes;}};
 }
 test('no automatic download, no prechecked reviews, explicit rules selection and truthful ML explanation',()=>{
@@ -36,6 +37,26 @@ test('download requires confirmation, only uses server-selected universe and can
  assert.equal(s.calls[0].path,'/api/desk/preparation/download');assert.equal(s.calls[0].body.universe,'nifty500');assert.equal(s.calls[0].body.revision,s.data.revision);assert.match(s.calls[0].body.request_id,/^[a-f0-9]{32}$/);
  assert.equal(s.calls.length,1);assert.equal(s.refreshes,1);
 });
+test('download stays disabled until both prerequisites are known and complete, with links before its action',()=>{
+ const s=setup();
+ for(const prerequisites of [undefined,{ready:false,session_verified:false,catalog_count:99},{ready:false,session_verified:true,catalog_count:0}]){
+  s.ui.render({...s.view,job:null,download_prerequisites:prerequisites});
+  assert.equal(s.nodes['prep-download'].disabled,true);s.nodes['prep-download'].fire('click');assert.equal(s.dialogs.length,0);
+  assert.equal(s.nodes['prep-prerequisites'].hidden,false);assert.match(s.nodes['prep-prerequisites-title'].textContent,/Finish setup/);
+ }
+ assert.equal(s.nodes['prep-session-link'].hidden,true);assert.equal(s.nodes['prep-catalog-link'].hidden,false);
+ assert.match(s.nodes['prep-catalog-status'].textContent,/import required/);
+ s.ui.render({...s.view,job:null,download_prerequisites:{ready:false,session_verified:false,catalog_count:99}});
+ assert.equal(s.nodes['prep-session-link'].hidden,false);assert.match(s.nodes['prep-session-status'].textContent,/verification required/);
+ s.ui.render({...s.view,job:null});assert.equal(s.nodes['prep-download'].disabled,false);
+ assert.equal(s.nodes['prep-session-link'].hidden,true);assert.match(s.nodes['prep-prerequisites-title'].textContent,/complete/);
+ const html=readFileSync('src/trading_agent/api/static/desk.html','utf8');
+ assert.ok(html.indexOf('id="prep-prerequisites"')<html.indexOf('id="prep-download"'));
+ assert.match(html,/id="prep-download"[^>]*disabled[^>]*aria-describedby="prep-session-status prep-catalog-status prep-prerequisites-help"/);
+ s.ui.stale();assert.equal(s.nodes['prep-download'].disabled,true);assert.match(s.nodes['prep-session-status'].textContent,/Checking again automatically/);
+ s.ui.render({...s.view,job:null});assert.equal(s.nodes['prep-download'].disabled,false);
+ s.ui.clear();assert.equal(s.nodes['prep-prerequisites'].hidden,true);assert.equal(s.nodes['prep-session-status'].textContent,'');
+});
 test('installation confirmation binds edited review, selected policy and current source hash',async()=>{
  const s=setup();s.ui.render(s.view);s.nodes['prep-policy'].value='rules';s.nodes['prep-reference'].value='Genuine operator review';
  s.nodes['prep-form'].fire('submit');assert.equal(s.dialogs.length,0);
@@ -48,6 +69,42 @@ test('download failures explain concrete recovery and disabled controls remain i
  s.data.mode='automatic';s.ui.render(s.view);assert.equal(s.nodes['prep-install'].disabled,true);assert.equal(s.nodes['prep-download'].disabled,true);
  s.data.mode='manual';s.ui.render({...s.view,job:job({state:'downloading',completed:3})});assert.equal(s.nodes['prep-download'].disabled,true);assert.equal(s.nodes['prep-cancel'].disabled,false);assert.equal(s.nodes['prep-progress-bar'].value,3);
  s.ui.controls(true,true);assert.equal(s.nodes['prep-cancel'].disabled,true);
+});
+test('failed download is an inline alert beside its action with recovery, not an active progress bar',()=>{
+ const s=setup();s.ui.render({...s.view,job:job({state:'failed',stage:'official_sources',total:0,completed:0,error:'BROKER_SESSION_UNAVAILABLE',elapsed_seconds:0})});
+ assert.equal(s.nodes['prep-failure'].hidden,false);assert.equal(s.nodes['prep-recovery'].hidden,false);
+ assert.match(s.nodes['prep-error'].textContent,/stopped before reading official sources or stock history/);
+ assert.match(s.nodes['prep-error'].textContent,/step 3/);assert.match(s.nodes['prep-error'].textContent,/fresh login and token exchange/);
+ assert.match(s.nodes['prep-progress'].textContent,/Download failed/);assert.doesNotMatch(s.nodes['prep-progress'].textContent,/Reading|Checking|Downloading/);
+ assert.equal(s.nodes['prep-progress-bar'].hidden,true);assert.equal(s.nodes['prep-cancel'].disabled,true);
+ assert.equal(s.nodes['prep-download'].disabled,false);assert.match(s.nodes['prep-download'].textContent,/Retry/);
+ const errorUpdates=s.nodes['prep-error'].textUpdates;
+ s.ui.render({...s.view,job:job({state:'failed',stage:'official_sources',total:0,completed:0,error:'BROKER_SESSION_UNAVAILABLE',elapsed_seconds:0})});
+ assert.equal(s.nodes['prep-error'].textUpdates,errorUpdates,'polling must not repeatedly announce the same alert');
+ const html=readFileSync('src/trading_agent/api/static/desk.html','utf8');
+ assert.match(html,/<div id="prep-failure" class="preparation-failure" role="alert" aria-atomic="true" hidden>/);
+ assert.match(html,/Download failed — action needed/);assert.match(html,/href="\/setup#setup-step-3"/);
+ assert.ok(html.indexOf('id="prep-download"')<html.indexOf('id="prep-failure"'));
+ assert.ok(html.indexOf('id="prep-failure"')<html.indexOf('id="prep-progress"'));
+ const css=readFileSync('src/trading_agent/api/static/dashboard.css','utf8');
+ assert.match(css,/\.preparation-failure\s*\{[^}]*border:2px solid[^}]*background:[^}]*overflow-wrap:anywhere/s);
+ s.ui.render({...s.view,job:job({state:'downloading',stage:'broker_session',total:0,error:null})});
+ assert.equal(s.nodes['prep-failure'].hidden,true);assert.equal(s.nodes['prep-recovery'].hidden,true);
+ assert.equal(s.nodes['prep-progress-bar'].hidden,false);assert.equal(s.nodes['prep-progress-bar'].value,undefined);
+ assert.match(s.nodes['prep-progress'].textContent,/Checking the saved Kite session/);
+ s.ui.render({...s.view,job:job({state:'downloading',stage:'official_sources',total:0})});
+ assert.match(s.nodes['prep-progress'].textContent,/Reading official constituent/);
+ s.ui.clear();assert.equal(s.nodes['prep-failure'].hidden,true);assert.equal(s.nodes['prep-error'].textContent,'');
+});
+test('cancelled and interrupted jobs do not claim an active source read; history failures keep partial counts',()=>{
+ const s=setup();
+ for(const state of ['cancelled','interrupted']){
+  s.ui.render({...s.view,job:job({state,stage:'official_sources'})});
+  assert.doesNotMatch(s.nodes['prep-progress'].textContent,/Reading official/);assert.equal(s.nodes['prep-progress-bar'].hidden,true);
+ }
+ s.ui.render({...s.view,job:job({state:'failed',stage:'daily_history',completed:3,eligible:2,error:'BROKER_DAILY_HISTORY_UNAVAILABLE'})});
+ assert.match(s.nodes['prep-progress'].textContent,/3 \/ 98 stocks downloaded; 2/);assert.equal(s.nodes['prep-recovery'].hidden,false);
+ s.ui.render(s.view);assert.equal(s.nodes['prep-failure'].hidden,true);assert.equal(s.nodes['prep-progress-bar'].hidden,true);
 });
 test('locking clears private history, source references and controls',()=>{
  const s=setup();s.ui.render(s.view);s.ui.clear();assert.equal(s.nodes['prep-sources'].children.length,0);assert.equal(s.nodes['prep-exclusions'].children.length,0);assert.equal(s.nodes['prep-install'].disabled,true);assert.equal(s.nodes['prep-progress'].textContent,'');

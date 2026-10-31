@@ -1,5 +1,147 @@
 # How to use Agentic Trader
 
+## 31 October 2026 — NSE watchlist and safety (0.21.0)
+
+Open **Watchlist** after unlocking, import the saved NSE catalog in Broker & Data,
+search symbols and review/confirm the permitted list. Connected accounts start
+with an empty list; only saved members can receive new manual, strategy or
+contribution/SIP buys. Saving cancels pending buys and returns decisions to manual.
+Keep held symbols subscribed for protective exits, then review readiness before
+restarting a trading mode. Native Android 1.1.0 adds a Watchlist bottom tab; Stock
+Discovery is available under More and from Watchlist.
+
+Entries are capped at 25% of current equity including buy fees and five accepted
+entry intents per IST day. A 25% peak-equity drawdown requires an explicit reference
+reset in Watchlist; invalid price integrity incidents block entries for that IST
+day. Exits remain possible. External funding is unsupported; contributions use
+existing cash. See [Watchlist and safety](watchlist-safety.md) for exact inputs,
+API commands, recovery rules, limitations and the unexecuted test coverage.
+
+## Android 1.0.9 and browser: fast automatic checks
+
+Backend **0.20.9** is published and **Android 1.0.9** is installed on the Moto.
+Unlock the phone normally. Reload an already-open browser workspace once to load the
+new layout; its subsequent data refreshes happen automatically. Real Discover navigation
+was checked without a loading bar or server error. Source checks now take about 0.25 s
+through the public domain; the former >55 s full audit completed locally in 0.787 s.
+
+Discover and other already-loaded daily tabs now display saved results immediately and
+refresh quietly, without the top loading bar or disabled navigation. Their source/check
+timestamps remain visible; a real refresh failure still marks data stale. Pages without
+saved content keep an explicit initial loading state. Financial actions still revalidate
+server state and require the existing confirmations.
+
+Open Home on Android, or Dashboard/Strategies in the browser, and follow **Access →
+Data → Review → Trade**. The browser now has the same daily card and collapsed
+**Advanced preparation & sources** controls. It checks saved broker access, imports
+missing catalog details after **Prepare & continue**, reuses audited Nifty 50 data and
+follows a requested download to one setup review. Your installed policy is reused;
+first policy choice and every consequential confirmation remain explicit. Browser broker
+sign-in opens Broker & data; after completing it, return to the daily card. Trade links
+to mode confirmation and remaining time-aware checks. Failed connection gives recovery
+without automatic retries. Waiting never activates a future trading mode.
+
+The bar at the top means a foreground request is in progress. In 1.0.8, opening Android
+also ran a full operations audit; repeated catalog resolution could hold shared locks
+past the 50-second phone timeout. 1.0.9 loads the account first, performs automatic
+checks quietly and uses a dedicated source-only check. Normal browser polls are quiet
+too. A failed source check pauses data reuse and retries without declaring an otherwise
+fresh account stale or starting a download. An actual account/status network failure
+still warns that displayed values may be stale. Unknown write outcomes require saved-
+state inspection; no trade instruction is automatically retried.
+
+## Android: follow the next step on Home
+
+Android **1.0.8** simplifies the daily journey to **Access → Data → Review → Trade**.
+Unlock with your fingerprint and follow the highlighted action in **Your day, step by
+step**. Saved broker verification and current-data audits happen automatically. **Prepare
+& continue** reuses valid Nifty 50 data or downloads what is needed, then opens the setup
+review here when ready. Your last confirmed decision policy is reused; first-time choice
+remains explicit. Confirm the combined setup review, then review Approval/Automatic
+when the server's time-aware readiness allows it. Connection results refresh automatically.
+
+Completed work is skipped. A reconnect needs a connection review rather than reinstalling
+the strategy. Waiting for the next reviewed market session never automatically activates
+trading. If data replacement needs Manual, the app offers its explicit mode review.
+Source failures, stale network data and unverified access show the next recovery action.
+Unknown write results still need saved-state inspection before another instruction.
+
+**Setup details & completed checks** explains progress. **More → Your strategy →
+Advanced preparation & sources** retains broader research, force-download and separate
+installation controls. [Android guide](android-app.md#guided-daily-home-android-108--code-9)
+describes inputs, automatic checks, recovery and limitations. These layout changes are
+native Android; the browser continues to use the shared backend preparation safeguards.
+
+**Automatic Nifty 50 — Android 1.0.7 / backend 0.20.7.** The main preparation flow
+now uses the official Nifty 50 basket. It selects the constituent names automatically;
+there is no ten-stock shortlist or request to type ten names. **Broker & data** shows
+**Automatic Nifty 50 basket**; manual stock entry is under Advanced. **Trade** shows
+how many constituents are monitored, how many have reviewed history, and per-stock
+signal/waiting reasons. Missing data/source exclusions remain visible and cannot force
+a purchase. Cash, risk and position limits are unchanged; monitoring 50 is not holding 50.
+
+Use **Prepare today's account** for the default basket, review the combined source/
+calendar/policy setup, then select a trading mode when ready. An existing saved data
+run is reused only for the same audited universe; changing from Nifty 100 to Nifty 50
+needs matching sources. To refresh a saved automatic basket, use **Use / refresh
+official Nifty 50** in Manual with the feed disconnected and review its effect.
+Held stocks are retained. See [automatic basket and signal handling](android-app.md#automatic-nifty-50-and-live-signal-checks).
+
+**Current Pi state (29 October):** all 50 Nifty 50 members are selected and the feed
+is connected. Fourteen have corporate-action history exclusions; the other 36 need
+the newest completed daily session refreshed. Open Trade for the corresponding
+preparation guidance. Manual is selected after deployment; mode activation remains
+explicit once readiness clears. No manual ten-stock list is required.
+
+**Android 1.0.6 — Trade explains what is pending.** Open **Trade** to see the current
+readiness summary, next reviewed entry start, completed checks and remaining actions.
+Tap **Approval · review every proposal** even when time/quotes/setup are blocking:
+the app rechecks the server and opens **Before choosing Approval** with the reasons.
+Use its Broker & data, strategy or risk link when action is required. Waiting checks
+update automatically; they never activate a mode. When ready, select **Review Approval
+mode**, acknowledge the effects and confirm. A failed check keeps the last snapshot
+marked stale and blocks confirmation. Your phone clock cannot override server checks.
+See [Trade guidance](android-app.md#trade-tells-you-what-is-pending).
+
+**Zerodha sign-in completed but the token field is empty:** the automatic callback
+exchanges and stores the access token on the Pi; the app never fills the manual
+one-time request-token fallback with saved credentials. Return to the app and unlock.
+A verified Kite-session status means no token copying is needed. The fallback is only
+for an incomplete callback started by this app. If verification is needed, use
+**Check saved broker session**; if it fails, begin a fresh **Sign in to Zerodha**.
+Market-data connection/readiness and history entitlement remain separate checks.
+
+**Android 1.0.5:** the light splash and biometric lock page now share the supplied
+logo and **Agentic Trader** name. Unlock normally; the first account read shows
+**Opening your workspace** until complete. Status refreshes automatically about every
+five seconds while unlocked, without shifting the page or disabling buttons. A failed
+read leaves the last snapshot visible, marked stale; use **Refresh displayed status**
+to retry. A successful read clears stale status. Locking still hides all account data.
+
+Tap **Paper** below the page title to open **Trading environment**. Paper uses virtual
+money. **Real · unavailable** explains that real execution and broker reconciliation
+are not implemented. It cannot be selected; closing the dialog changes no account,
+holdings or decision mode. Manual/Approval/Automatic remain separate paper controls.
+See [Android instructions](android-app.md).
+
+**Android native app:** install from <https://shanmukhan.com/agentic-trader/android>.
+Android **1.0.4** fixes repeated daily-candle downloads: **Check & prepare today**
+runs the explicit source audit and reuses valid same-day data for the selected
+universe. It shows **Reusing today's … data** and **No daily candles were downloaded**.
+Use **Download fresh sources & history** only for an intentional fresh acquisition.
+Android **1.0.3** uses the supplied blue/teal growth symbol as its launcher icon.
+Use **1.0.2 or later** for the idle-connection and background-lock fixes.
+Update over the existing app to
+keep its encrypted pairing; do not uninstall. If an earlier pairing reports an
+unknown result after biometrics, close/reopen and use **Unlock with biometrics**
+when offered instead of enrolling again. Changing the server token later deliberately
+invalidates existing phone pairings, which then need to be created again.
+Pair once with the server operator token, then unlock with strong biometrics. Home's
+**Prepare today's account** checks the session/catalog and acquires current history;
+review the resulting setup before applying it. Research, policies, backtests and
+paper-account controls use native light-mode screens. Android 11+ and hardware-backed
+strong biometrics are required. See [installation, use and recovery](android-app.md).
+
 **NSE session reference:** Broker & Data → step 5 now suggests the official NSE
 holidays/notices URL after unlock. Keep it after reviewing that source, or replace it
 with a specific circular/review note. Refresh preserves your edits; Lock then unlock
@@ -33,9 +175,29 @@ for your existing RPi Monitor username/password. See [public browser setup, brok
 callback and recovery](public-browser-access.md). Services run automatically; opening
 an app does not connect a broker or submit an order.
 
+On mobile, save the full server operator token in your phone's password manager for
+`https://shanmukhan.com/agentic-trader/workspace`, username **operator**, and autofill
+it when unlocking. The unlock form supports password autofill; save prompts depend on
+your browser. Lock/reload still clears the app's in-memory access. See [mobile unlock](ui-setup.md#mobile-unlock-and-the-hosted-kite-redirect).
+
+For the hosted Kite app, edit your existing app in <https://developers.kite.trade/apps>
+and set **Redirect URL** to exactly `https://shanmukhan.com/agentic-trader/`. Save it,
+then start a fresh login from Broker & Data step 3. The API base itself is
+`https://api.kite.trade`. See [callback and login steps](ui-setup.md#mobile-unlock-and-the-hosted-kite-redirect).
+
+Broker & Data checks connection status automatically every three seconds while a feed
+is requested and this tab is visible/unlocked. It shows connected success, retries or
+failure beside the buttons; failed status reads show stale guidance and retry the read.
+Manual refresh remains optional. No login, reconnect or order is submitted by polling.
+See [automatic connection feedback and recovery](ui-setup.md#automatic-market-data-connection-status).
+
 For the shared Raspberry Pi service setup, use the [Pi deployment and mobile-monitor guide](raspberry-pi.md).
 `bash deployment/rpi/deploy.sh lipi@192.168.1.13 ../portfolio-advisor` installs both
-boot-enabled services with persistent private state. The recovery SSH
+boot-enabled services with persistent private state. For an existing installation,
+`bash deployment/rpi/deploy.sh lipi@192.168.1.13 --trader-only` updates just Trader.
+Backend releases now carry a version in the package, manifest, release directory and
+`/health` response (this release: **0.19.2**). See [version checks, restart behavior
+and rollback](raspberry-pi.md#versioned-backend-updates). The recovery SSH
 tunnel uses Trader port **8010** and Advisor port **8501**; RPi Monitor's Services list
 provides status and service controls. Fresh Trader is paper/manual and Advisor is
 demo; existing local accounts and broker credentials are not copied. Follow the guide
@@ -215,9 +377,17 @@ For the missing strategy, use **Strategies** → **Prepare a paper strategy**:
    profile check does not prove streaming access or fresh quotes. On failure, check
    connectivity and retry; if expired, disconnect a requested feed in step 6 and
    complete a fresh login/token exchange. See [session-check recovery](ui-setup.md#saved-session-check-feedback).
-2. In Strategies, choose Nifty 100 or Nifty 500 and confirm **Download strategy data**.
+2. In Strategies, complete the prerequisite panel first. Download stays disabled
+   until your saved session is verified today in this server run and the NSE catalog
+   is present. Its links open Broker & Data steps 3/4. After a restart, explicitly check
+   the saved session again. Then choose Nifty 100/500 and confirm **Download strategy data**.
    Watch progress; review sources and exclusions. It can run after hours. Your feed,
-   mode and virtual cash are unchanged by the download.
+   mode and virtual cash are unchanged by the download. If it stops, a red-bordered
+   **Download failed — action needed** box appears directly below the buttons with
+   the cause. For a Kite session failure, use its **Check saved broker session in
+   Broker & Data** link, check step 3, resolve connectivity or an expired login, then
+   return and confirm **Retry strategy data download**. The progress bar disappears
+   on failure; partial counts remain visible. See [failure/retry details](strategy-preparation.md#download-failure-and-retry).
 3. Choose **Rules only** explicitly for the experimental paper policy, or **Rules + ML**
    if a separately supplied matching model is configured. Click **Review and finish setup**.
 4. Review the summary: exact ranked stocks, source links, all proposed session dates/hours,

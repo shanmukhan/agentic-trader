@@ -17,6 +17,7 @@ from trading_agent.risk.policy import policy_fingerprint
 
 class Research:
     def __init__(self, engine: Any, path: Path, now: datetime, *, synthetic: bool = False):
+        self.engine = engine
         self.profile = AnalysisProfile.load(path)
         self.dataset = DailyDataset(self.profile.daily_dataset)
         if self.dataset.manifest.synthetic and not synthetic:
@@ -35,6 +36,18 @@ class Research:
             }
         self.timeline = DailyTimeline(
             self.dataset, self.timeline_symbols, self.profile.long_term.screen
+        )
+        self.automatic_universe = (
+            "nifty50"
+            if (
+                self.dataset.manifest.universe_kind == "prospective_snapshot"
+                and all(
+                    m.reference
+                    == "https://www.niftyindices.com/IndexConstituent/ind_nifty50list.csv"
+                    for m in self.dataset.manifest.universe
+                )
+            )
+            else "custom"
         )
         self.synthetic = self.dataset.manifest.synthetic
         self.model: Any = None
@@ -80,6 +93,37 @@ class Research:
         started = perf_counter()
         # analyze checks source hashes before publishing; future/incomplete data is excluded.
         result = analyze(self.dataset, self.profile.long_term.screen, now)
+        if self.engine.settings.automatic_universe == "nifty50":
+            tokens = self.engine.settings.stream_tokens
+            with self.engine.db.read_snapshot() as tx:
+                monitored = (
+                    {
+                        row[0]
+                        for row in tx.execute(
+                            "SELECT symbol FROM instruments WHERE token IN ("
+                            + ",".join("?" for _ in tokens)
+                            + ")",
+                            tokens,
+                        )
+                    }
+                    if tokens
+                    else set()
+                )
+            by_symbol = {row["symbol"]: row for row in result["rows"]}
+            result["rows"] = [
+                by_symbol.get(
+                    symbol,
+                    {
+                        "symbol": symbol,
+                        "status": "needs_data",
+                        "rank": None,
+                        "reasons": ["REVIEWED_DAILY_HISTORY_UNAVAILABLE"],
+                        "observations": 0,
+                    },
+                )
+                for symbol in sorted(monitored)
+            ]
+            result["active_universe"] = "nifty50"
         reviewed = {s.symbol for s in self.profile.shares if s.reviewed_at <= now}
         for row in result["rows"]:
             if row["symbol"] not in reviewed:

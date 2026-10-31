@@ -16,6 +16,7 @@ _PAGES = {
     "console",
     "setup",
     "workspace",
+    "watchlist",
     "desk",
     "activity",
     "dashboard",
@@ -29,6 +30,8 @@ _PAGES = {
     "portfolio",
     "settings",
     "learn",
+    "android",
+    "downloads",
     "health",
     "ready",
 }

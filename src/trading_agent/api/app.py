@@ -13,6 +13,7 @@ from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
+from trading_agent import __version__
 from trading_agent.api.console import console_snapshot
 from trading_agent.api.public_path import PublicAssets, PublicPathMiddleware
 from trading_agent.api.setup import SetupService, mount_setup
@@ -38,7 +39,9 @@ def create_app(
     desk: Any = None,
     backtests: Any = None,
     investment_policies: Any = None,
+    android_release_dir: Path | None = None,
 ) -> FastAPI:
+    engine.safety.enable(clock())
     assets = PublicAssets(ASSETS, engine.settings.public_path)
     from trading_agent.desk.api import mount_desk
     from trading_agent.desk.preparation import Preparation, saved_profile
@@ -71,6 +74,13 @@ def create_app(
 
     investment_policies = investment_policies or InvestmentPolicyStore(
         engine.settings.database.with_suffix(".investment-policies")
+    )
+    from trading_agent.mobile.auth import DeviceAccess
+
+    mobile_access = DeviceAccess(
+        engine.settings.database.with_suffix(".mobile.json"),
+        lambda: engine.settings.operator_token.get_secret_value(),
+        clock,
     )
     stopped = threading.Event()
 
@@ -124,6 +134,7 @@ def create_app(
 
     app = FastAPI(
         title="Paper operator API",
+        version=__version__,
         docs_url=None,
         redoc_url=None,
         openapi_url=None,
@@ -158,6 +169,7 @@ def create_app(
             "/backtesting",
             "/settings",
             "/learn",
+            "/watchlist",
         }
         response.headers["X-Frame-Options"] = "SAMEORIGIN" if framed else "DENY"
         response.headers["Referrer-Policy"] = "no-referrer"
@@ -173,10 +185,19 @@ def create_app(
         secret = engine.settings.operator_token.get_secret_value()
         if not secret:
             raise HTTPException(503, "operator controls disabled: configure operator token")
-        if not authorization or not hmac.compare_digest(
-            authorization.encode(), ("Bearer " + secret).encode()
-        ):
+        operator = bool(
+            authorization
+            and hmac.compare_digest(authorization.encode(), ("Bearer " + secret).encode())
+        )
+        phone = (
+            mobile_access.identity(authorization[7:])
+            if authorization and authorization.startswith("Bearer ")
+            else None
+        )
+        if not operator and not phone:
             raise HTTPException(401, "operator authentication required")
+        if not operator and not mobile_access.permits(request.method, request.scope["path"]):
+            raise HTTPException(403, "This phone session cannot access that operation.")
         if request.method not in ("GET", "HEAD"):
             # Bearer authentication and Origin validation protect browser controls.
             origin = request.headers.get("origin")
@@ -190,8 +211,23 @@ def create_app(
             if origin is not None and origin not in permitted:
                 raise HTTPException(403, "cross-origin controls prohibited")
 
+    from trading_agent.mobile.api import mount_mobile
+
+    mobile_login = mount_mobile(app, mobile_access, setup, clock, authorized)
+    from trading_agent.api.environment import mount_environment
+
+    mount_environment(app, authorized)
+    app.state.mobile_access = mobile_access
+    app.state.mobile_login = mobile_login
+    from trading_agent.mobile.release import mount_release
+
+    mount_release(app, android_release_dir or Path.cwd() / "downloads", engine.settings.public_path)
+
     mount_setup(app, setup, authorized, assets=assets)
     mount_desk(app, desk, setup, authorized, assets, clock, preparation)
+    from trading_agent.api.watchlist import mount_watchlist
+
+    mount_watchlist(app, desk, authorized, assets, clock)
     from trading_agent.operations.report import operations_report
     from trading_agent.operations.schedule import ScheduledDownload, scheduled_download
 
@@ -295,8 +331,21 @@ def create_app(
         )
 
     @app.get("/", response_class=HTMLResponse)
-    def dashboard() -> str:
+    def dashboard(request: Request) -> str:
+        if "mobile_attempt" in request.query_params:
+            return mobile_login.finish(request.query_params).replace(
+                "</html>",
+                '<script src="'
+                + engine.settings.public_path
+                + '/mobile-return.js" defer></script></html>',
+            )
         return assets.joinpath("index.html").read_text(encoding="utf-8")
+
+    @app.get("/mobile-return.js")
+    def mobile_return_script() -> HTMLResponse:
+        return HTMLResponse(
+            assets.joinpath("mobile-return.js").read_text(), media_type="application/javascript"
+        )
 
     @app.get("/console", response_class=HTMLResponse)
     def console_page() -> str:
@@ -445,7 +494,7 @@ def create_app(
 
     @app.get("/health")
     def health() -> dict[str, str]:
-        return {"status": "alive", "mode": "paper"}
+        return {"status": "alive", "mode": "paper", "version": __version__}
 
     @app.get("/ready")
     def ready() -> JSONResponse:

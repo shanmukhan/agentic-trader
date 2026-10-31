@@ -126,11 +126,11 @@
           <summary id="setup-step-title-4" class="setup-step-summary"><span class="step-number" aria-hidden="true">4</span><span class="step-title">Choose stock subscriptions<span class="sr-only"> · Step 4 of 6</span></span><span id="setup-step-state-4" class="setup-step-state muted"></span></summary>
           <div class="setup-step-body">
             <p id="catalog-state" class="muted"></p>
-            <p id="selection-help" class="muted">The catalog is a symbol/token lookup. This account streams live quotes for up to ten saved symbols, used for paper fills and monitoring holdings. These names are your saved watchlist, not a fixed list of allowed stocks or a promise of profit. For broader stock screening, use Trading desk → Prepare a paper strategy with Nifty 100 or Nifty 500, then review its proposed shortlist.</p>
+            <p id="selection-help" class="muted">The catalog is a symbol/token lookup. The default capacity supports the official Nifty 50 basket. The Android app can select current constituents automatically; this advanced form is for a deliberately customized feed. Strategy signals and independent risk checks determine paper orders. Held stocks must remain included.</p>
             <button id="catalog" type="button" class="quiet"><svg class="icon" aria-hidden="true" focusable="false" width="20" height="20"><use href="/icons.svg#download"/></svg>Download / validate catalog</button>
             <p class="muted">Disconnect before catalog or selection changes. Existing mappings are never silently replaced. Selection must include every held symbol; resolve pending orders before changing it.</p>
             <form id="symbols" class="review-form">
-              <label><span id="symbol-list-label">One to ten symbols, comma separated</span><input id="symbol-list" placeholder="NSE:SYMBOL, NSE:ANOTHER" required maxlength="400" spellcheck="false" aria-describedby="selection-help selection-save-help"></label>
+              <label><span id="symbol-list-label">One to 50 symbols, comma separated</span><input id="symbol-list" placeholder="NSE:SYMBOL, NSE:ANOTHER" required maxlength="1800" spellcheck="false" aria-describedby="selection-help selection-save-help"></label>
               <button id="save-symbols">Validate and save selection</button>
             </form>
             <p id="selection-save-help" class="muted">Editing the field does not change subscriptions. Validate and save, then confirm to update the saved list below. A symbol’s token identifies it to the broker; tick is its permitted price increment in rupees.</p>
@@ -169,7 +169,7 @@
         <details id="feed-connection" class="panel setup-step" name="broker-setup" tabindex="-1">
           <summary id="setup-step-title-6" class="setup-step-summary"><span class="step-number" aria-hidden="true">6</span><span class="step-title">Connect the read-only feed<span class="sr-only"> · Step 6 of 6</span></span><span id="setup-step-state-6" class="setup-step-state muted"></span></summary>
           <div class="setup-step-body">
-            <p id="feed-state" class="notice"></p>
+            <p id="feed-state" class="notice" role="status" aria-live="polite" aria-atomic="true"></p>
             <div class="controls">
               <button id="connect" type="button">Connect paper market data</button>
               <button id="disconnect" type="button" class="quiet">Disconnect market data</button>

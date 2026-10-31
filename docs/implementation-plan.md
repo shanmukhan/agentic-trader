@@ -1,5 +1,535 @@
 # Implementation plan, enhancements and status
 
+## 31 October 2026 — implemented watchlist permissions and operator safety
+
+Backend 0.21.0 / Android source 1.1.0 (code 11). Implement the NSE catalog picker,
+private workspace tab/native bottom tab, durable account permissions, explicit
+replacement confirmation and empty-list entry blocking. Enforce watchlist membership
+and conservative safety restrictions in PaperBroker for every connected entry path;
+retain held stocks for exits. Add daily accepted-intent quota, fee-inclusive 25%
+equity sizing, persistent 25% drawdown pause/reset and daily price-integrity latch.
+Reuse existing exact money accounting, no-borrow/no-short and ledger fault handling.
+Persist the overlay separately from existing immutable economic/model policy hashes;
+it can only constrain their authority. Runtime feed shortlists intersect permissions.
+Offline research is explicitly separate. External funding is not an implemented
+workflow; audited flow adjustment remains required before funding can be added.
+
+Add unit, functional, browser and native regression sources, including independent
+SQLite checks of money/reservations/fills. Tests are intentionally **not executed**
+on this change at the user's request. See [watchlist-safety.md](watchlist-safety.md)
+for implemented behavior, recovery, activation semantics and acceptance limits.
+Static Python/JS syntax, Ruff, mypy (135 files), whitespace and secret-pattern
+checks pass. Android compilation remains unverified: wrapper download timed out;
+the installed Gradle offline fallback lacks Android Gradle plugin 9.4.1.
+Deployment and native package publication are not requested or marked complete.
+
+## 29 October 2026 — resolve opening timeout and share the browser daily flow
+
+Backend **0.20.9**, Android **1.0.9 / code 10**. Reproduce the >55-second full report
+and identify repeated basket resolution under shared locks. Cache the basket, isolate UI
+source checks from full accounting, finish initial account loading independently, preserve
+fresh values on source-only failure and recover cancelled checks. Extend the four-step
+flow to browser Dashboard/Strategies with quiet polling and guarded late-read handling.
+Keep explicit policy/setup/feed/mode reviews and all existing account/market safeguards.
+Validation: **1,435 Python tests** pass (52.40 seconds), **252 browser JS tests**,
+**22 native unit tests**, and **33 offline Compose workflows** on Moto g52 pass
+(83.993 seconds). Source-only checks independently preserve persisted SQLite state;
+full report basket resolution stays bounded. Phone tests cover slow/failing/cancelled
+audit reads with no global busy bar, no financial side effects and recovery. Discover and other cached
+daily tabs show saved data immediately and refresh quietly; source timestamps and stale
+read protections remain. Exact 1440px/390px browser layouts were visually inspected
+with invented data; the 390px document has no horizontal overflow. Lint has
+zero errors (37 nonblocking advisories); Ruff/format/mypy and whitespace checks pass.
+Signed **Android 1.0.9 / code 10** retains the existing v3 certificate and security
+manifest. APK SHA-256:
+`28eb2e42f9515bef49519592836ac85c8db5e500dc2fde51ecc7e9d446cef5b8`.
+Simulated/browser fixture checks do not establish production biometric or market-fill
+acceptance. Live publication and navigation evidence follows.
+
+Published **backend 0.20.9 / Android 1.0.9** on 29 October 2026. Release
+`/opt/agentic-trader/releases/v0.20.9-20261029T170852-8e34e6bec934`, Trader PID 47194;
+previous 0.20.8 code retained. Local/public health, manifest/installed-source hashes,
+public daily-flow asset, installer metadata/certificate and downloaded APK hash match.
+Other service PIDs remain 1193/1194. The official Nifty 50 scope is preserved.
+
+Live timings: local account **0.163 s**, source-only check **0.073 s**, full accounting
+report **0.787 s** (previously exceeded 55 seconds); public account **0.537 s**, source
+check **0.250 s**. These are individual live acceptance measurements, not a load-test SLA.
+The previously requested feed is connected with zero connection failures, broker profile
+verified and Manual still selected. Current guidance is waiting for the next reviewed
+entry, **30 October, 09:30 IST**. No trading mode or purchase was submitted by deployment.
+
+Strict independent full SQLite comparisons pass: **both databases entirely unchanged**.
+Broker credentials, phone registry, economic/risk configuration and other configuration
+files are unchanged. The sole configuration difference is the installed-calendar file
+reference; its reviewed file contents are byte-for-byte identical to the private baseline.
+This difference is recorded separately, not represented as an unchanged whole-config hash.
+Both strict unchanged-database assertions were retained and passed. No financial database
+was restored.
+
+Signed production **Android 1.0.9 / code 10** installed in place on Moto g52; cold launch
+282 ms. Retained pairing and the already-authenticated production Discover screen were
+verified using fixed-label navigation and boolean observations only. Two samples showed
+saved research visible, no progress indicator, no Discover loading label and no network
+error. No biometric was bypassed and no private screenshot or financial values were saved.
+This is live phone/API navigation acceptance, distinct from the 33 invented offline UI
+workflows. Temporary demo/test packages were removed. Actual market signals/fills and a
+new sensor-authentication event were not asserted by this check.
+
+Private evidence:
+`/var/backups/trading-services-v0.20.9-20261029T170852-8e34e6bec934/acceptance.json`,
+`latency-acceptance.json`, `feed-status.json` and `configuration-comparison.json` in the
+same directory. Baseline:
+`/var/backups/trader-v0.20.9-preflight-20261029T170828Z.json`.
+
+
+
+## 29 October 2026 — simplify the native daily journey
+
+Android **1.0.8 / code 9**, backend **0.20.8**: implement Access/Data/Review/Trade on
+Home and Strategy; move repeated advanced preparation controls behind expansion. Bound
+automatic saved-profile/source audits, cache only verified matching current data, invalidate
+at reviewed close/day/source changes, reuse confirmed policy and advance requested downloads
+to a single explicit setup preview. Skip valid installation for reconnection/readiness;
+retain all confirmations, biometric/2FA, stale/unknown-result guards and server authority.
+All native research/backtest/policy workflows remain. No backend behavior changes besides
+release identity.
+
+Validation: **22 native unit tests**, **30 offline Compose workflows** on Moto g52
+(77.569 seconds), **1,433 Python tests** (51.64 seconds) and **244 browser JS tests**
+pass. Native coverage includes pre-install proposed-calendar close invalidation, current
+server-policy reuse, one connection review and visible failure without retry. Exact
+invented balances remain unchanged; backend financial tests independently reopen SQLite.
+Lint has zero errors / 37 nonblocking style advisories. Ruff, format, mypy (133 source
+files) and whitespace checks pass. Signed production v3 APK keeps the existing certificate,
+package, biometric protection, disabled backup/debug/cleartext and permission allowlist.
+APK SHA-256: `1a7228a77e89369040f2f7b473c6cd74caecb909e6d978cb93f0b30174a05188`.
+Phone tests use invented offline data in a separate package without Internet permission;
+they do not establish authenticated production broker/biometric or live-market acceptance.
+Published **backend 0.20.8 / Android 1.0.8** on 29 October 2026. Fresh release
+`/opt/agentic-trader/releases/v0.20.8-20261029T122533-c74cc8f8668b`, Trader PID 43484;
+previous 0.20.7 code retained. Local/public health, manifest/installed-source hashes,
+Paper-only capabilities, public installer metadata, certificate and downloaded APK hash
+are verified. Other services retain PIDs 1193/1194. Independent full logical comparisons
+show **both SQLite databases entirely unchanged**; configuration, broker credentials and
+mobile pairing registry hashes are unchanged. No financial database was restored.
+
+Existing official Nifty 50 monitoring remains intact. The previously requested feed was
+restored after a successful read-only broker profile check; it is connected and **Manual
+remains selected**. No paper mode or purchase was armed/submitted. Production guidance
+still requests current data and gives the next reviewed entry as **30 October, 09:30 IST**;
+this UI release does not fabricate fresh history or guarantee a signal/fill.
+
+Signed production **1.0.8 / code 9** installed in place on Moto g52; cold launch succeeded
+(442 ms), package/version and retained biometric-unlock entry verified. Temporary demo/
+test packages were removed. Production screenshots were not recorded and biometrics were
+not bypassed. Authenticated production use of the new daily flow remains separate from
+the 30 fully simulated offline UI workflows.
+
+Private deployment evidence:
+`/var/backups/trading-services-v0.20.8-20261029T122533-c74cc8f8668b/acceptance.json`
+and `connection-acceptance.json` in the same directory. Preflight:
+`/var/backups/trader-v0.20.8-preflight-20261029T122408Z.json`.
+
+
+## 29 October 2026 — full official Nifty 50 automation and live candle evaluation
+
+Backend **0.20.7**, Android **1.0.7 / code 8**: remove hard-coded ten-stock shortlist/
+guided limits; default preparation to Nifty 50 and automatically select its official
+basket. Retain held names, raise operational capacity as needed and keep history/source
+exclusions separate from monitored membership. Scope discovery to the basket; move
+manual names to Advanced and expose coverage/signal diagnostics. No cash, exposure,
+position or economic fingerprint change.
+
+The observed 6.442-second serial ten-stock acquisition exceeded the five-second candle
+limit. Production analysis now seeds history off the decision path and consumes new
+completed live candles. Seeding/late results cannot replay trades; incomplete/gapped
+inputs block and re-seed. Five-second freshness and all financial gates remain.
+Validation: **1,433 Python tests** pass (50.73 seconds), **244 browser JS**, **15
+native unit** and **24 offline Compose workflow tests** pass (65.181 seconds on Moto
+g52). Simulated fifty-stock signals produce real fixture orders/fills within unchanged
+risk caps, with independently reopened SQLite exact cash/fees and holdings verified.
+Delayed warm-up, stale/gapped/incomplete data, Manual/late results and bounded retries
+remain blocked appropriately. The phone tests use separate no-Internet demo packages
+and invented balances. Lint: zero errors / 36 existing advisories; Ruff, format, mypy
+and whitespace pass. Signed Android 1.0.7 verifies v3 signature, unchanged certificate,
+package, biometric/backup/cleartext policy. Official current CSV count/hash verification
+is live public-source evidence; prospective production signal/fill acceptance is separate.
+Publication and actual basket-migration evidence are recorded below.
+
+
+Signed production **Android 1.0.7 / code 8** is installed on Moto g52. Cold launch
+succeeded (1,015 ms), package/version and retained biometric pairing screen verified.
+Demo/test packages were removed. APK SHA-256:
+`9acb26e3bfb1cb459e914c4f83c0e3e4220702c73d65eb8438cb476f98b2b415`.
+Published and verified **backend 0.20.7 / Android 1.0.7**, 29 October 2026.
+Release `/opt/agentic-trader/releases/v0.20.7-20261029T105213-a74ff224ca49`, Trader PID
+41760. Public/local health, installed/source and published installer/APK hashes match;
+other services retain PIDs 1193/1194. The official-basket endpoint was applied with the
+fresh revision: **50 official members, 50 monitored, 50 discovery rows, capacity 50,
+automatic_universe=nifty50**. Exact membership was independently compared against
+the retained source CSV, SHA-256
+`f5ba4027d935ae72879d5c24bbebf0e8439ec8ed504ffdf4175fde69206244b3`.
+Saved broker credentials are unchanged and profile verification succeeded. The previously
+requested feed was restored and is connected. Manual remains selected; no mode was armed
+and no purchase instruction was submitted by the migration.
+
+Independent full SQLite logical comparisons show **both databases entirely unchanged**,
+including cash/fees/orders/fills/positions. Economic configuration is unchanged; only
+operational basket/capacity fields were intentionally updated. Held symbols were retained.
+The current 50 rows include **14 corporate-action history exclusions** and **36 with
+reviewed cached history**. After today's close, the latest completed session is missing
+from that cache; the 36 therefore show needs-data. Trade correctly requests preparation
+and gives the next reviewed entry as 30 October, 09:30 IST. Use the default Nifty 50
+preparation flow for current history; do not treat coverage as a valid buy signal.
+
+Private evidence:
+`/var/backups/trading-services-v0.20.7-20261029T105213-a74ff224ca49/acceptance.json`,
+`nifty50-acceptance.json` and `final-state.json` in that same directory.
+Preflight: `/var/backups/trader-v0.20.7-preflight-20261029T105201Z.json`;
+financial scope baseline: `/var/backups/trader-v0.20.7-universe-baseline-20261029T105145Z.json`.
+Previous 0.20.6 code is retained; no financial DB was restored. Actual 50-member saved
+scope and feed connection are verified, while fresh next-cycle candles/signals/fills and
+an authenticated production phone tap flow remain separate from simulated UI tests.
+
+## 29 October 2026 — proactive native Trade guidance
+
+Android **1.0.6 / code 7**, backend **0.20.6**. Implemented plain, time-aware readiness
+on Trade and on attempts to choose Approval/Automatic. Pure server guidance calculates
+next entry from reviewed sessions intersected with configured times, distinguishes
+waits/actions, handles special sessions/cutoff/missing dates and retains every blocker.
+Completed checks and direct setup links reduce manual investigation. Native mode taps
+freshly inspect state, show live help when blocked and retain explicit review/confirm.
+A changed-readiness rejection shows new reasons without a retry. Stale/missing status
+fails closed. No mode gates, accounting, automatic arming or broker execution changed.
+
+Validation: **1,421 Python tests** pass (61.16 seconds), including eight pure time/
+session cases and the independently persisted HTTP flow. **14 native unit**, **22
+offline Compose workflows** (58.532 seconds on Moto g52) and **244 browser JS tests**
+pass. Demo/test packages use invented balances and no Internet; new tests verify
+blocked Approval has a visible time-aware explanation, quiet readiness transition
+without a write, direct setup navigation, failed fresh reads and changed-readiness
+409 handling without retry. Existing acknowledgement/duplicate-tap tests still pass.
+Reviewed the simulated Approval dialog screenshot. Lint: zero errors / 36 existing
+advisories. Ruff, formatting, mypy and whitespace checks pass. Signed APK v3 verification
+confirms unchanged certificate/package and no debugging, backup or cleartext traffic.
+Physical production installation/publication evidence is recorded separately.
+
+Signed production **1.0.6 / code 7** installed in place on the Moto g52; cold launch
+succeeded (884 ms). Package/version are verified and the existing biometric-unlock
+screen remains, preserving pairing. Temporary demo/test apps were removed. This is
+installation/entry acceptance; the new production Trade flow remains distinct from
+the fully simulated UI evidence until the paired app is unlocked against 0.20.6.
+APK SHA-256: `2e937a50aaf1cfa61517381c4efe854d511ffdac5abad4ad1c9edda143fc3d4c`.
+Published **backend 0.20.6 / Android 1.0.6** on 29 October 2026:
+`/opt/agentic-trader/releases/v0.20.6-20261029T063226-ce5c7f2eee46`, Trader PID 38450.
+Local/public health, installed/source hashes, live schema-1 mode guidance, Paper-only
+capabilities, installer metadata/certificate and downloaded APK hashes are verified.
+Live guidance reports action-required with no future entry time while the current
+reviewed entry window is open; it does not incorrectly tell the user to wait until
+tomorrow. All current server blockers have corresponding explanatory items.
+Independent full SQLite comparisons show **both account databases unchanged**; Trader
+config/env hashes unchanged. Advisor/Monitor PIDs 1193/1194 retained. Preflight:
+`/var/backups/trader-v0.20.6-preflight-20261029T063210Z.json`.
+Private acceptance:
+`/var/backups/trading-services-v0.20.6-20261029T063226-ce5c7f2eee46/acceptance.json`.
+Previous 0.20.5 code is retained; no financial DB was restored. Restart expires phone
+sessions and market-data verification/connection; encrypted phone pairing and saved
+broker credentials survive. Unlock and use Trade's live Broker & data link for any
+required session check/reconnection. No mode or feed is activated automatically.
+Production phone installation/entry is verified; the new authenticated tap flow is
+covered by the separate simulated Moto UI tests and live server guidance verification,
+not claimed as an observed production phone confirmation.
+
+Post-restart read-only Kite profile verification succeeded at
+`2026-10-29T06:35:04.899814+00:00` (12:05 IST). The saved access token is available
+and verified in this run; another Zerodha sign-in is unnecessary. Feed connection is
+still off and Manual remains selected. During the current reviewed entry window,
+Trade correctly directs **Connect market data** and **Wait for fresh usable prices**
+instead of displaying a future start time. Use **Open Broker & data** → **Connect
+paper market data**, review and confirm. This can resume pending fills/protective exits;
+it does not choose Approval/Automatic. Broker-check evidence:
+`/var/backups/trading-services-v0.20.6-20261029T063226-ce5c7f2eee46/post-deploy-broker-check.json`.
+
+## 29 October 2026 — native branding, stable refresh and environment selector
+
+Android **1.0.5 / code 6**, backend **0.20.5**: selected logo and Agentic Trader name
+on the biometric entry page; matching native light splash with reduced-motion-aware
+fade; initial branded loading until account data is complete. Fixed recurring Home
+flicker by keeping quiet polls out of foreground busy/progress and publishing one
+completed snapshot. Stable progress spacing and object reuse reduce layout changes;
+new foreground work cancels quiet reads with generation guards. Stale errors remain
+visible and actions blocked until recovery. Reviews and dialogs pause polling.
+
+Paper/Real selector shows Paper active and Real unavailable, per the user's chosen
+scope. Authenticated GET capabilities expose the actual paper-only backend limitation;
+no environment write endpoint or real execution is added. Unexpected non-paper account
+responses fail closed. Financial reviews, token storage and biometric policies remain.
+
+Validation: 1,412 Python tests (55.96 seconds), 244 browser JavaScript tests,
+eleven native unit tests and seventeen offline Compose UI tests (47.594 seconds)
+pass. Native UI tests ran on Moto g52 in separate no-Internet demo/test packages,
+using invented balances. Reviewed captured lock, loading and environment screens;
+quiet-refresh tests verify stable button bounds/enabled state, no progress indicator,
+atomic publication, review cancellation and no account write. Lint: zero errors,
+36 existing advisories. Ruff, formatting, mypy and whitespace checks pass. Signed
+Android 1.0.5 / code 6 verifies v3 signature, unchanged signing certificate,
+no debugging, no backup and no cleartext network. Production publication and physical
+biometric acceptance are recorded separately below.
+
+Signed production **1.0.5 / code 6** was installed in place on the Moto g52 and cold
+launch succeeded (Android reported COLD, 793 ms activity launch). The existing
+**Unlock with biometrics** screen was retained, and its native fingerprint prompt
+opened without re-pairing. Subsequently, actual fingerprint unlock showed authenticated
+controls and loaded account values without a network/auth error. Temporary offline
+demo/test packages were removed. A later extended production refresh observation did
+not complete while the app was no longer visible; stable quiet-poll controls/layout
+are established by the separate offline UI regressions, not that interrupted capture.
+Final APK SHA-256: `8983ab7e9773125871777919247438b48a6ea446d1e7298f0ef45b3aecfd17f7`.
+
+Published and verified **backend 0.20.5 / Android 1.0.5**, 29 October 2026.
+Release `/opt/agentic-trader/releases/v0.20.5-20261029T020620-4407a0cfb30a`;
+Trader PID 35291. Local/public health, installed/source hashes, paper-only capability,
+installer metadata, certificate and downloaded APK hashes all match. Independent
+full SQLite logical comparisons found **both account databases unchanged**; private
+Trader config/env hashes also match. Advisor/Monitor retain PIDs 1193/1194.
+Preflight: `/var/backups/trader-v0.20.5-preflight-20261029T020553Z.json`.
+Private acceptance: `/var/backups/trading-services-v0.20.5-20261029T020620-4407a0cfb30a/acceptance.json`.
+Previous 0.20.4 release is retained for code-only rollback; no financial DB restoration
+was performed. Pairings survive restart; memory-only phone sessions require a new unlock.
+Post-restart physical fingerprint/account-load was observed successfully as above.
+
+Actual Zerodha sign-in was also confirmed after deployment: server status reports
+`access_token_available: true` and `profile_verified_this_run: true`; latest observed
+profile check `2026-10-29T02:11:34.184605+00:00` (07:41 IST). The automatic callback
+saved the credential privately; the manual fallback field is intentionally empty.
+The user-initiated login updates the broker credential after the earlier deployment
+configuration comparison. An independent post-login read again found **both full
+financial databases unchanged**. Credential-free evidence:
+`/var/backups/trading-services-v0.20.5-20261029T020620-4407a0cfb30a/post-broker-login-acceptance.json`.
+This establishes actual callback/profile acceptance, not history entitlement,
+streaming connectivity or real-order execution.
+
+## 28 October 2026 — native reuse of recent preparation
+
+Android **1.0.4**, backend **0.20.4**: corrected use of unaudited lightweight status
+in daily preparation. Explicit `?audit=true` supplies freshness evidence; matching
+valid same-day/same-universe ready or installed data is reused without history reads.
+Job identity is checked after audit; concurrent work is shown or rechecked. Explicit
+fresh requests, invalid/stale/incomplete evidence and universe changes still acquire
+data. UI names the reused download/time and states no candles were downloaded.
+All source/policy/calendar reviews and financial authority remain unchanged.
+
+Validation: 1,411 Python, eleven native unit and eleven offline simulated UI tests
+pass. The demo tests used a separate no-Internet phone package, removed afterward.
+The API regression independently verifies exact persisted cash/full DB contents,
+source bytes and provider-call counts across repeated audits. Live source audit
+shows the current Nifty 100 download qualifies. The compiled production predicate
+accepted the real audited response and rejected unaudited status without a download.
+No actual broker history was requested by these checks; saved job/snapshot unchanged.
+
+Signed 1.0.4 / code 5 installed in place on Moto g52; pairing preserved. Published
+`v0.20.4-20261028T171417-775c61599b3d`, Trader PID 29643. Public APK/source/installed
+hashes verified; both full account DB/config hashes and unrelated PIDs 1193/1194
+unchanged. Private versioned backup includes `acceptance.json`. Production-button
+acceptance requiring biometric unlock remains distinct from the simulated UI tests.
+
+## 28 October 2026 — supplied Android icon
+
+Android **1.0.3**, backend **0.20.3**: choose the wordless supplied blue/teal growth
+artwork for small launcher sizes. Legacy/adaptive density resources, safe foreground
+padding, normal/round icons and a separate notification glyph are implemented.
+Source art is unchanged; `scripts/build_android_icons.py` regenerates packaged PNGs
+with macOS `sips`. This asset-only update retains signing identity and phone pairing.
+Actual 1.0.2 biometric login/account load without network error was verified before
+this update; idle locking subsequently hid private data. Build/device/publication
+validation: ten PNG sizes checked and density preview visually inspected; seven native
+unit and 42 focused API/deployment tests pass, release lint zero errors / 36 advisories.
+Signed 1.0.3 / code 4 installed and cold-launched on Moto g52; pairing/authenticated
+controls retained without network/auth errors. Financial/login policies are unchanged.
+
+Deployed/verified `v0.20.3-20261028T164611-8df9aa2528da`, Trader PID 28798. Public
+APK bytes match the signed artifact; both account DB/config hashes and unrelated
+service PIDs 1193/1194 unchanged. Private versioned backup contains `acceptance.json`.
+
+## 28 October 2026 — background locking follow-up
+
+Android **1.0.2**, backend **0.20.2**: actual Moto crash stacks identify TLS close
+on the UI thread during cancellation/locking. Socket/call cleanup now runs on a
+background executor; tokens/private state clear immediately, and a new HTTP client
+is installed before retiring the old one. No automatic financial retries or relaxed
+TLS/StrictMode policy. Seven native unit tests pass. An opt-in device test exercises
+the actual transport's public reads, idle interval, UI cancellation, cleanup completion
+and fresh-client read without credentials. It passed on the Moto g52 in a temporary
+package compiling the exact transport/test sources; the package was removed. All
+1,410 Python, 244 browser UI and seven native unit tests pass; lint has zero errors.
+Signed 1.0.2 updated the actual Moto in place and retained its encrypted pairing.
+Actual 1.0.2 biometric login/account load without network/auth errors was verified;
+later idle locking hid private values. No account instruction sent.
+
+Deployed/verified `v0.20.2-20261028T163249-8e5e7ba037e2`, Trader PID 28144;
+public APK bytes match the signed artifact. Both full account DB/config hashes
+and Advisor/Monitor PIDs 1193/1194 are unchanged. Private `acceptance.json` recorded
+under the matching versioned backup. Broker/history and biometric enrollment-change
+acceptance remain external.
+
+## 28 October 2026 — native connection recovery patch
+
+Android **1.0.1**, backend release **0.20.1**. Actual Moto pairing/biometric-encrypted
+storage succeeded; an idle pooled connection subsequently failed with `unexpected
+end of stream`. A public-endpoint diagnostic reproduced it after 6.5 seconds idle.
+The client now evicts idle sockets after one second without enabling mutation retries.
+Paired UI state survives session failures once its encrypted credential is saved.
+Existing signed installations update in place, retaining the hardware-protected pairing.
+
+Validation: 1,410 Python tests and six Android unit tests pass, including a real local
+socket regression verifying new connections and exactly one invented instruction.
+Release lint/manifest/signature checks pass. No broker login or financial command
+was submitted. Actual phone and deployment evidence will be recorded after verification.
+
+## 28 October 2026 — Android full native companion implemented
+
+Backend **0.20.0**, Android **1.0.0**, native Compose light UI, Android 11+.
+The requested browser-feature coverage is implemented through sixteen native
+destinations, including research/indicators, all policy draft fields, backtests,
+portfolio/SIP and consequential paper controls. [Coverage and use](android-app.md).
+One preparation action verifies the session/catalog and current history; login
+returns through a phone/nonce-bound server callback and resumes after biometric
+unlock. Existing factual source/calendar reviews, previews, accounting and mode
+confirmations remain authoritative. No browser content is embedded in a WebView.
+
+Security foundation includes per-phone hashed/revocable credentials, hardware-backed
+strong-biometric-bound AES-GCM storage, fifteen-minute memory-only sessions, origin/
+scope checks, fixed HTTPS, backup/secure-window/overlay protection, background/idle
+locking and best-effort logout. Requests do not silently retry; durable outcome
+inspection survives cancelled writes/recreation. Separate offline fixtures have no
+Internet permission and cannot authorize production. Public installer delivery is
+hash-verified, and the build validates the real APK signature/manifest. The private
+signing identity is excluded from deployment and Git. [Component](mobile-api.md).
+
+Validation complete: **1,410 Python + 244 Node UI + 5 Android unit + 7 Android offline
+workflow + 2 production negative-security tests**, Ruff/format/mypy/whitespace, release
+lint (0 errors; 28 advisory warnings), synthetic screen QA and actual signed APK
+installation/cold launch in an isolated API 33 ARM64 emulator. Independent SQLite
+reads verify exact fees/cash/fill quantities and duplicate request behavior.
+
+Deployed and verified release `v0.20.0-20261028T152359-e41c1fc957f7`, Trader PID 26277;
+public APK matches the signed local artifact. Both full account databases and private
+config hashes are unchanged; Advisor/Monitor PIDs 1193/1194 unchanged. Previous code
+retained, private `acceptance.json` recorded under its versioned deployment backup.
+
+Actual Moto g52 / Android 13 installation and cold launch were subsequently verified
+on 28 October 2026. External acceptance remains: hardware-backed positive biometric
+pairing/unlock/enrollment change, app update, broker login and history entitlement.
+OS-isolated backtests may remain unavailable on the Pi. No background push, remote
+device attestation, security certification, actual market validation or unfinished
+investment-engine milestone is asserted. These limits are visible in usage docs/UI.
+
+## 28 October 2026 — 0.19.2: prerequisites, automatic connection feedback and autofill
+
+Strategy download now requires a saved Kite session explicitly verified during the
+current server run and current IST date, plus an NSE-token catalog. A prerequisite
+panel before the buttons states what is missing and links directly to Broker & Data
+steps 3/4. Unknown/stale status disables download. The backend independently refuses
+unverified requests before creating a job, files or provider reads. The worker still
+rechecks the frozen session; profile failure clears that verification so retry is
+blocked until a new explicit check. An older failing worker cannot revoke a newer
+successful verification. Profile success does not establish historical entitlement.
+
+Broker & Data polls local setup status every three seconds while a feed is requested
+and the tab is visible/unlocked, skipping pending requests and confirmations. It shows
+connecting/retrying, connected success or a fixed failure/recovery reason beside the
+buttons; network errors mark status stale and the next check can recover. Polling uses
+GET only, preserves edited/cleared inputs and session-action feedback, and discards late
+responses after Lock/pagehide. It also reconciles an uncertain Connect result without
+repeating that action. Streaming worker retry limits and trading safeguards are unchanged.
+
+The shared unlock form now supports password-manager autofill with username `operator`
+and the operator token as the password. The app retains tab-memory-only access; saving
+and autofill remain under the browser/password manager's control. Hosted Kite setup uses
+`https://shanmukhan.com/agentic-trader/` as the exact registered redirect URL. Developer
+console: `https://developers.kite.trade/apps`; API base: `https://api.kite.trade`.
+
+Validation: **1,400 Python tests and 242 Node UI tests passed**, plus Ruff lint/
+format, mypy, secret-pattern and whitespace checks. Added unit/functional coverage
+for missing/prior-day/future verification, missing tokens/catalog, no job/provider
+reads before verification, profile-failure revocation and a newer-check race. Synthetic
+API polling and failed-prerequisite/recovery tests independently preserve full SQLite
+contents and exact ₹25,000.00 cash. UI tests cover state transitions, hidden/locked/
+confirmation/overlap guards, uncertain Connect reconciliation, stale recovery, form
+preservation and password-manager markup. Labeled desktop previews were inspected;
+mobile password-manager, broker, real-market and handset acceptance remain separate.
+
+Deployed after renewed sudo authorization as
+`v0.19.2-20261028T032717-5b4caa55c9b5`; Trader PID 19373. Public/local health
+report 0.19.2; source/installed hashes and public prerequisite/autorefresh/autofill
+assets passed verification. Independent integrity/full logical-state comparisons
+found both account databases unchanged, and Trader private config hashes matched.
+Advisor/Monitor retained PIDs 1193/1194. Private rollback and `acceptance.json`:
+`/var/backups/trading-services-v0.19.2-20261028T032717-5b4caa55c9b5`.
+A one-time workspace reload loads the new scripts; subsequent connection status
+updates are automatic. Restart clears in-memory broker verification/feed authority;
+check the saved session and explicitly reconnect when ready.
+
+## 28 October 2026 — backend release 0.19.1 and scoped Pi updates
+
+Version **0.19.1** includes the strategy-download feedback and broker-verification
+stage fix described below. Package, source and lock versions match. `/health` now
+returns the running backend `version` alongside paper/alive status. Deployment
+manifests include each project's declared version, Git base and exact file hashes;
+new release directories use `vVERSION-UTC_TIMESTAMP-MANIFEST_HASH`.
+
+Added `bash deployment/rpi/deploy.sh USER@PI --trader-only` for an existing Trader
+installation. It packages only Trader, prepares dependencies before stopping it,
+backs up its state privately, switches to a fresh release and requires the new
+health version to match. Advisor, monitor registration and other app state are
+excluded from this update. Failure after switching restores prior code/service
+configuration and starts the prior service; financial databases are never restored
+automatically. The existing combined deploy command remains available. Backend
+versioning is recorded as a standing instruction in `AGENTS.md`.
+
+Validation: **1,392 Python tests and 236 Node UI tests passed**, plus Ruff
+lint/format, mypy, secret-pattern and whitespace checks. Deployment tests cover
+matching source/project/lock versions, code-only Trader-only manifests, unsafe-version
+refusal and an isolated SSH/SCP CLI workflow. These tests use invented local fixtures.
+
+Deployed to `lipi@192.168.1.13` as
+`v0.19.1-20261028T030028-773cf72602db`; only Trader restarted (PID 16781).
+Local and public HTTPS health report **0.19.1**, installed/source hashes match and
+public strategy/setup assets passed checks. Independent read-only integrity and full
+logical-state comparisons found both Trader and Advisor SQLite databases unchanged;
+Trader env/calendar/config hashes also match. Advisor PID 1193 and Monitor PID 1194
+were retained. Private rollback/evidence:
+`/var/backups/trading-services-v0.19.1-20261028T030028-773cf72602db`, including
+`acceptance.json`; the prior release remains available. This proves deployment and
+state preservation, not a repaired broker session or market/device acceptance.
+The narrow Firefox screenshot was a temporary local layout preview; production
+continues to use its existing responsive full-width desktop layout.
+
+## 28 October 2026 — make strategy-download failures visible at the action
+
+Strategies now shows a bordered, tinted **Download failed — action needed** alert
+immediately below the download buttons, with the reason and a direct Broker & Data
+step-3 link for session/history failures. The original summary badge remains secondary.
+Screen-reader alert semantics, an underlined keyboard-accessible recovery link, wrapping
+text and existing responsive columns preserve access without relying on color alone.
+Failed/cancelled/interrupted jobs no longer claim an active source read or show an
+active progress bar. Retry remains explicit and confirmed; partial stock counts remain
+visible. Running pre-history reads use indeterminate progress. The worker now records
+`broker_session` before profile verification and `official_sources` only after success.
+No credentials are refreshed automatically and no installation or trading mode is
+activated by failure/retry feedback.
+
+Validation: **236 Node UI tests and 34 focused Python tests passed**. Added checks for
+inline alert placement, failure/retry/Lock transitions, legacy failed jobs, accurate
+worker stages and a failed-session → explicit-retry API workflow. Independently read
+SQLite state and exact ₹25,000.00 cash remained unchanged throughout the synthetic
+failure/recovery workflow. A local Firefox preview using invented failed-job status
+was visually inspected at desktop and narrow content widths; this is not broker,
+real-market or physical handset acceptance. The UI and backend stage change are included in deployed release **0.19.1** above.
+The original 270 focused checks were followed by the complete release checks.
+See [preparation recovery](strategy-preparation.md#download-failure-and-retry).
+
 ## 27 October 2026 — default NSE review-reference URL
 
 Pre-commit validation for the complete Pi/browser/token/default-reference change:

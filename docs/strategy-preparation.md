@@ -1,5 +1,72 @@
 # Prepare a genuine-data paper strategy in the UI
 
+## Fast source checks and the browser daily path (0.20.9)
+
+Android and browser daily flows use `GET /api/desk/preparation/audit` for read-only
+source/job/date/coverage validation. Full accounting reports are no longer in the normal
+daily UI path. Account snapshots, source freshness and trading permission are separate.
+A failed source read pauses reuse and retries; it cannot trigger a new download. Exact
+current job/universe and all source flags are required to skip downloading. Full audits
+and every installation/readiness/risk guard remain available and unchanged.
+
+Browser Dashboard/Strategies now share the four-stage card. Continue imports a missing
+catalog, attaches a running Nifty 50 preparation or starts needed evidence acquisition.
+With a saved policy, completion opens one explicit guided review; first policy choice
+stays explicit. Completed installation skips repeated install steps. Sources, force-
+download and separate calendar/install controls remain in collapsed Advanced preparation.
+Broker 2FA, source/basis/calendar acknowledgments, feed effects and mode selection are
+not automatically approved. A lost write reply blocks follow-through pending inspection.
+
+## Android daily steps (1.0.8)
+
+Home and Your strategy show one guided **Access → Data → Review → Trade** card.
+Saved access/current-source checks are automatic. **Prepare & continue** follows an
+existing download or prepares current official Nifty 50 history, keeping Home visible.
+With a previously selected policy, the combined review opens when the requested download
+finishes. First policy choice and every setup acknowledgment remain explicit. A valid
+installed setup skips directly to connection/readiness; an incomplete guided receipt
+continues to require review. Reconnection does not reinstall the strategy. Manual must
+still be reviewed before replacing data. Dates/close boundaries come from the server's
+reviewed sessions; after close, newly completed missing history invalidates reuse.
+
+Expand **Advanced preparation & sources** for other research universes, forced fresh
+downloads, cancellation, source/exclusion inspection and separate installation. Daily
+progress does not override any source/calendar/basis/model/risk gate. Cancelled previews
+stay closed until requested again; uncertain writes require saved-outcome inspection.
+See [Android daily guide](android-app.md#guided-daily-home-android-108--code-9) for the
+complete inputs, expected results and recovery path.
+
+## Automatic Nifty 50 basket — 0.20.7 / Android 1.0.7
+
+Nifty 50 is the default acquisition universe, using
+<https://www.niftyindices.com/IndexConstituent/ind_nifty50list.csv>. Constituent count,
+unique NSE names, EQ class/ISIN and catalog coverage are checked; the server does not
+truncate the list to ten. Guided Nifty 50 setup uses all supported official members
+and retains held symbols. Reviewed history controls execution eligibility separately
+from monitoring, so action/history exclusions remain explicit. The dataset may contain
+members with no eligible bars; those rows show missing data and cannot produce entries.
+
+Nifty 100/500 are still available for broader research. Their shortlist uses reviewed
+configured capacity instead of a hard-coded ten; the automatic Nifty 50 path preserves
+the full basket even when migrating an old ten-slot configuration. Default capacity is
+50, automatically expanded for supported index additions/retained holdings. This does
+not change position, capital, spread, loss or exposure limits. Capacity/universe flags
+are operational and excluded from the existing financial-policy fingerprint.
+
+Existing same-day source audit/reuse is universe-bound, including Nifty 50. No source,
+calendar, policy, corporate-action or price-basis review is inferred from an index name.
+A missing catalog member stops automatic setup instead of silently subscribing to 49.
+See [phone flow](android-app.md#automatic-nifty-50-and-live-signal-checks).
+
+Android **1.0.4** fixes unnecessary repeats from **Check & prepare today**. It requests
+the explicit read-only source audit and reuses a valid same-day, same-universe
+ready/installed download, with a visible **No daily candles were downloaded** message.
+The job identity is checked again after the audit. New dates/completed-session gaps,
+changed/missing evidence, another universe or **Download fresh sources & history**
+require fresh acquisition; ongoing downloads are shown rather than duplicated.
+There is no five-minute expiry. Review/installation/trading authority remain explicit.
+See [Android reuse details](android-app.md#daily-routine).
+
 The [operations supervisor](operations-automation.md) can now acquire this bundle
 once per reviewed IST session date with explicit scheduling opt-in. It checks Manual,
 account/order/catalog/held-symbol and broker preconditions, deduplicates attempts and
@@ -149,6 +216,30 @@ review checkboxes and individual controls below. Use it for necessary session ed
 those edits are not used by the combined summary until separately installed. Additional
 sessions require complete fresh source data. Do not change hours to allow evening trades.
 
+## Download prerequisites
+
+Before **Download strategy data** can be enabled, its prerequisite panel must show:
+
+- **Kite session: verified today in this server run.** Follow **Verify Kite session →**
+  to Broker & Data step 3, then select **Check saved broker session**, or complete login/
+  token exchange if required. A saved token, a prior-day check or a pre-restart check
+  is insufficient. Verification is explicit; viewing/polling this panel never contacts
+  the broker. Server restart requires another saved-session check.
+- **NSE catalog: supported instruments available.** Follow **Import NSE catalog →** to
+  step 4 and select **Download / validate catalog** if missing. This is a symbol/token
+  lookup, not a feed subscription or a history download.
+
+Unknown, failed-to-refresh or missing prerequisite status disables the button and
+explains the next action above it. Refreshes restore it only after both requirements
+are met. The API enforces the same gate before starting a worker or saving a new run.
+A lost response retried with the same request identity still returns its prior outcome.
+
+The worker checks the frozen session again because access can fail after verification.
+A profile-check failure revokes that run's verification, blocks retry and displays the
+existing failure alert. A newer successful check is retained if an older worker fails.
+History entitlement remains separate: even a verified profile can lack historical-data
+access. Calendar/source/policy review is still required after a successful download.
+
 ## Download, inspect, review
 
 Choose **Nifty 100** for a smaller initial run or **Nifty 500** for broader discovery,
@@ -192,6 +283,39 @@ history, source period, elapsed seconds and excluded symbols/reasons.
 Closing/locking the browser does not cancel the worker. A server restart marks an
 unfinished download Interrupted and does not replay it. Start a new run explicitly.
 The browser refreshes status without clearing your edited review form.
+
+## Download failure and retry
+
+A **Download failed — action needed** alert appears immediately below the download
+buttons, with a red border, tinted background, reason and recovery instructions. It
+is announced as an alert to assistive technology; the small header badge is only a
+summary. No active progress bar or “Reading official sources” message remains on
+failed/cancelled/interrupted jobs. Partial stock counts and elapsed duration remain
+visible. Before stock counts are known, an active download uses indeterminate progress
+and says whether it is checking the Kite session or reading official sources.
+
+For **BROKER_SESSION_UNAVAILABLE**, nothing reached official sources or stock history:
+
+1. Follow **Check saved broker session in Broker & Data →** to step 3 (workspace
+   destination `#broker/setup-step-3`). Select **Check saved broker session**.
+2. Check connectivity and retry verification. A failed profile read alone cannot
+   establish that the token expired. If expired, disconnect any requested feed in
+   step 6, complete Zerodha login/2FA and exchange a fresh request token in step 3.
+3. Return to Strategies, keep Manual selected, choose Nifty 100/500 and confirm
+   **Retry strategy data download**. A new confirmed retry creates a new run; repeated
+   delivery of the same request returns the saved original outcome.
+
+For a daily-history failure, the same link helps check the saved session; also check
+historical-data entitlement. Profile verification or a working stream does not prove
+history access. For official-source failures, follow the displayed reason and retry
+later; no alternate sources/prices are assumed. Failure and retry do not install a
+strategy, change virtual cash, or approve any review. A broker login is never silently
+refreshed. Lock hides the alert/private status; unlocking reloads the saved result.
+
+Load updated HTML/JS/CSS by reloading after deployment. The new `broker_session` worker
+stage also needs the updated Python service loaded (`./scripts/start_ui.sh` after
+stopping the owning local server with Ctrl+C); old failed jobs still display correctly.
+A reload cannot repair broker credentials or deploy local source to the Pi.
 
 ## Advanced: install the policy separately
 

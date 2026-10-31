@@ -1,5 +1,142 @@
 # Browser access on shanmukhan.com
 
+## Verified 0.20.9 / Android 1.0.9 publication
+
+Published **backend 0.20.9 / Android 1.0.9** on 29 October 2026. Release
+`/opt/agentic-trader/releases/v0.20.9-20261029T170852-8e34e6bec934`, Trader PID 47194;
+previous 0.20.8 code retained. Local/public health, manifest/installed-source hashes,
+public daily-flow asset, installer metadata/certificate and downloaded APK hash match.
+Other service PIDs remain 1193/1194. The official Nifty 50 scope is preserved.
+
+Live timings: local account **0.163 s**, source-only check **0.073 s**, full accounting
+report **0.787 s** (previously exceeded 55 seconds); public account **0.537 s**, source
+check **0.250 s**. These are individual live acceptance measurements, not a load-test SLA.
+The previously requested feed is connected with zero connection failures, broker profile
+verified and Manual still selected. Current guidance is waiting for the next reviewed
+entry, **30 October, 09:30 IST**. No trading mode or purchase was submitted by deployment.
+
+Strict independent full SQLite comparisons pass: **both databases entirely unchanged**.
+Broker credentials, phone registry, economic/risk configuration and other configuration
+files are unchanged. The sole configuration difference is the installed-calendar file
+reference; its reviewed file contents are byte-for-byte identical to the private baseline.
+This difference is recorded separately, not represented as an unchanged whole-config hash.
+Both strict unchanged-database assertions were retained and passed. No financial database
+was restored.
+
+Signed production **Android 1.0.9 / code 10** installed in place on Moto g52; cold launch
+282 ms. Retained pairing and the already-authenticated production Discover screen were
+verified using fixed-label navigation and boolean observations only. Two samples showed
+saved research visible, no progress indicator, no Discover loading label and no network
+error. No biometric was bypassed and no private screenshot or financial values were saved.
+This is live phone/API navigation acceptance, distinct from the 33 invented offline UI
+workflows. Temporary demo/test packages were removed. Actual market signals/fills and a
+new sensor-authentication event were not asserted by this check.
+
+Private evidence:
+`/var/backups/trading-services-v0.20.9-20261029T170852-8e34e6bec934/acceptance.json`,
+`latency-acceptance.json`, `feed-status.json` and `configuration-comparison.json` in the
+same directory. Baseline:
+`/var/backups/trader-v0.20.9-preflight-20261029T170828Z.json`.
+
+## Browser daily guide (0.20.9)
+
+Dashboard and Strategies now start with **Your day, step by step**: Access, Data,
+Review and Trade. It displays completed/current/upcoming stages and a prominent next
+action. Saved access/current-source checks happen quietly, current data is reused,
+missing catalogs are imported after Continue and existing downloads are followed instead
+of restarted. First policy selection stays explicit; the installed Rules/ML choice is
+reused. One guided summary still requires review/acknowledgment/confirmation. The exact
+stocks, calendar and feed effects remain inspectable; source exclusions stay excluded.
+
+A valid installed setup skips to connection/readiness, with one connection confirmation
+when necessary. Pending fills/protective exits may resume, so this is not automatic.
+Connection progress/failure refreshes automatically; failed connections link to Broker &
+data without retries. Trade links to the existing mode confirmations and time-aware
+checks. Complete missing broker sign-in in Broker & data, then return here. Existing
+advanced controls remain under **Advanced preparation & sources**; no live trading or
+future queued mode activation is added.
+
+Browser five-second status polls no longer toggle the global loading bar or disable
+controls. A foreground action can cancel a quiet read; late results and old abort timers
+cannot replace a newer request. Read timeouts are described as failed refreshes, while
+unknown write outcomes still require inspection. Lock/pagehide clears the daily snapshot,
+audit/policy choice and pending follow-through; no owner token is added to storage.
+The layout remains responsive on desktop and narrow browsers.
+
+## Android 1.0.8 publication
+
+Published **backend 0.20.8 / Android 1.0.8** on 29 October 2026. Fresh release
+`/opt/agentic-trader/releases/v0.20.8-20261029T122533-c74cc8f8668b`, Trader PID 43484;
+previous 0.20.7 code retained. Local/public health, manifest/installed-source hashes,
+Paper-only capabilities, public installer metadata, certificate and downloaded APK hash
+are verified. Other services retain PIDs 1193/1194. Independent full logical comparisons
+show **both SQLite databases entirely unchanged**; configuration, broker credentials and
+mobile pairing registry hashes are unchanged. No financial database was restored.
+
+Existing official Nifty 50 monitoring remains intact. The previously requested feed was
+restored after a successful read-only broker profile check; it is connected and **Manual
+remains selected**. No paper mode or purchase was armed/submitted. Production guidance
+still requests current data and gives the next reviewed entry as **30 October, 09:30 IST**;
+this UI release does not fabricate fresh history or guarantee a signal/fill.
+
+Signed production **1.0.8 / code 9** installed in place on Moto g52; cold launch succeeded
+(442 ms), package/version and retained biometric-unlock entry verified. Temporary demo/
+test packages were removed. Production screenshots were not recorded and biometrics were
+not bypassed. Authenticated production use of the new daily flow remains separate from
+the 30 fully simulated offline UI workflows.
+
+Private deployment evidence:
+`/var/backups/trading-services-v0.20.8-20261029T122533-c74cc8f8668b/acceptance.json`
+and `connection-acceptance.json` in the same directory. Preflight:
+`/var/backups/trader-v0.20.8-preflight-20261029T122408Z.json`.
+
+## Current release — 29 October 2026
+
+Backend **0.20.7** and Android **1.0.7** are published. The Pi now uses the full official
+Nifty 50 basket: 50 subscriptions/discovery rows, with the feed restored. Source and
+installer hashes match. Both full account DBs are unchanged, with economic limits
+preserved; only operational basket/capacity configuration was updated. Trade exposes
+history exclusions and data/preparation needs. Manual remains selected after deployment.
+See [current release and evidence](raspberry-pi.md#current-trader-release--29-october-2026)
+and [automatic basket use](android-app.md#automatic-nifty-50-and-live-signal-checks).
+
+## Native Android access — backend 0.20.0 / app 1.0.0
+
+The workspace links to <https://shanmukhan.com/agentic-trader/android> for the signed
+native light-mode app. Pair once with this server's owner token, then unlock using
+hardware-backed strong biometrics. Its revocable phone authority uses the same paper
+API safeguards. Public installer/metadata routes expose no credentials/account data.
+The Kite redirect stays `https://shanmukhan.com/agentic-trader/`; native broker login
+adds a nonce-bound attempt and exchanges the callback once on the server. No custom
+redirect scheme or new Kite app is required. See [Android use/recovery](android-app.md)
+and [authority and callback implementation](mobile-api.md).
+
+## Trader 0.19.2 — 28 October 2026
+
+The live release is `v0.19.2-20261028T032717-5b4caa55c9b5`. Public health and
+source/installed asset checks passed; independent full SQLite/config comparisons
+remained unchanged. Only Trader restarted (PID 19373), preserving Advisor/Monitor
+processes. The new download prerequisite panel, automatic connection status and
+password-manager unlock markup are live. Reload/unlock once, then connection status
+refreshes automatically; after restart explicitly check the saved broker session.
+See [current release and rollback](raspberry-pi.md#current-trader-release--29-october-2026).
+For mobile token saving and the exact hosted Kite callback, follow
+[mobile unlock and redirect instructions](ui-setup.md#mobile-unlock-and-the-hosted-kite-redirect).
+
+## Trader 0.19.1 — 28 October 2026
+
+The download failure alert and backend session-verification stage are live in
+`v0.19.1-20261028T030028-773cf72602db`. The public
+`/agentic-trader/health` response now includes `"version":"0.19.1"`.
+Public strategy HTML/JS/CSS and the existing default NSE-reference asset passed
+checks. Full logical SQLite contents for both apps and Trader config hashes stayed
+unchanged. Only Trader restarted; Advisor/Monitor processes were retained. See
+[release and private rollback evidence](raspberry-pi.md#current-trader-release--29-october-2026).
+Reload the full workspace and unlock to load current files. The narrow local
+`file:///private/tmp/.../mobile.html` screenshot was a layout test preview; use the
+public workspace for the normal responsive desktop layout. Deployment does not
+refresh a broker token or establish market/device acceptance.
+
 ## NSE reference suggestion — 27 October 2026
 
 The step-5 reference now defaults to the official NSE holidays/notices URL. It stays
@@ -111,7 +248,21 @@ unrelated configuration edits. Never paste token values into chat or logs.
 
 ## Deploy or update the public profile
 
-Prepare the updated app source, run tests, then authenticate sudo privately:
+For an existing public Trader installation, use a versioned app-only update:
+
+```sh
+bash deployment/rpi/deploy.sh lipi@192.168.1.13 --trader-only
+ssh lipi@192.168.1.13 'curl -fsS http://127.0.0.1:8010/health'
+```
+
+Version 0.19.1 adds `version` to health and `versions` to the deployment manifest.
+Its release directory contains the version, UTC build time and manifest hash. This
+path restarts only Trader, retains the public profile/private state and does not
+republish Apache or restart Advisor. See [checks and rollback](raspberry-pi.md#versioned-backend-updates).
+Reload the full workspace after deployment and unlock again to load current assets.
+
+For a first installation or a deliberate combined update, prepare the updated app
+source, run tests, then authenticate sudo privately:
 
 ```sh
 ssh -t lipi@192.168.1.13 'sudo -v'

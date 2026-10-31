@@ -7,7 +7,7 @@ from fastapi import Depends, HTTPException, Query
 from fastapi.responses import HTMLResponse
 
 from trading_agent.desk.activity import activity, fill_page
-from trading_agent.desk.contracts import DecisionAction, ModeRequest
+from trading_agent.desk.contracts import AutomaticUniverseRequest, DecisionAction, ModeRequest
 from trading_agent.desk.service import DeskError
 
 
@@ -41,6 +41,37 @@ def mount_desk(
             "guided_setup": guided.view(),
         }
 
+    @app.get("/api/desk/preparation/audit", dependencies=[Depends(authorized)])
+    def audit_sources() -> dict:
+        """Source-only UI check: no catalog scan, accounting audit or quote/risk lock."""
+        from copy import deepcopy
+        from types import SimpleNamespace
+
+        from trading_agent.models import stamp
+        from trading_agent.operations.report import validate_download
+
+        observed = clock()
+        with preparation.lock:
+            job = deepcopy(preparation.state or {})
+            snapshot = SimpleNamespace(root=preparation.root, state=job)
+        try:
+            evidence = validate_download(snapshot, observed)
+            error = None
+        except Exception:
+            evidence = None
+            error = "SOURCE_INVALID_OR_UNAVAILABLE"
+        return {
+            "schema_version": 1,
+            "observed_at": stamp(observed),
+            "preparation": {
+                key: job.get(key)
+                for key in ("job_id", "state", "universe", "snapshot_at", "preview_sha256")
+            },
+            "source_validation": evidence,
+            "source_error": error,
+            "trading_authorization": "NOT AUTHORIZED BY THIS CHECK",
+        }
+
     @app.get("/api/desk/alerts", dependencies=[Depends(authorized)])
     def alerts() -> dict:
         """Bounded persisted proposal metadata; reading never expires or approves a trade."""
@@ -61,6 +92,12 @@ def mount_desk(
             ],
             "limit": 100,
         }
+
+    @app.get("/daily.js")
+    def daily_script() -> HTMLResponse:
+        return HTMLResponse(
+            assets.joinpath("daily.js").read_text(), media_type="application/javascript"
+        )
 
     @app.get("/preparation.js")
     def preparation_script() -> HTMLResponse:
@@ -144,6 +181,31 @@ def mount_desk(
         except KeyError:
             raise HTTPException(404, "Unknown paper order.") from None
 
+    @app.post("/api/desk/universe/nifty50", dependencies=[Depends(authorized)])
+    def automatic_universe(body: AutomaticUniverseRequest) -> dict:
+        if not setup or not desk.research:
+            raise HTTPException(
+                409, "Prepare and review a strategy before applying the automatic basket."
+            )
+
+        def guard() -> None:
+            if desk.mode != "manual" or desk.revision != body.revision:
+                raise DeskError(
+                    "Choose Manual and recheck the current basket before applying Nifty 50."
+                )
+
+        try:
+            result = setup.select_official_nifty50(guard)
+        except ValueError:
+            raise HTTPException(
+                409,
+                "Automatic Nifty 50 selection could not be completed. Check official-source "
+                "access, the catalog, Manual mode and a disconnected feed; resolve pending "
+                "orders. Holdings are retained.",
+            ) from None
+        desk.research.refresh(clock())
+        return {"selection": result, "desk": desk.view(clock())}
+
     @app.post("/api/desk/shortlist", dependencies=[Depends(authorized)])
     def shortlist(body: DecisionAction) -> dict:
         if not setup or not desk.research:
@@ -165,7 +227,11 @@ def mount_desk(
                 if plan["preview_sha256"] != body.preview_sha256:
                     raise HTTPException(409, "Shortlist changed. Refresh and review again.")
             try:
-                setup.select_symbols({"symbols": plan["symbols"]})
+                setup.select_symbols(
+                    {"symbols": plan["symbols"]},
+                    automatic_nifty50=desk.engine.settings.automatic_universe == "nifty50"
+                    or desk.research.automatic_universe == "nifty50",
+                )
             except ValueError:
                 raise HTTPException(
                     409,

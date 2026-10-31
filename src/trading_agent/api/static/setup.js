@@ -5,12 +5,13 @@
     const dialogs = createDialogs(doc, win);
     const el = id => doc.getElementById(id);
     let token = '', generation = 0, busy = false, controller = null, state = '', popup = null, pending = null, latest = null;
-    let recommendedStep = 1;
+    let recommendedStep = 1, watchConnection = false;
+    const textIfChanged = (id, text) => { if (el(id).textContent !== text) el(id).textContent = text; };
     const secretFields = ['token', 'api-key', 'api-secret', 'request-token'];
     const actionIds = ['save-credentials', 'login', 'profile', 'exchange-button', 'catalog', 'save-symbols', 'save-session', 'connect', 'disconnect', 'refresh-status'];
     const stepIds = ['setup-step-1', 'setup-step-2', 'setup-step-3', 'setup-step-4', 'setup-step-5', 'feed-connection'];
     const stepTitles = ['Register your Kite app', 'Save app credentials', 'Sign in to Zerodha', 'Choose stock subscriptions', 'Review an exchange session', 'Connect market data'];
-    const streamLimit = data => Number.isInteger(data?.stream_limit) && data.stream_limit >= 1 && data.stream_limit <= 3000 ? data.stream_limit : 10;
+    const streamLimit = data => Number.isInteger(data?.stream_limit) && data.stream_limit >= 1 && data.stream_limit <= 3000 ? data.stream_limit : 50;
     function selectionCapacity(data) {
       const limit = streamLimit(data);
       el('symbol-list-label').textContent = 'One to ' + limit + ' symbols, comma separated';
@@ -32,7 +33,7 @@
     function overview(data) {
       const diagnostic = data.feed_diagnostics;
       const connected = data.feed_connected, requested = data.stream_requested;
-      el('connection-status').textContent = connected ? 'Data connected' : requested ? diagnostic?.state === 'failed' ? 'Connection needs attention' : 'Connecting / reconnecting' : 'Data disconnected';
+      textIfChanged('connection-status', connected ? 'Data connected' : requested ? diagnostic?.state === 'failed' ? 'Connection needs attention' : 'Connecting / reconnecting' : 'Data disconnected');
       el('connection-description').textContent = connected ? 'Zerodha market data is connected. Quote freshness, liquidity and today’s price-basis reviews determine whether a quote can be used for paper execution.' : requested ? 'A connection has been requested. The streaming status below explains progress and recovery; fresh usable quotes are still required.' : 'Your paper account is not receiving new market data. Review the next step below to prepare the connection.';
       el('overview-session').textContent = data.profile_verified_this_run ? 'Verified this run' : data.access_token_available ? 'Saved · not checked this run' : 'Sign-in needed';
       el('overview-symbols').textContent = data.selected.length + ' of ' + streamLimit(data) + ' stocks';
@@ -46,7 +47,7 @@
         guidance = 'Register a Kite app with market-data access, then save its API key and secret privately.';
       } else if (requested && !connected) {
         recommendedStep = 6; label = 'Review connection recovery';
-        guidance = diagnostic?.state === 'failed' ? 'Connection retries are exhausted. Resolve the reported cause, then review Disconnect and Connect in step 6.' : 'Review the connection status in step 6. Refresh status to check progress; disconnect before replacing a broker session.';
+        guidance = diagnostic?.state === 'failed' ? 'Connection retries are exhausted. Resolve the reported cause, then review Disconnect and Connect in step 6.' : 'Connection status updates automatically in step 6. Disconnect before replacing a broker session.';
       } else if (!data.access_token_available || (!data.profile_verified_this_run && !connected)) {
         recommendedStep = 3; label = data.access_token_available ? 'Check saved broker session' : 'Sign in to Zerodha';
         guidance = data.access_token_available ? 'A saved token can expire. Open step 3 and explicitly check the saved session before connecting.' : 'Open Zerodha login, complete 2FA and exchange the one-time request token in step 3.';
@@ -77,7 +78,7 @@
     }
     function lock() {
       if (win.AgenticNavigation) win.AgenticNavigation.locked();
-      generation++; token = ''; state = ''; busy = false; pending = null; latest = null;
+      generation++; token = ''; state = ''; busy = false; pending = null; latest = null; watchConnection = false;
       if (controller) controller.abort(); controller = null;
       if (popup && !popup.closed) popup.close(); popup = null;
       for (const id of secretFields.concat(['symbol-list', 'session-date', 'session-open', 'session-close', 'session-source'])) el(id).value = '';
@@ -96,7 +97,7 @@
       el('token').required = true;
     }
     function row(parent, text) { const p = doc.createElement('p'); p.textContent = text; el(parent).append(p); }
-    function render(data) {
+    function render(data, background = false) {
       const firstStatus = !latest;
       if (firstStatus) {
         el('session-open').value = '09:15';
@@ -110,41 +111,43 @@
       el('redirect').textContent = 'Register this redirect URL: ' + win.location.origin + '/';
       el('credentials-state').textContent = data.credentials_configured ? 'API key and secret configured (values hidden).' : 'API key and secret not configured.';
       sessionStatus(data);
-      sessionMessage('');
+      if (!background) sessionMessage('');
       el('catalog-state').textContent = data.catalog_count + ' catalog instruments stored. Selected tokens and tick sizes below are server-validated.';
       el('selected-title').textContent = 'Saved feed subscriptions (' + data.selected.length + ' of ' + streamLimit(data) + ')';
       el('calendar-state').textContent = data.calendar_today ? 'Today has a reviewed session definition.' : 'Today is not in the reviewed calendar; entries remain blocked.';
       const diagnostic = data.feed_diagnostics;
       const failures = {
         handshake_rejected: 'Zerodha refused the WebSocket handshake. Check the saved broker session and streaming entitlement.',
-        timeout: 'The connection or incoming data timed out. Check the network and refresh status.',
+        timeout: 'The connection or incoming data timed out. Check the network; status updates automatically.',
         broker_rejected: 'Zerodha reported a streaming error. Check the saved broker session and streaming entitlement.',
         invalid_data: 'The feed returned unsupported or invalid data. Trading quotes remain blocked; inspect the application before retrying.',
         processing_error: 'The application could not process a quote. Inspect account health and the server before reconnecting.',
         connection_lost: 'The market-data connection failed or closed. Check the network and broker session.'
       };
-      let feedText = data.feed_connected ? 'WebSocket connected. A connection is not proof of fresh usable quotes. Check quote freshness and trading safeguards in the console.' : data.stream_requested ? 'Feed requested but not connected. Refresh status; check login, entitlement and network. Disconnect before trying another session.' : 'Feed disconnected. No new quotes can establish execution readiness.';
+      let feedText = data.feed_connected ? 'Connected to Zerodha market data. A connection is not proof of fresh usable quotes. Check quote freshness and trading safeguards in the console.' : data.stream_requested ? 'Feed requested but not connected. Status updates automatically; check login, entitlement and network. Disconnect before trying another session.' : 'Feed disconnected. No new quotes can establish execution readiness.';
       if (data.stream_requested && diagnostic) {
         if (!data.feed_connected) {
-          if (diagnostic.state === 'failed') feedText = 'Connection retries exhausted. Select Disconnect market data, then Connect paper market data after resolving the cause.';
-          else if (diagnostic.state === 'retrying') feedText = 'Feed reconnecting after failure ' + diagnostic.failures + ' of 10. Refresh setup status to check progress.';
-          else if (diagnostic.state === 'connecting') feedText = 'Connecting to Zerodha market data. Wait a few seconds, then select Refresh setup status.';
+          if (diagnostic.state === 'failed') feedText = 'Connection failed: retries exhausted. Select Disconnect market data, then Connect paper market data after resolving the cause.';
+          else if (diagnostic.state === 'retrying') feedText = 'Feed reconnecting after failure ' + diagnostic.failures + ' of 10. Status updates automatically.';
+          else if (diagnostic.state === 'connecting') feedText = 'Connecting to Zerodha market data. Status updates automatically; please wait.';
           if (failures[diagnostic.last_failure]) feedText += ' ' + failures[diagnostic.last_failure];
         }
         if (diagnostic.unusable_quotes > 0) feedText += ' Empty-sided/zero-liquidity quotes ignored: ' + diagnostic.unusable_quotes + '. This can occur after market hours or in an illiquid book. No price or liquidity is invented; these observations cannot fill orders.';
       }
-      el('feed-state').textContent = feedText;
+      textIfChanged('feed-state', feedText);
+      el('feed-state').className = 'notice' + (data.feed_connected ? ' feed-connected' : diagnostic?.state === 'failed' ? ' feed-failed' : '');
       overview(data);
       el('selected').replaceChildren(); for (const item of data.selected) row('selected', item.symbol + ' · token ' + item.token + ' · tick ' + item.tick);
       el('sessions').replaceChildren(); for (const session of data.sessions) row('sessions', session.date + ' · ' + session.open + '–' + session.close + ' IST · ' + session.source);
-      if (!el('symbol-list').value) el('symbol-list').value = data.selected.map(s => s.symbol).join(', ');
-      if (!el('session-date').value) el('session-date').value = data.today;
-      if (!data.manual) message('This account is automation/model-bound. Setup changes are unavailable; use its dedicated workflow.', true);
+      if (!background && !el('symbol-list').value) el('symbol-list').value = data.selected.map(s => s.symbol).join(', ');
+      if (!background && !el('session-date').value) el('session-date').value = data.today;
+      if (!data.manual && !background) message('This account is automation/model-bound. Setup changes are unavailable; use its dedicated workflow.', true);
       if (firstStatus) openStep(recommendedStep);
       if (win.AgenticNavigation?.updated) win.AgenticNavigation.updated();
     }
-    async function call(path = '', body) {
+    async function call(path = '', body, background = false) {
       if (!token || busy) return;
+      if (['/connect', '/disconnect'].includes(path)) watchConnection = true;
       const version = generation; busy = true; buttons();
       const sessionAction = ['/profile', '/login', '/exchange'].includes(path);
       if (sessionAction) sessionMessage(path === '/profile' ? 'Checking saved broker session with Zerodha… Please wait (up to 30 seconds).' : path === '/exchange' ? 'Exchanging the request token and verifying the broker session…' : 'Opening Zerodha login…');
@@ -158,14 +161,20 @@
         if (version !== generation) return;
         if (response.status === 401 || response.status === 403) { lock(); message('Use TRADING_OPERATOR_TOKEN from your local .env. Zerodha request/access tokens do not unlock this app.', true); return; }
         if (!response.ok) throw Error(typeof data.detail === 'string' ? data.detail : 'Setup request failed.');
-        if (path !== '/login') render(data);
+        if (path !== '/login') { render(data, background); watchConnection = false; }
         if (path) win.AgenticFeedback?.notify('Setup action completed. Review the updated status; no orders were submitted.');
-        message(path ? 'Setup action completed. Review the updated status; no orders were submitted.' : 'Setup status updated. All trading safeguards remain active.');
+        if (!background) message(path ? 'Setup action completed. Review the updated status; no orders were submitted.' : 'Setup status updated. All trading safeguards remain active.');
         if (sessionAction) sessionMessage(path === '/login' ? 'Complete login and 2FA in the Zerodha window, then exchange the returned request token here.' : 'Broker session verified successfully. This checks profile access only; connect paper market data in step 6 and check fresh usable quotes separately.');
         else if (path === '/credentials') sessionMessage('App credentials saved. Open Zerodha login to create a new broker session.');
         return data;
       } catch (error) {
         if (version === generation) {
+          if (background) {
+            textIfChanged('connection-status', 'Status unavailable');
+            textIfChanged('feed-state', 'Connection status could not be checked. Displayed state may be stale; checking again automatically.');
+            el('feed-state').className = 'notice feed-failed';
+            return;
+          }
           let text = error.name === 'AbortError' ? 'Outcome unknown after timeout. Refresh status before retrying. A consumed login token needs a fresh login.' : String(error.message);
           if (path === '/profile') {
             if (latest) { latest = { ...latest, profile_verified_this_run: false }; sessionStatus(latest); overview(latest); }
@@ -228,6 +237,10 @@
     el('cancel-confirm').addEventListener('click', () => dialogs.cancel(el('confirm')));
     el('confirm-action').addEventListener('click', () => { const action = pending; pending = null; dialogs.close(el('confirm')); if (action && token && !busy) action(); });
     win.addEventListener?.('pagehide', lock);
+    win.setInterval?.(() => {
+      if (token && (watchConnection || latest?.stream_requested) && !doc.hidden && !busy && !el('confirm').open)
+        call('', undefined, true);
+    }, 3000);
     lock(); return { lock, refresh: () => call(), canNavigate: () => !busy && !el('confirm').open && (!popup || popup.closed) };
   }
   if (typeof module !== 'undefined' && module.exports) module.exports = { createSetup };

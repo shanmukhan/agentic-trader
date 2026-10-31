@@ -22,14 +22,59 @@ const status=(extra={})=>({manual:true,credentials_configured:true,access_token_
 const ok=data=>({ok:true,status:200,json:async()=>data});
 function setup(fetcher=async()=>ok(status())){
   const nodes=Object.fromEntries([...readFileSync('src/trading_agent/api/static/setup.html','utf8').matchAll(/\bid="([^"]+)"/g)].map(m=>[m[1],new Element()]));
-  const events={},calls=[],timeouts=new Map();let sequence=0;
+  const events={},calls=[],timeouts=new Map(),intervals=[];let sequence=0;
   const popup={closed:false,close(){this.closed=true;}};
-  const win={location:{origin:'http://127.0.0.1:8004'},open:()=>{popup.closed=false;return popup;},addEventListener:(n,f)=>{events[n]=f;},setTimeout:f=>{timeouts.set(++sequence,f);return sequence;},clearTimeout:n=>timeouts.delete(n)};
+  const win={location:{origin:'http://127.0.0.1:8004'},open:()=>{popup.closed=false;return popup;},addEventListener:(n,f)=>{events[n]=f;},setTimeout:f=>{timeouts.set(++sequence,f);return sequence;},clearTimeout:n=>timeouts.delete(n),setInterval:(fn,ms)=>{intervals.push({fn,ms});return intervals.length;}};
   const doc={getElementById:id=>{assert.ok(nodes[id],id);return nodes[id];},createElement:()=>new Element()};
   const instance=createSetup(doc,win,async(url,options)=>{calls.push({url,options});return fetcher(url,options);});
   async function unlock(){nodes.token.value='local-test-token';nodes.access.fire('submit');await flush();}
-  return {nodes,events,calls,popup,instance,unlock,timeouts};
+  return {nodes,events,calls,popup,instance,unlock,timeouts,intervals,doc,poll:async()=>{intervals[0].fn();await flush();}};
 }
+test('connection status automatically changes from connecting to success, retrying and failure using GET only',async()=>{
+ let current=status({stream_requested:true,feed_diagnostics:{state:'connecting'}});
+ const s=setup(async()=>ok(current));await s.unlock();assert.equal(s.intervals[0].ms,3000);
+ assert.match(s.nodes['feed-state'].textContent,/updates automatically/);
+ s.nodes['symbol-list'].value='';s.nodes['session-date'].value='';s.nodes['session-source'].value='my source';s.nodes['session-reviewed'].checked=true;
+ s.nodes['session-feedback'].textContent='Broker session verified successfully.';const actionMessage=s.nodes.message.textContent;
+ current={...current,feed_connected:true,feed_diagnostics:{state:'connected'}};await s.poll();
+ assert.match(s.nodes['feed-state'].textContent,/Connected to Zerodha market data/);assert.match(s.nodes['feed-state'].className,/feed-connected/);
+ assert.equal(s.nodes['session-feedback'].textContent,'Broker session verified successfully.');assert.equal(s.nodes.message.textContent,actionMessage);
+ assert.equal(s.nodes['symbol-list'].value,'');assert.equal(s.nodes['session-date'].value,'');assert.equal(s.nodes['session-source'].value,'my source');assert.equal(s.nodes['session-reviewed'].checked,true);
+ current={...current,feed_connected:false,feed_diagnostics:{state:'retrying',failures:2}};await s.poll();
+ assert.match(s.nodes['feed-state'].textContent,/failure 2 of 10/);
+ current={...current,feed_diagnostics:{state:'failed',failures:10,last_failure:'handshake_rejected'}};await s.poll();
+ assert.match(s.nodes['feed-state'].textContent,/Connection failed/);assert.match(s.nodes['feed-state'].textContent,/Zerodha refused/);assert.match(s.nodes['feed-state'].className,/feed-failed/);
+ assert.ok(s.calls.every(call=>call.url==='/api/setup'&&call.options.method==='GET'));
+ current={...current,stream_requested:false,feed_diagnostics:null};await s.poll();const count=s.calls.length;await s.poll();assert.equal(s.calls.length,count);
+});
+test('background status failures show stale state then recover, while hidden pages and confirmations suspend polling',async()=>{
+ let fail=false;const s=setup(async()=>{if(fail)throw Error('private upstream details');return ok(status({stream_requested:true,feed_connected:true}));});
+ await s.unlock();s.doc.hidden=true;await s.poll();assert.equal(s.calls.length,1);
+ s.doc.hidden=false;s.nodes.confirm.open=true;await s.poll();assert.equal(s.calls.length,1);s.nodes.confirm.open=false;
+ fail=true;await s.poll();assert.match(s.nodes['feed-state'].textContent,/may be stale/);assert.doesNotMatch(s.nodes['feed-state'].textContent,/private/);
+ fail=false;await s.poll();assert.equal(s.nodes['connection-status'].textContent,'Data connected');
+ s.events.pagehide();await s.poll();assert.equal(s.calls.length,3);assert.equal(s.nodes['feed-state'].textContent,'');
+});
+test('polling never overlaps and a late response after Lock cannot restore private status',async()=>{
+ let finish;const s=setup(async()=>s.calls.length===1?ok(status({stream_requested:true})):new Promise(resolve=>{finish=resolve;}));
+ await s.unlock();await s.poll();await s.poll();assert.equal(s.calls.length,2);
+ s.instance.lock();finish(ok(status({stream_requested:true,feed_connected:true})));await flush();
+ assert.equal(s.nodes.private.hidden,true);assert.equal(s.nodes['feed-state'].textContent,'');assert.equal(s.calls[1].options.signal.aborted,true);
+});
+test('a timed-out connect is reconciled by GET and an authorization failure locks polling',async()=>{
+ let requested=false,denied=false;
+ const s=setup(async(url)=>{
+  if(url.endsWith('/connect')){requested=true;throw Object.assign(Error('timeout'),{name:'AbortError'});}
+  if(denied)return {ok:false,status:401,json:async()=>({detail:'unauthorized'})};
+  return ok(status({stream_requested:requested,feed_diagnostics:requested?{state:'connecting'}:null}));
+ });
+ await s.unlock();s.nodes.connect.fire('click');s.nodes['confirm-action'].fire('click');await flush();
+ assert.match(s.nodes.message.textContent,/Outcome unknown/);
+ await s.poll();assert.match(s.nodes['feed-state'].textContent,/Connecting to Zerodha/);
+ assert.equal(s.calls.filter(call=>call.url.endsWith('/connect')).length,1);
+ denied=true;await s.poll();assert.equal(s.nodes.private.hidden,true);
+ const count=s.calls.length;await s.poll();assert.equal(s.calls.length,count);
+});
 test('setup loads no private data while locked, uses only bearer and renders safe text',async()=>{
   const s=setup(async()=>ok(status({sessions:[{date:'2026-10-21',open:'09:15',close:'15:30',source:'<script>bad</script>'}]})));
   assert.equal(s.calls.length,0);assert.ok(s.nodes.private.hidden);
@@ -187,14 +232,14 @@ test('configured stream capacity updates accessible selection guidance and suppo
   assert.equal(s.nodes['overview-symbols'].textContent,'50 of 50 stocks');
   s.nodes['symbol-list'].value=symbols.concat('NSE:EXTRA').join(', ');s.nodes.symbols.fire('submit');
   assert.match(s.nodes.message.textContent,/one to 50 catalog symbols/);assert.equal(s.nodes.confirm.open,false);assert.equal(s.calls.length,2);
-  s.nodes.lock.fire('click');assert.equal(s.nodes['symbol-list-label'].textContent,'One to 10 symbols, comma separated');assert.equal(s.nodes['symbol-list'].maxLength,360);
+  s.nodes.lock.fire('click');assert.equal(s.nodes['symbol-list-label'].textContent,'One to 50 symbols, comma separated');assert.equal(s.nodes['symbol-list'].maxLength,1800);
   const html=readFileSync('src/trading_agent/api/static/setup.html','utf8');
   assert.match(html,/<label><span id="symbol-list-label">[^<]+<\/span><input id="symbol-list"/);
 });
 test('stream capacity display has bounded defaults for older or malformed status payloads',async()=>{
   for(const stream_limit of [undefined,0,3001,50.5,'50',true]){
     const s=setup(async()=>ok(status({stream_limit})));await s.unlock();
-    assert.equal(s.nodes['symbol-list'].maxLength,360);assert.equal(s.nodes['overview-symbols'].textContent,'1 of 10 stocks');
+    assert.equal(s.nodes['symbol-list'].maxLength,1800);assert.equal(s.nodes['overview-symbols'].textContent,'1 of 50 stocks');
   }
   const s=setup(async()=>ok(status({stream_limit:3000})));await s.unlock();
   assert.equal(s.nodes['symbol-list'].maxLength,108000);assert.match(s.nodes['symbol-list-label'].textContent,/3000/);
@@ -297,7 +342,7 @@ test('streaming prevents credential/selection replacement and connecting twice',
 });
 test('connected empty books explain missing usable quotes without presenting them as tradable',async()=>{
   const s=setup(async()=>ok(status({stream_requested:true,feed_connected:true,feed_diagnostics:{state:'connected',failures:0,unusable_quotes:5}})));await s.unlock();
-  assert.match(s.nodes['feed-state'].textContent,/WebSocket connected/);
+  assert.match(s.nodes['feed-state'].textContent,/Connected to Zerodha market data/);
   assert.match(s.nodes['feed-state'].textContent,/not proof of fresh usable quotes/);
   assert.match(s.nodes['feed-state'].textContent,/ignored: 5/);
   assert.match(s.nodes['feed-state'].textContent,/cannot fill orders/);

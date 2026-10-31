@@ -39,7 +39,9 @@ def open_engine(settings: Settings) -> tuple[Database, PaperBroker]:
     calendar = SessionCalendar.load(settings.calendar)
     database = Database(settings.database, settings.starting_cash)
     try:
-        return database, PaperBroker(database, settings, calendar)
+        engine = PaperBroker(database, settings, calendar)
+        engine.safety.enable(clock())
+        return database, engine
     except BaseException:
         database.close()
         raise
@@ -813,6 +815,7 @@ def attach_automation(
             catalog, strategy, feed_policy, model.version if model else None, False
         )
         engine = PaperBroker(db, settings, calendar, model=model, automation=signature)
+        engine.safety.enable(clock())
         runtime = PaperFeed(
             engine, instruments=catalog, strategy=strategy, settings=feed_policy, now=clock()
         )

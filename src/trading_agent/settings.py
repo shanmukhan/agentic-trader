@@ -37,7 +37,8 @@ class Settings(BaseModel):
     entry_end: time = time(14, 30)
     flatten_at: time = time(15, 15)
     calendar: Path = Path("config/sessions.csv")
-    stream_limit: int = Field(default=10, ge=1, le=3000, strict=True)
+    stream_limit: int = Field(default=50, ge=1, le=3000, strict=True)
+    automatic_universe: Literal["custom", "nifty50"] = "custom"
     stream_tokens: tuple[Annotated[int, Field(gt=0, strict=True)], ...] = ()
     operator_token: SecretStr = SecretStr("")
 

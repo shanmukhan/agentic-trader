@@ -4,8 +4,10 @@ import argparse
 import hashlib
 import io
 import json
+import re
 import subprocess
 import tarfile
+import tomllib
 from pathlib import Path
 
 
@@ -67,13 +69,22 @@ def sources(root: Path, project: str) -> list[Path]:
     return sorted(result)
 
 
-def build(trader: Path, advisor: Path, output: Path) -> None:
-    manifest: dict[str, object] = {"projects": {}, "sha256": {}}
+def build(
+    trader: Path, advisor: Path | None, output: Path, android_apk: Path | None = None
+) -> None:
+    roots = [("trader", trader)] + ([("advisor", advisor)] if advisor else [])
+    versions = {}
+    for name, root in roots:
+        version = tomllib.loads((root / "pyproject.toml").read_text())["project"]["version"]
+        if not isinstance(version, str) or not re.fullmatch(r"\d+\.\d+\.\d+", version):
+            raise ValueError(f"Invalid {name} release version; use major.minor.patch")
+        versions[name] = version
+    manifest: dict[str, object] = {"projects": {}, "versions": versions, "sha256": {}}
     projects = manifest["projects"]
     hashes = manifest["sha256"]
     assert isinstance(projects, dict) and isinstance(hashes, dict)
     with tarfile.open(output, "w:gz") as archive:
-        for name, root in (("trader", trader), ("advisor", advisor)):
+        for name, root in roots:
             projects[name] = subprocess.check_output(
                 ["git", "-C", str(root), "rev-parse", "HEAD"], text=True
             ).strip()
@@ -81,6 +92,20 @@ def build(trader: Path, advisor: Path, output: Path) -> None:
                 target = f"{name}/{path.as_posix()}"
                 hashes[target] = hashlib.sha256((root / path).read_bytes()).hexdigest()
                 archive.add(root / path, arcname=target, recursive=False)
+        if android_apk is not None:
+            from trading_agent.mobile.release import verified_release
+
+            # The build script produces this exact reviewed directory layout, never a debug APK.
+            release = verified_release(android_apk.parent)
+            if android_apk.name != "agentic-trader.apk":
+                raise ValueError("Use the signed release directory's agentic-trader.apk")
+            manifest["android"] = release
+            for name in ("agentic-trader.apk", "android-release.json"):
+                target = "trader/downloads/" + name
+                hashes[target] = hashlib.sha256(
+                    (android_apk.parent / name).read_bytes()
+                ).hexdigest()
+                archive.add(android_apk.parent / name, arcname=target, recursive=False)
         for path in sorted(Path(__file__).parent.iterdir()):
             if path.is_file() and path.suffix in {".py", ".sh", ".service"}:
                 target = f"rpi/{path.name}"
@@ -96,7 +121,10 @@ def build(trader: Path, advisor: Path, output: Path) -> None:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--trader", type=Path, required=True)
-    parser.add_argument("--advisor", type=Path, required=True)
+    parser.add_argument("--advisor", type=Path, help="Omit for a Trader-only release")
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument(
+        "--android-apk", type=Path, help="Include the verified signed production release"
+    )
     args = parser.parse_args()
-    build(args.trader, args.advisor, args.output)
+    build(args.trader, args.advisor, args.output, args.android_apk)

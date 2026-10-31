@@ -68,3 +68,14 @@ class ModeRequest(DomainModel):
 
 class DecisionAction(DomainModel):
     preview_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+
+
+class AutomaticUniverseRequest(DomainModel):
+    revision: str = Field(pattern=r"^[a-f0-9]{32}$")
+    acknowledged: bool = Field(strict=True)
+
+    @model_validator(mode="after")
+    def reviewed(self) -> "AutomaticUniverseRequest":
+        if not self.acknowledged:
+            raise ValueError("Confirm the official automatic Nifty 50 basket change.")
+        return self

@@ -28,7 +28,7 @@ def test_preview_is_read_only_and_confirmation_coordinates_existing_controls_onc
     config = s.setup.config.read_bytes()
     guide = GuidedSetup(s.prep)
     result = preview(s, guide)
-    assert result["plan"]["symbols"] == ["NSE:A000", *[f"NSE:A{i:03}" for i in range(3, 12)]]
+    assert result["plan"]["symbols"] == ["NSE:A000", *[f"NSE:A{i:03}" for i in range(3, 52)]]
     assert result["plan"]["basis_reviews"] == result["plan"]["symbols"]
     assert "binding" not in result and not s.desk.research
     assert e.snapshot(s.clock[0]) == before and s.setup.config.read_bytes() == config
@@ -43,10 +43,9 @@ def test_preview_is_read_only_and_confirmation_coordinates_existing_controls_onc
         assert all(
             e.long_term.reviewed(tx, symbol, s.clock[0]) for symbol in result["plan"]["symbols"]
         )
-        assert (
-            tx.execute("SELECT COUNT(*) FROM events WHERE kind='long_term_review'").fetchone()[0]
-            == 10
-        )
+        assert tx.execute("SELECT COUNT(*) FROM events WHERE kind='long_term_review'").fetchone()[
+            0
+        ] == len(result["plan"]["symbols"])
     assert guide.confirm(confirm(result)) == completed
     assert calls == ["connect"]
     restarted = GuidedSetup(s.prep)

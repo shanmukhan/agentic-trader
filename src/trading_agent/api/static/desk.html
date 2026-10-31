@@ -11,6 +11,7 @@
     <script src="/dialogs.js" defer></script>
     <script src="/workspace-bridge.js" defer></script>
     <script src="/preparation.js" defer></script>
+    <script src="/daily.js" defer></script>
     <script src="/desk.js" defer></script>
   </head>
   <body class="desk-page">
@@ -35,6 +36,20 @@
     <p id="error-alert" role="alert" class="sr-only"></p>
     <div id="loading-state" class="loading-state" role="status" hidden>Loading the latest saved evidence…<span class="skeleton" aria-hidden="true"></span></div>
     <main id="main" hidden>
+      <section class="panel daily-journey" data-desk-section="dashboard strategies" aria-labelledby="day-title">
+        <h2 id="day-title">Your day, step by step</h2>
+        <p class="muted">Official Nifty 50 · paper trading</p>
+        <ol class="daily-stepper" aria-label="Daily preparation progress">
+          <li id="day-step-0">1. Access</li><li id="day-step-1">2. Data</li><li id="day-step-2">3. Review</li><li id="day-step-3">4. Trade</li>
+        </ol>
+        <h3 id="day-step"></h3><p id="day-summary" role="status" aria-live="polite" aria-atomic="true"></p>
+        <div id="day-policy-wrap" hidden><label for="day-policy">Decision policy · choose once, then reuse</label><select id="day-policy"><option value="">Choose explicitly</option><option value="rules">Rules only · experimental paper policy</option><option id="day-ml" value="rules_ml">Rules + validated ML</option></select></div>
+        <button id="day-continue" type="button" disabled>Continue</button>
+        <a id="day-broker" class="button" href="/setup#setup-step-3" hidden>Complete Kite sign-in →</a>
+        <a id="day-trade" class="button" href="/paper" hidden>Review trading mode &amp; remaining checks →</a>
+        <a id="day-inspect" href="/strategies#strategy-setup" hidden>Inspect saved preparation →</a>
+        <details><summary>Setup details &amp; completed checks</summary><p id="day-checks"></p><p class="muted">Status updates automatically. Setup reviews and trading modes still need your confirmation. Waiting never activates a future mode.</p><a href="/strategies#strategy-setup">Advanced preparation &amp; sources →</a></details>
+      </section>
       <section class="metrics portfolio-metrics dashboard-section" data-desk-section="dashboard" aria-label="Virtual portfolio summary">
         <article class="panel metric">
           <h2>Portfolio value</h2>
@@ -159,6 +174,7 @@
           <h2 id="preparation-title">Set up your paper strategy</h2>
           <span id="prep-state" class="badge">Not prepared</span>
         </div>
+        <details id="prep-controls"><summary>Advanced preparation &amp; sources</summary>
         <p>Download real history, choose a policy, then confirm the reviewed setup. You can prepare after market hours. Installation keeps Manual selected.</p>
         <p id="prep-availability" class="muted"></p>
         <div class="preparation-steps">
@@ -167,17 +183,30 @@
             <p class="muted">Choose the stocks to research. The download checks broker tokens and official sources, then reads completed daily candles from your saved Kite session.</p>
             <label for="prep-universe">Discovery universe</label>
             <select id="prep-universe">
-              <option value="nifty100">Nifty 100 · smaller first download</option>
+              <option value="nifty50">Nifty 50 · automatic official basket</option>
+              <option value="nifty100">Nifty 100 · broader research</option>
               <option value="nifty500">Nifty 500 · wider coverage</option>
             </select>
             <p class="muted">Requires an entitled broker history session. A download can take several minutes and does not change your feed selection.</p>
+            <div id="prep-prerequisites" class="preparation-prerequisites" hidden>
+              <h4 id="prep-prerequisites-title">Finish setup before downloading</h4>
+              <p id="prep-session-status"></p>
+              <a id="prep-session-link" href="/setup#setup-step-3">Verify Kite session →</a>
+              <p id="prep-catalog-status"></p>
+              <a id="prep-catalog-link" href="/setup#setup-step-4">Import NSE catalog →</a>
+              <p id="prep-prerequisites-help">A verified profile does not prove historical-data entitlement. The download checks access again.</p>
+            </div>
             <div class="dialog-actions">
-              <button id="prep-download" type="button">Download strategy data</button>
+              <button id="prep-download" type="button" disabled aria-describedby="prep-session-status prep-catalog-status prep-prerequisites-help">Download strategy data</button>
               <button id="prep-cancel" class="quiet" type="button" disabled>Cancel download</button>
             </div>
+            <div id="prep-failure" class="preparation-failure" role="alert" aria-atomic="true" hidden>
+              <h4>Download failed — action needed</h4>
+              <p id="prep-error"></p>
+              <p id="prep-recovery" hidden><a href="/setup#setup-step-3">Check saved broker session in Broker &amp; Data →</a></p>
+            </div>
             <p id="prep-progress" role="status" aria-live="polite"></p>
-            <progress id="prep-progress-bar" max="100" value="0" aria-label="Historical-data download progress"></progress>
-            <p id="prep-error" class="error" role="alert"></p>
+            <progress id="prep-progress-bar" max="100" value="0" aria-label="Historical-data download progress" hidden></progress>
             <details>
               <summary>Sources, coverage and exclusions</summary>
               <p class="muted">Reads are paced at least 400 ms apart. Current constituent snapshots support prospective screening, not historical strategy validation. Corporate actions and incomplete history can substantially reduce coverage; excluded stocks stay excluded.</p>
@@ -223,20 +252,23 @@
           </article>
         </div>
         <p class="muted">Every setup has its own horizon, strategy and virtual cash. Screening strength and model scores do not guarantee profit.</p>
+        </details>
       </section>
       <section id="execution-shortlist" class="panel strategy-section" data-desk-section="strategies" tabindex="-1" aria-labelledby="shortlist-title">
         <h2 id="shortlist-title">Review the execution shortlist</h2>
+        <details><summary>Advanced: execution selection &amp; research coverage</summary>
         <p id="universe" class="notice"></p>
         <p id="watchlist" class="muted"></p>
         <p id="coverage" class="muted"></p>
         <p id="shortlist-preview" class="muted"></p>
         <button id="apply-shortlist" type="button" class="quiet" disabled>Use reviewed ranked shortlist</button>
-        <p class="muted">Research can cover up to 500 reviewed stocks. The execution shortlist holds at most ten, including every held stock. To replace it, choose Manual, resolve pending orders and <a href="/setup#feed-connection">disconnect the feed</a>. This review does not submit an order.</p>
+        <p class="muted">Research can cover up to 500 reviewed stocks. The official Nifty 50 flow monitors the full supported basket and retains every held stock. To replace it, choose Manual, resolve pending orders and <a href="/setup#feed-connection">disconnect the feed</a>. This review does not submit an order.</p>
         <details>
           <summary>Screening evidence and exclusions</summary>
           <div id="screen" class="records"></div>
         </details>
         <p class="muted">Rules-only policies are experimental paper hypotheses. Intraday uses completed five-minute signals; long-term uses prior completed daily information. Each horizon keeps separate capital.</p>
+        </details>
       </section>
       <p id="updated" class="muted"></p>
     </main>

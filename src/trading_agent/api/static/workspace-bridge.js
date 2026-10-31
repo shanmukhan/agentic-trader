@@ -35,7 +35,7 @@
   if (typeof window === 'undefined') return;
   const win = window, doc = document;
   const embedded = win.parent !== win;
-  const views = {'/':'dashboard','/desk':'dashboard','/dashboard':'dashboard','/discovery':'discovery','/analysis':'analysis','/strategies':'strategies','/investment-policy':'strategies','/backtesting':'backtesting','/paper':'paper','/holdings':'portfolio','/portfolio':'portfolio','/activity':'history','/console':'risk','/setup':'broker','/settings':'settings','/learn':'learn'};
+  const views = {'/':'dashboard','/desk':'dashboard','/dashboard':'dashboard','/discovery':'discovery','/watchlist':'watchlist','/analysis':'analysis','/strategies':'strategies','/investment-policy':'strategies','/backtesting':'backtesting','/paper':'paper','/holdings':'portfolio','/portfolio':'portfolio','/activity':'history','/console':'risk','/setup':'broker','/settings':'settings','/learn':'learn'};
   const cleanAnchor = value => typeof value === 'string' && /^[A-Za-z][A-Za-z0-9_-]{0,99}$/.test(value) ? value : '';
   function destination(path, hash) {
     let view=views[path],anchor=cleanAnchor((hash||'').slice(1));

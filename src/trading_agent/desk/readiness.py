@@ -3,6 +3,7 @@
 from datetime import datetime
 from typing import Any
 
+from trading_agent.desk.mode_guidance import mode_guidance
 from trading_agent.execution.quote_status import quote_status
 from trading_agent.market_data.calendar import IST
 
@@ -212,4 +213,7 @@ def readiness(desk: Any, now: datetime, blockers: list[str]) -> dict[str, Any]:
         "blocking_count": len(blockers),
         "can_start": not blockers,
         "next_action": next_action,
+        "mode_guidance": mode_guidance(
+            now, blockers, e.calendar.sessions, e.settings.entry_start, e.settings.entry_end
+        ),
     }

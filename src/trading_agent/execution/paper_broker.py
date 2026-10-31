@@ -16,6 +16,7 @@ from trading_agent.market_data.calendar import IST, SessionCalendar
 from trading_agent.models import Candidate, Instrument, Quote, RiskDecision, stamp, utc
 from trading_agent.persistence.database import Database
 from trading_agent.risk.limits import size, validate_exit
+from trading_agent.risk.operator_safety import OperatorSafety
 from trading_agent.risk.policy import policy_fingerprint
 from trading_agent.settings import Settings
 
@@ -69,6 +70,7 @@ class PaperBroker:
             )
         self.long_term = LongTermBook(self) if settings.investment_horizon == "long_term" else None
         self.lock = threading.RLock()
+        self.safety = OperatorSafety(self)
         self.connected = False  # explicitly NOT restored; reconnect must provide fresh data
         self.last_tick_received_at: datetime | None = None
         self.faulted = False
@@ -236,7 +238,7 @@ class PaperBroker:
                 }
             )
         equity = cash + value
-        result = {
+        result: dict[str, Any] = {
             "mode": "paper",
             "investment_horizon": self.settings.investment_horizon,
             "cash": str(cash),
@@ -264,6 +266,7 @@ class PaperBroker:
 
         if self.long_term:
             self.long_term.decorate(tx, now, result)
+        result["operator_safety"] = self.safety.view(tx, now, result)
         return result
 
     def _sale_fee(
@@ -295,10 +298,13 @@ class PaperBroker:
         self.db.set(tx, "loss_streak", "0")
 
     def _entry_reasons(
-        self, tx: sqlite3.Connection, quote: Quote | None, now: datetime
+        self, tx: sqlite3.Connection, quote: Quote | None, now: datetime, *, for_fill: bool = False
     ) -> list[str]:
         s = self.settings
         reasons = []
+        reasons.extend(self.safety.reasons(tx, now, for_fill=for_fill))
+        if quote and not self.safety.allows(tx, quote.symbol):
+            reasons.append("SYMBOL_OUTSIDE_WATCHLIST")
         if self.faulted:
             reasons.append("DATABASE_FAULT")
         if not self.connected:
@@ -360,7 +366,7 @@ class PaperBroker:
             self.settings.daily_loss_limit + D(snapshot["day_pnl"]) - D(snapshot["reserved_risk"])
         )
         position_room = self.settings.max_position_notional
-        cash = D(snapshot["available_cash"])
+        cash = min(D(snapshot["available_cash"]), self.safety.budget(tx, snapshot))
         if add:
             old = tx.execute(
                 "SELECT * FROM positions WHERE symbol=?", (candidate.symbol,)
@@ -426,6 +432,8 @@ class PaperBroker:
                     record(self, tx, _contribution, now)
                 quote = self._quote(tx, candidate.symbol)
                 reasons = self._entry_reasons(tx, quote, now)
+                if not quote and not self.safety.allows(tx, candidate.symbol):
+                    reasons.append("SYMBOL_OUTSIDE_WATCHLIST")
                 if self.automation and automation != self.automation:
                     reasons.append("AUTOMATION_CONTROLLER_REQUIRED")
                 age = (now - candidate.decision_time).total_seconds()
@@ -665,6 +673,7 @@ class PaperBroker:
             return {"exit_queued": True, "order": dict(row)}
 
     def _watch(self, tx: sqlite3.Connection, now: datetime) -> None:
+        self.safety.observe(tx, now, self._snapshot(tx, now))
         if self.long_term:
             self.long_term.watch(tx, now)
             return
@@ -744,6 +753,16 @@ class PaperBroker:
                 if isinstance(exc, (sqlite3.Error, RuntimeError)):
                     self.faulted = True
                     self.connected = False
+                elif isinstance(exc, ValueError):
+                    # The failed frame was rolled back; persist its entry lockout
+                    # separately so later valid prices cannot erase the incident.
+                    try:
+                        with self.db.transaction() as tx:
+                            self.safety.block_data(tx, now, "INVALID_PRICE_FRAME")
+                    except (sqlite3.Error, RuntimeError):
+                        self.faulted = True
+                        self.connected = False
+                        raise
                 raise
 
     def _ingest(self, tx: sqlite3.Connection, quote: Quote, now: datetime) -> bool:
@@ -769,6 +788,7 @@ class PaperBroker:
             same_second_update = quote.ordered_kite_second_update(previous)
             if not same_second_update:
                 self.bad_symbols.add(quote.symbol)
+                self.safety.block_data(tx, now, "DUPLICATE_OR_OUT_OF_ORDER")
                 self.db.event(
                     tx,
                     stamp(now),
@@ -784,6 +804,7 @@ class PaperBroker:
         )
         if same_day and previous and quote.volume < previous.volume:
             self.bad_symbols.add(quote.symbol)
+            self.safety.block_data(tx, now, "VOLUME_REGRESSION")
             self.db.event(
                 tx,
                 stamp(now),
@@ -849,7 +870,12 @@ class PaperBroker:
                 continue
             side = order["side"]
             if side == "BUY":
-                reasons = self._entry_reasons(tx, quote, now)
+                reasons = self._entry_reasons(tx, quote, now, for_fill=True)
+                snapshot = self._snapshot(tx, now)
+                if self.safety.state(tx) is not None and D(order["turnover"]) + D(
+                    order["fees"]
+                ) + D(order["reserved_cash"]) > self.safety.budget(tx, snapshot):
+                    reasons.append("ORDER_EXCEEDS_ACCOUNT_QUARTER")
                 if reasons:
                     self._cancel(tx, order, stamp(now), ",".join(reasons))
                     continue

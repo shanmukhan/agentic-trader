@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>NSE watchlist and safety</title>
+  <link rel="stylesheet" href="/dashboard.css">
+  <script src="/dialogs.js" defer></script>
+  <script src="/workspace-bridge.js" defer></script>
+  <script src="/watchlist.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to watchlist</a>
+  <header><p class="eyebrow">PAPER ONLY · NSE</p><h1>Watchlist</h1>
+    <p>Choose the NSE stocks this account may buy. Every new manual, strategy and scheduled purchase must be on the saved list.</p>
+    <span id="state" class="badge">Locked</span>
+  </header>
+  <section class="panel" aria-label="Access">
+    <form id="access"><label for="token">Operator token</label><input id="token" type="password" autocomplete="off" required>
+      <button id="unlock">Unlock</button><button id="lock" type="button" class="quiet" disabled>Lock</button>
+    </form>
+  </section>
+  <p id="message" role="status" aria-live="polite">Unlock to see your watchlist.</p>
+  <p id="error-alert" role="alert"></p><p id="loading-state" hidden>Loading watchlist…</p>
+  <main id="main" hidden>
+    <section class="panel" aria-labelledby="safety-heading">
+      <h2 id="safety-heading">Account safety</h2>
+      <p id="safety-state"></p><p id="safety-values"></p><p id="safety-data"></p>
+      <ul>
+        <li>Each purchase, including buy fees, is limited to 25% of current account equity. Existing risk and exposure limits may reduce it further.</li>
+        <li>At most five accepted entry orders per IST day. Cancelled entries use a slot; partial fills and retries of the same order do not add slots. Exits remain available.</li>
+        <li>A 25% fall from observed peak equity pauses new entries until you explicitly reset the reference. Data integrity incidents block entries for the rest of that IST day.</li>
+        <li>Cash only; no borrowing or short selling. Unreadable or inconsistent account records block execution.</li>
+      </ul>
+      <p class="muted">This app cannot deposit or withdraw external funds. Contributions and SIPs invest existing cash. Corporate-action income is investment performance. Never edit the financial database to change a balance.</p>
+      <button id="resume" type="button" class="quiet" hidden>Review drawdown pause reset</button>
+    </section>
+    <section class="panel" aria-labelledby="saved-heading">
+      <h2 id="saved-heading">Your permitted stocks</h2>
+      <p id="updated" class="muted"></p><p id="selection-state" aria-live="polite"></p>
+      <p>Saving pauses strategy decisions and cancels all pending buys. Holdings and protective exits remain. An empty list blocks every new purchase.</p>
+      <ul id="selected" class="watchlist-items"></ul>
+      <p id="held-note" class="muted"></p>
+      <div class="actions"><button id="review" type="button">Review watchlist change</button><button id="discard" type="button" class="quiet">Discard edits</button><button id="refresh" type="button" class="quiet">Refresh saved state</button></div>
+    </section>
+    <section class="panel" aria-labelledby="catalog-heading">
+      <h2 id="catalog-heading">Pick from the NSE catalog</h2>
+      <p id="catalog-state" class="muted"></p>
+      <p>Import or refresh the NSE catalog in <a href="/setup#setup-step-3">Broker &amp; Data</a>. Watchlist membership permits a stock; it still needs feed selection, fresh quotes, a reviewed strategy and all risk checks before a purchase.</p>
+      <form id="search-form" class="controls"><label for="search">NSE symbol, for example RELIANCE</label><input id="search" type="search" maxlength="34" autocomplete="off"><button id="search-button">Search catalog</button></form>
+      <p id="search-state" role="status" aria-live="polite"></p><ul id="results" class="watchlist-items"></ul>
+    </section>
+  </main>
+  <dialog id="confirm" aria-labelledby="confirm-title" aria-describedby="confirm-text">
+    <h2 id="confirm-title"></h2><p id="confirm-text"></p><p id="confirm-symbols"></p>
+    <label><input id="ack" type="checkbox"> I reviewed this change and its effects.</label>
+    <div class="actions"><button id="confirm-action" type="button" disabled>Confirm change</button><button id="cancel" type="button" class="quiet">Cancel</button></div>
+  </dialog>
+</body>
+</html>

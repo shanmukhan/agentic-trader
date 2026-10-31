@@ -4,6 +4,15 @@ const assert=require('node:assert/strict');
 const {readFileSync}=require('node:fs');
 const vm=require('node:vm');
 const {createWorkspace}=require('../../src/trading_agent/api/static/workspace.js');
+test('unlock supports password-manager autofill while token persistence remains in memory',()=>{
+ const html=readFileSync('src/trading_agent/api/static/workspace.html','utf8');
+ assert.match(html,/<form id="workspace-unlock"[^>]*autocomplete="on"/);
+ assert.match(html,/<input type="hidden" name="username" value="operator" autocomplete="username">/);
+ assert.match(html,/id="workspace-token" name="password" type="password" autocomplete="current-password"/);
+ assert.match(html,/phone or browser password manager/);
+ const js=readFileSync('src/trading_agent/api/static/workspace.js','utf8');
+ assert.doesNotMatch(js,/localStorage|sessionStorage|document\.cookie/);
+});
 class Element {
  constructor(){this.events={};this.value='';this.style={};this.attributes={};this.children=[];this.open=false;}
  set textContent(v){this.text=String(v);this.children=[];}

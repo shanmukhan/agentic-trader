@@ -52,7 +52,7 @@ test('Strategies has a separate view with focused setup links and no mode activa
  const s=setup(async()=>ok(status({readiness:{now_ist:'2026-10-22T10:00:00+05:30',checks:[{title:'Strategy',ready:false,action:'Prepare data',href:'#strategy-setup'}]}})),false,{location:{pathname:'/strategies'}});
  assert.equal(s.doc.body.getAttribute('data-desk-view'),'strategies');assert.equal(s.doc.title,'Strategies · Paper only');
  assert.equal(s.nodes['page-title'].textContent,'Strategies');assert.equal(s.calls.length,0);
- for(const section of s.sections)assert.equal(section.hidden,section.getAttribute('data-desk-section')!=='strategies');
+ for(const section of s.sections)assert.equal(section.hidden,!section.getAttribute('data-desk-section').split(' ').includes('strategies'));
  await s.unlock();assert.equal(s.nodes['next-step-link'].href,'#strategy-setup');
  assert.equal(s.nodes['readiness-checks'].children[0].children.at(-1).href,'#strategy-setup');assert.equal(s.calls.length,1);
  const dashboard=setup();for(const section of dashboard.sections)assert.equal(section.hidden,!section.getAttribute('data-desk-section').split(' ').includes('dashboard'));
@@ -164,4 +164,13 @@ test('Alt+R focuses proposal review without preview or approval, ignores text en
  let focused=0,prevented=0;const first=s.nodes.queue.children[0].children.find(n=>n.textContent==='Review buy proposal');first.focus=()=>focused++;
  const event={key:'r',altKey:true,target:{tagName:'BODY'},preventDefault(){prevented++;}};events.keydown(event);assert.equal(focused,1);assert.equal(prevented,1);assert.equal(s.calls.length,1);assert.match(s.nodes.message.textContent,/Approval still requires confirmation/);
  events.keydown({...event,target:{tagName:'INPUT'}});assert.equal(focused,1);s.instance.lock();events.keydown(event);assert.equal(focused,1);assert.equal(s.calls.length,1);
+});
+
+test('quiet polling keeps mode controls enabled and never flashes the global busy indicator',async()=>{
+ const busy=[];let finish,reads=0;
+ const s=setup(async()=>{reads++;if(reads===2)return new Promise(r=>finish=()=>r(ok(status({blockers:[]}))));return ok(status({blockers:[]}));},false,{AgenticFeedback:{setBusy:value=>busy.push(value)}});
+ await s.unlock();busy.length=0;s.intervals[0]();await flush();
+ assert.equal(s.nodes['mode-approval'].disabled,false);assert.equal(busy.includes(true),false);
+ finish();await flush();assert.equal(busy.includes(true),false);assert.equal(s.nodes['mode-approval'].disabled,false);
+ assert.equal(s.calls.filter(c=>c.opts.method==='POST').length,0);
 });

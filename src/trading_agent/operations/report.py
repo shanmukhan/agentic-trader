@@ -93,10 +93,11 @@ def operations_report(
         job = dict(preparation.state or {})
         with e.db.transaction() as tx:
             account = e._snapshot(tx, now)
+            execution_tokens = frozenset(desk.execution_tokens)
             selected = [
                 dict(r)
                 for r in tx.execute("SELECT symbol,token FROM instruments ORDER BY symbol")
-                if r["token"] in desk.execution_tokens
+                if r["token"] in execution_tokens
             ]
             held = {p["symbol"] for p in account["positions"]}
             selected_symbols = {s["symbol"] for s in selected}
