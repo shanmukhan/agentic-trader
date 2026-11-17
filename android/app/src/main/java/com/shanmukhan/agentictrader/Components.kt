@@ -81,11 +81,22 @@ val LocalFormEnabled = staticCompositionLocalOf { true }
 
 @Composable fun Field(label: String, value: String, onValue: (String) -> Unit, help: String = "",
                       numeric: Boolean = false, secret: Boolean = false, multiline: Boolean = false) {
+    var revealed by remember { mutableStateOf(false) }
     OutlinedTextField(value, onValue, label = { Text(label) }, modifier = Modifier.fillMaxWidth(),
         enabled = LocalFormEnabled.current,
         shape = RoundedCornerShape(14.dp), minLines = if (multiline) 3 else 1, maxLines = if (multiline) 12 else 1,
-        singleLine = !multiline, keyboardOptions = KeyboardOptions(keyboardType = if (secret) KeyboardType.Password else if (numeric) KeyboardType.Decimal else KeyboardType.Text),
-        visualTransformation = if (secret) PasswordVisualTransformation() else VisualTransformation.None,
+        singleLine = !multiline, keyboardOptions = KeyboardOptions(keyboardType = if (secret && !revealed) KeyboardType.Password else if (numeric) KeyboardType.Decimal else KeyboardType.Text),
+        visualTransformation = if (secret && !revealed) PasswordVisualTransformation() else VisualTransformation.None,
+        trailingIcon = if (secret) {
+            {
+                IconButton(onClick = { revealed = !revealed }) {
+                    Icon(
+                        if (revealed) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
+                        contentDescription = if (revealed) "Hide $label" else "Show $label"
+                    )
+                }
+            }
+        } else null,
         supportingText = if (help.isNotBlank()) ({ Text(help) }) else null)
 }
 

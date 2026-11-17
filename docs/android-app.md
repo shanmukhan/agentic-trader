@@ -598,6 +598,16 @@ The script builds a minified production APK, verifies its v3 signature/certifica
 and manifest (package, debugging/backup/cleartext disabled, permission allowlist),
 and writes `dist/android/agentic-trader.apk`, `android-release.json` and
 `build-validation.json`. Metadata contains only public hashes and validation status.
+For Android release 1.1.1 / code 12, the signed APK SHA-256 is
+`5fb791ae1c374fbca455648c69365bc962ee788334b95ad601531bb3962c2cfb`
+and signer certificate SHA-256 is
+`f455c37a122d562f0db773dbd69ac1f0755563e2191e00cb1adf669ee14c92ea`.
+The operator token field includes a visibility toggle to inspect and edit the token before submit, and preserves text on pairing errors to allow quick correction without retyping.
+
+To install to a connected device via adb (targeting primary user 0 on multi-user or Samsung Secure Folder devices):
+```sh
+adb install -r --user 0 dist/android/agentic-trader.apk
+```
 
 ```sh
 cd android

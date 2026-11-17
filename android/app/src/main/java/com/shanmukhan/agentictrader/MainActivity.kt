@@ -146,6 +146,9 @@ class MainActivity : FragmentActivity() {
     var owner by remember { mutableStateOf("") }
     var label by remember { mutableStateOf("My Android phone") }
     var forget by remember { mutableStateOf(false) }
+    LaunchedEffect(state.paired) {
+        if (state.paired) owner = ""
+    }
     Column(Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Brush.verticalGradient(
         listOf(CanvasColor, androidx.compose.ui.graphics.Color(0xFFE4F3F0), CanvasColor)))
         .safeDrawingPadding().imePadding().verticalScroll(rememberScrollState()).padding(24.dp),
@@ -165,8 +168,8 @@ class MainActivity : FragmentActivity() {
         } else Section("Pair your Android phone") {
             Field("Phone name", label, { label = it }, "A name you recognize in your paired-phone list.")
             Field("Server operator token", owner, { owner = it }, "Use the server token once. It is not saved on this phone.", secret = true)
-            Action("Pair and protect this phone", enabled = !state.busy && owner.length >= 32 && label.isNotBlank()) {
-                val supplied = owner; owner = ""; model.pair(supplied, label, gate)
+            Action("Pair and protect this phone", enabled = !state.busy && owner.trim().length >= 32 && label.isNotBlank()) {
+                model.pair(owner, label, gate)
             }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {

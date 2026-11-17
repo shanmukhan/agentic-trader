@@ -195,8 +195,8 @@ import org.json.JSONObject
         TextButton({ emergency = !emergency }) { Text("Manage other paired phones") }
         if (emergency) {
             Field("Owner token · emergency device management", owner, { owner = it }, "Used only while this page stays unlocked. It is not saved.", secret = true)
-            Action("Load my paired phones", model.canAct() && owner.length >= 32, secondary = true) {
-                val supplied = owner; owner = ""; model.ownerPhones(supplied)
+            Action("Load my paired phones", model.canAct() && owner.trim().length >= 32, secondary = true) {
+                model.ownerPhones(owner)
             }
             model.data("ownerDevices").rows("devices").forEach { device ->
                 Text(device.text("label"), fontWeight = FontWeight.SemiBold)

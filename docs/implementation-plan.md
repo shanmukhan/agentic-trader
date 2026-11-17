@@ -1,5 +1,15 @@
 # Implementation plan, enhancements and status
 
+## 17 November 2026 — mobile token visibility and non-erasing pairing retry
+
+Backend **0.21.1**, Android **1.1.1 / code 12**.
+Enhance operator token entry in Android app:
+- Add a show/hide password toggle to the `Field` composable using `Icons.Outlined.Visibility` and `Icons.Outlined.VisibilityOff`.
+- Retain entered operator token when pairing fails or returns an error, preventing lost input and avoiding repeated pasting or typing of 32+ character secrets.
+- Clear the token only upon successful device pairing.
+- Bump backend version across `pyproject.toml`, `src/trading_agent/__init__.py`, and `uv.lock`.
+- Verified production APK build (`5fb791ae1c374fbca455648c69365bc962ee788334b95ad601531bb3962c2cfb`), v3 signature check, and installation/launch on Samsung phone (`SM-M566B`, user `0`).
+
 ## 31 October 2026 — implemented watchlist permissions and operator safety
 
 Backend 0.21.0 / Android source 1.1.0 (code 11). Implement the NSE catalog picker,
@@ -19,9 +29,11 @@ SQLite checks of money/reservations/fills. Tests are intentionally **not execute
 on this change at the user's request. See [watchlist-safety.md](watchlist-safety.md)
 for implemented behavior, recovery, activation semantics and acceptance limits.
 Static Python/JS syntax, Ruff, mypy (135 files), whitespace and secret-pattern
-checks pass. Android compilation remains unverified: wrapper download timed out;
-the installed Gradle offline fallback lacks Android Gradle plugin 9.4.1.
-Deployment and native package publication are not requested or marked complete.
+checks pass. Android compilation is verified: Gradle dependency verification
+checksums were updated for missing build/lint tools, producing a signed production
+APK for Android 1.1.0 / code 11 with v3 signature scheme. The APK was installed and
+process launch was verified on the connected physical Samsung Galaxy device (`SM-M566B`, user 0).
+Deployment to remote environments and broker production acceptance remain separate.
 
 ## 29 October 2026 — resolve opening timeout and share the browser daily flow
 

@@ -7,8 +7,12 @@ search symbols and review/confirm the permitted list. Connected accounts start
 with an empty list; only saved members can receive new manual, strategy or
 contribution/SIP buys. Saving cancels pending buys and returns decisions to manual.
 Keep held symbols subscribed for protective exits, then review readiness before
-restarting a trading mode. Native Android 1.1.0 adds a Watchlist bottom tab; Stock
-Discovery is available under More and from Watchlist.
+restarting a trading mode. Native Android 1.1.1 adds a Watchlist bottom tab; Stock
+Discovery is available under More and from Watchlist. When pairing a phone, the operator
+token text field includes a password show/hide toggle and preserves input on error so you can
+easily inspect and correct values before submitting. To install the latest signed release
+to a connected handset (including Samsung devices with Secure Folder / multi-user enabled):
+`adb install -r --user 0 dist/android/agentic-trader.apk`.
 
 Entries are capped at 25% of current equity including buy fees and five accepted
 entry intents per IST day. A 25% peak-equity drawdown requires an explicit reference

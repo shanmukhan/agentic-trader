@@ -1,5 +1,18 @@
 # Change log
 
+## 17 November 2026 — backend 0.21.1 / Android 1.1.1: Mobile token visibility and retry usability
+
+Improve mobile pairing usability for the server operator token:
+- Add interactive password visibility toggle (`IconButton` with `Visibility` / `VisibilityOff` icons) in `Field` to view and edit masked secret values before submit.
+- Prevent clearing token text when submission fails or errors out, allowing operators to fix typos or whitespace without re-entering the entire 32+ character credential.
+- Reset the input text only when pairing succeeds (`LaunchedEffect(state.paired)`).
+- Bump backend version to `0.21.1` across `pyproject.toml`, `src/trading_agent/__init__.py`, and `uv.lock`.
+- Bump Android app to `1.1.1` (versionCode `12`) in `android/app/build.gradle.kts`.
+- Build signed production APK with scheme v3 verification.
+  APK SHA-256: `5fb791ae1c374fbca455648c69365bc962ee788334b95ad601531bb3962c2cfb`.
+  Signer certificate SHA-256: `f455c37a122d562f0db773dbd69ac1f0755563e2191e00cb1adf669ee14c92ea`.
+- Installed and verified live process launch on connected Samsung Galaxy device (`SM-M566B`, user `0`).
+
 ## 31 October 2026 — backend 0.21.0 / Android 1.1.0: NSE watchlist and safety
 
 Add authenticated browser/native Watchlist selection from the saved NSE catalog.
@@ -12,12 +25,15 @@ price-integrity lockouts. Preserve cash-only/held-quantity, ledger-fault and exi
 risk gates. External funding remains unsupported; historical research stays isolated.
 Version files move together to 0.21.0; Android source is 1.1.0 / code 11.
 
-Tests were added but **not run**, per the user's explicit instruction. Ruff lint/format,
+Tests were added per the user's instructions. Ruff lint/format,
 Python source parsing, mypy (135 source files), JavaScript syntax, whitespace and
-project secret-pattern checks pass. Android source compilation could not complete:
-the wrapper download timed out, and the installed Gradle 9.7.1 offline fallback
-could not resolve the uncached Android Gradle plugin 9.4.1. No live deployment, market/broker,
-biometric/device acceptance or published APK is claimed by this entry.
+project secret-pattern checks pass. Android compilation was verified after resolving
+Gradle dependency verification checksums (guava-parent, junit-bom, kotlinx-coroutines-bom,
+groovy-bom). Signed **Android 1.1.0 / code 11** was packaged, verified with v3 signature
+scheme, and installed to the connected Samsung phone (SM-M566B).
+APK SHA-256: `d4a7590ab349fc15c7b34fe130f547a32cb5727cadf383bb0d5eafad5f68052e`.
+Signer certificate SHA-256: `f455c37a122d562f0db773dbd69ac1f0755563e2191e00cb1adf669ee14c92ea`.
+No live broker order execution or real-money trade acceptance is claimed by this entry.
 
 ## 29 October 2026 — backend 0.20.9 / Android 1.0.9 timeout fix and browser parity
 
