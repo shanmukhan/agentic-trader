@@ -25,8 +25,8 @@ import androidx.compose.ui.unit.dp
     Column(Modifier.fillMaxWidth().padding(vertical = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(18.dp)) {
         BrandMark(72.dp)
-        Text("Opening your workspace", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-        Text(if (loading) "Checking your account securely…" else "Account details could not be loaded. Use Refresh displayed status to try again.")
+        Text("Welcome to Agentic Trader", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+        Text(if (loading) "Connecting to your account securely…" else "Account details could not be loaded. Tap Refresh to try again.")
     }
 }
 
@@ -35,19 +35,19 @@ import androidx.compose.ui.unit.dp
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    RadioButton(selected = true, onClick = close, modifier = Modifier.semantics { contentDescription = "Paper trading selected" })
+                    RadioButton(selected = true, onClick = close, modifier = Modifier.semantics { contentDescription = "Simulated trading active" })
                     Column {
-                        Text("Paper · active", fontWeight = FontWeight.Bold)
-                        Text("Virtual money and simulated execution. Market data may be real.")
+                        Text("Simulated trading · active", fontWeight = FontWeight.Bold)
+                        Text("Virtual money and simulated execution. Live market data.")
                     }
                 }
                 HorizontalDivider()
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     RadioButton(selected = false, onClick = {}, enabled = false, modifier = Modifier.semantics { contentDescription = "Real trading unavailable" })
-                    Text("Real · unavailable", fontWeight = FontWeight.Bold)
+                    Text("Real trading · unavailable", fontWeight = FontWeight.Bold)
                 }
                 Text("Real-order execution and broker-account reconciliation are not implemented on this server. Real trading cannot be enabled yet.")
-                Text("Manual, Approval and Automatic control decisions within your paper account. They do not switch to real money.", style = MaterialTheme.typography.bodySmall)
+                Text("Manual, Approval and Automatic control decisions within your virtual account. They do not switch to real money.", style = MaterialTheme.typography.bodySmall)
             }
         }, confirmButton = { TextButton(close) { Text("Done") } })
 }

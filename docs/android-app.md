@@ -1,5 +1,16 @@
 # Agentic Trader for Android
 
+## Android 1.1.4 / code 15 — Mobile UX final polish
+
+Polishes dialog titles, loading screen headers, and confirmation copy across
+the mobile experience:
+- **Mode Confirmation Dialogs**: Replaced raw mode keys with explicit user-friendly
+  titles and confirmation actions ("Confirm Review each trade (Approval)", "Confirm Auto-trade (Automatic)", "Confirm Paused (Manual)").
+- **Workspace Loading Experience**: Added a clear "Welcome to Agentic Trader"
+  header on initial startup.
+- **Environment Selector**: Clarified "Simulated trading · active" in the environment
+  dialog.
+
 ## Android 1.1.3 / code 14 — Mobile UX improvements (Phase 4 — Polish & Progressive Disclosure)
 
 Completes all four phases in [mobile-ux-improvement-plan.md](mobile-ux-improvement-plan.md).

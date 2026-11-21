@@ -1,5 +1,18 @@
 # Implementation plan, enhancements and status
 
+## 21 November 2026 — Android 1.1.4: Mobile UX final polish
+
+**Status:** Built and verified. All 4 phases in `docs/mobile-ux-improvement-plan.md` complete and fully polished.
+
+**Scope:** Android app only — no financial logic, security model or backend API changes. Backend unchanged at 0.21.1.
+
+**Files changed:**
+- `android/app/build.gradle.kts` — versionCode 14→15, versionName 1.1.3→1.1.4
+- `android/app/src/main/java/com/shanmukhan/agentictrader/TradeGuidance.kt` —
+  `modeLabel` integration for mode dialog headers, guidance titles and confirm actions.
+- `android/app/src/main/java/com/shanmukhan/agentictrader/Branding.kt` —
+  welcome header on workspace loading screen, environment dialog copy.
+
 ## 21 November 2026 — Android 1.1.3: Mobile UX improvements (Phase 4)
 
 **Status:** Built and verified. All 4 phases in `docs/mobile-ux-improvement-plan.md` complete.

@@ -1,5 +1,16 @@
 # Change log
 
+## 21 November 2026 — Android 1.1.4: Mobile UX final polish
+
+Complete final polish across modal dialogs, loading states, and guidance copy:
+- **Mode dialog copy & titles (P2-F)**: Integrated `modeLabel` mapping so that
+  mode dialogs and confirm buttons use plain terms ("Paused (Manual)",
+  "Review each trade (Approval)", "Auto-trade (Automatic)").
+- **Workspace welcome screen (P1-C)**: Enhanced initial loading screen with
+  "Welcome to Agentic Trader" and clear connection status.
+- **Environment dialog clarity**: Updated environment toggle dialog to describe
+  "Simulated trading · active" and "Real trading · unavailable" clearly.
+
 ## 21 November 2026 — Android 1.1.3: Mobile UX improvements (Phase 4 — Polish & progressive disclosure)
 
 Complete the 4th phase of the user-friendliness roadmap across the Android mobile app.

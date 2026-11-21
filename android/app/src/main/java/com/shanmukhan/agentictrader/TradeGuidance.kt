@@ -13,13 +13,20 @@ import org.json.JSONObject
 
 internal fun modeIsReady(desk: JSONObject): Boolean = desk.optJSONArray("blockers")?.length() == 0 && desk.obj("readiness").opt("can_start") == true
 
+internal fun modeLabel(mode: String): String = when (mode) {
+    "manual" -> "Paused (Manual)"
+    "approval" -> "Review each trade (Approval)"
+    "automatic" -> "Auto-trade (Automatic)"
+    else -> friendly(mode)
+}
+
 /** Guidance cannot grant authority; only a fresh desk response and explicit review can. */
 internal fun tradeGuidance(desk: JSONObject): JSONObject {
     val readiness = desk.obj("readiness")
     val supplied = readiness.obj("mode_guidance")
     if (supplied.optInt("schema_version") == 1) return supplied
     val blockers = desk.strings("blockers")
-    return json("title" to if (modeIsReady(desk)) "Ready to review a paper mode" else "Paper trading is not ready yet",
+    return json("title" to if (modeIsReady(desk)) "Ready to select a trading mode" else "Trading setup is not ready yet",
         "summary" to readiness.text("next_action", "Review the current readiness checks below."),
         "now_ist" to desk.text("observed_at", ""), "items" to JSONArray(
             readiness.rows("checks").filter { !it.optBoolean("ready") }.map { check ->
@@ -66,11 +73,11 @@ private fun guidanceLabel(page: Page): String = when (page) {
     val mode = state.modeHelp ?: return
     val ready = state.data["desk"]?.let { modeIsReady(it) } == true && !state.stale && !state.reconcile
     AlertDialog(onDismissRequest = model::dismissModeHelp, containerColor = MaterialTheme.colorScheme.surface,
-        title = { Text(if (ready) "${friendly(mode)} is ready to review" else "Before choosing ${friendly(mode)}") },
+        title = { Text(if (ready) "${modeLabel(mode)} is ready" else "Setup needed before choosing ${modeLabel(mode)}") },
         text = { Column(Modifier.heightIn(max = 500.dp).verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(14.dp)) { ModeGuidanceContent(state, model) } },
         confirmButton = {
-            if (ready) TextButton({ model.chooseMode(mode) }, enabled = !state.busy) { Text("Review ${friendly(mode)} mode") }
+            if (ready) TextButton({ model.chooseMode(mode) }, enabled = !state.busy) { Text("Confirm ${modeLabel(mode)}") }
             else TextButton(model::dismissModeHelp) { Text("Got it") }
         }, dismissButton = { if (ready) TextButton(model::dismissModeHelp) { Text("Not now") } })
 }
