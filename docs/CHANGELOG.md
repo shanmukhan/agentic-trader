@@ -1,5 +1,45 @@
 # Change log
 
+## 21 November 2026 — Android 1.1.2: Mobile UX improvements (Phases 1–3)
+
+Comprehensive user-friendliness pass across the Android app. No financial logic,
+security model or backend API changes. Backend version unchanged at 0.21.1.
+
+**Phase 1 — First impressions**
+- Pairing screen: "Server operator token" replaced with "Server passphrase" and an
+  inline explanation panel (what it is, 3 bullet points explaining where to get it,
+  minimum length). Live character counter shows progress toward the 32-char minimum.
+- Bottom nav: `Paper` → `Trading`, `More` → `Tools`.
+- Top-bar environment chip label: `Virtual funds` → `Simulated trading`.
+- Daily Journey step labels: `Access / Data / Review / Trade` →
+  `Connect / Data / Setup / Trade`.
+- All Daily Journey step body texts rewritten in plain language (no "source and
+  completed-history evidence", no "Kite session verification needed" jargon).
+- Stale data hint shortened: plain "Prices may be out of date — tap Refresh".
+
+**Phase 2 — Mode & trading clarity**
+- Trading screen mode buttons: each now shows a one-line description of what the
+  mode does. Approval mode marked with ★ Recommended for beginners.
+- Decision card headers: `BUY · NSE:RELIANCE · awaiting_approval` →
+  `Buy proposal: RELIANCE · Awaiting approval`.
+- Empty decisions state: replaced with actionable guidance pointing to Home screen.
+- Home: "Your paper account" → "Your virtual account"; subtitle updated.
+- Trading mode section subtitle: removed dense disclaimer.
+
+**Phase 3 — Navigation & information architecture**
+- Tools (More) screen: every item now has a one-line plain-language description.
+- Broker & data screen: section headers renamed —
+  `Market-data connection` → `Live price feed`,
+  `Kite session` → `Zerodha sign-in`,
+  `Automatic Nifty 50 basket` → `Stock universe`,
+  `Exchange session review` → `Exchange session calendar`.
+  `Fallback: exchange a one-time request token` → `Manual sign-in fallback (advanced)`.
+- Watchlist: `Permitted NSE stocks` → `Your approved stocks`; entry slot text simplified.
+- Portfolio: `Remaining basis` → `Cost basis`; `Estimated P&L` → `Unrealised gain/loss`;
+  empty state improved with actionable guidance.
+
+APK sha256: `dfc7afd18ebe71a018b33cd588d4e6893f89c8cc57ee58ff0049b5860eb7fc77`
+
 ## 17 November 2026 — backend 0.21.1 / Android 1.1.1: Mobile token visibility and retry usability
 
 Improve mobile pairing usability for the server operator token:

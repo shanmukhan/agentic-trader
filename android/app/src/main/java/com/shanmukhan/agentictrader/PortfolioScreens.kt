@@ -20,7 +20,7 @@ fun stockOptions(desk: JSONObject): List<Pair<String, String>> {
 
 @Composable fun PortfolioScreen(state: AppState, model: TraderViewModel) {
     val portfolio = model.data("views").obj("portfolio")
-    Section("Your holdings", "Values use saved accepted prices. Missing prices, fees and pending commitments stay visible.") {
+    Section("Your virtual holdings", "Values use the last accepted prices. Missing prices or fees may affect totals.") {
         Metric("Portfolio value", decimalMoney(portfolio.text("equity")))
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             Metric("Available cash", decimalMoney(portfolio.text("available_cash")), Modifier.weight(1f))
@@ -30,11 +30,11 @@ fun stockOptions(desk: JSONObject): List<Pair<String, String>> {
         Action("Purchases & SIP plans", !state.busy, secondary = true) { model.navigate(Page.PURCHASES) }
     }
     val positions = portfolio.rows("positions")
-    if (positions.isEmpty()) Section("") { EmptyState("No open virtual holdings", "An accepted order appears here only after actual simulated fills.") }
+    if (positions.isEmpty()) Section("") { EmptyState("No holdings yet", "Holdings appear here after a paper trade is placed and filled. Use the Home screen to get started.") }
     positions.forEach { position -> Section(position.text("symbol"), "${position.text("quantity")} current shares") {
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            Metric("Remaining basis", decimalMoney(position.text("cost")), Modifier.weight(1f))
-            Metric("Estimated P&L", decimalMoney(position.text("unrealized_pnl")), Modifier.weight(1f))
+            Metric("Cost basis", decimalMoney(position.text("cost")), Modifier.weight(1f))
+            Metric("Unrealised gain/loss", decimalMoney(position.text("unrealized_pnl")), Modifier.weight(1f))
         }
         DetailTree(position)
         Action("Inspect stock research", !state.busy, secondary = true) { model.selectSymbol(position.text("symbol")) }

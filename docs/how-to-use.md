@@ -1,5 +1,56 @@
 # How to use Agentic Trader
 
+## 21 November 2026 — Mobile UX improvements (Android 1.1.2)
+
+### Pairing your phone (first-time setup)
+
+1. Open the app — you'll see an explanation panel describing what a **server
+   passphrase** is and where to find it.
+2. The passphrase is the value of `TRADING_OPERATOR_TOKEN` on the server. It is
+   at least 32 characters long. You only need it once.
+3. Enter your **Phone name** (e.g. "My Samsung") and paste the passphrase into the
+   **Server passphrase** field. A live counter shows how many characters you've typed
+   and confirms when the minimum length is met.
+4. Tap **Pair and protect this phone** — your fingerprint is registered and you
+   never need to type the passphrase again.
+
+### Bottom navigation (v1.1.2 names)
+
+| Tab | What it does |
+|---|---|
+| **Home** | Daily step-by-step setup card + virtual account balance |
+| **Watchlist** | Manage which stocks are approved for buying |
+| **Trading** | Select a trading mode and review proposals |
+| **Portfolio** | Virtual holdings, cost basis and unrealised gain/loss |
+| **Tools** | All other features with one-line descriptions |
+
+### Daily setup (Home screen)
+
+The Home screen shows a 4-step progress card: **Connect → Data → Setup → Trade**.
+
+- **Connect** — Checks your Zerodha login. Tap *Continue with Kite* to verify.
+- **Data** — Downloads or reuses today's Nifty 50 stock data.
+- **Setup** — One review covers the strategy, stock list and market-data connection.
+- **Trade** — Choose a trading mode: *Paused*, *Review each trade*, or *Auto-trade*.
+
+### Trading modes
+
+| Mode (new label) | Old label | Meaning |
+|---|---|---|
+| Paused (Manual) | Manual | No new strategy orders. Safe for reviewing settings. |
+| Review each trade (Approval) | Approval | App asks you to approve every trade. ★ Recommended. |
+| Auto-trade (Automatic) | Automatic | Eligible trades run without individual approval. |
+
+### Virtual account terminology
+
+| New label | Old label |
+|---|---|
+| Virtual account / Simulated trading | Paper account / Paper trading |
+| Your approved stocks | Permitted NSE stocks |
+| Cost basis | Remaining basis |
+| Unrealised gain/loss | Estimated P&L |
+| Trade opportunities today | Entry slots today |
+
 ## 31 October 2026 — NSE watchlist and safety (0.21.0)
 
 Open **Watchlist** after unlocking, import the saved NSE catalog in Broker & Data,

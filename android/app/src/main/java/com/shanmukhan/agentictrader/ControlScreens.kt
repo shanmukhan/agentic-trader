@@ -13,7 +13,7 @@ import org.json.JSONObject
     val setup = model.data("setup"); val diagnostics = setup.obj("feed_diagnostics")
     val requested = setup.optBoolean("stream_requested"); val connected = setup.optBoolean("feed_connected")
     val failed = diagnostics.text("state") == "failed"
-    Section("Market-data connection") {
+    Section("Live price feed", "Connect to receive real-time stock prices") {
         Hint(when {
             connected -> "Connected to Zerodha market data. Check fresh usable prices and trading readiness separately."
             failed -> "Connection failed after its retry limit. Resolve the cause, then explicitly disconnect and reconnect."
@@ -29,7 +29,7 @@ import org.json.JSONObject
             model.reviewPost("Disconnect market data?", "Holdings remain open. Fills and protective exits must wait for fresh quotes after reconnection.", "/api/setup/disconnect", JSONObject())
         }
     }
-    Section("Kite session", if (setup.optBoolean("profile_verified_this_run")) "Verified in this server run" else "Verification needed") {
+    Section("Zerodha sign-in", if (setup.optBoolean("profile_verified_this_run")) "Session verified today" else "Sign-in verification needed") {
         Text("A saved token can expire. Profile success alone does not prove history or streaming entitlement.")
         Action("Check saved broker session", model.canAct()) { model.direct("/api/setup/profile", label = "Verifying Kite session") }
         Action("Sign in to Zerodha", model.canAct() && !requested, secondary = true) { model.brokerLogin() }
@@ -37,7 +37,7 @@ import org.json.JSONObject
         ManualBrokerToken(state, model)
     }
     BrokerCredentials(state, model, requested, external)
-    Section("Automatic Nifty 50 basket") {
+    Section("Stock universe", "Which stocks to monitor and trade") {
         val monitoring = model.data("desk").obj("monitoring")
         Text(if (setup.text("automatic_universe", "custom") == "nifty50")
             "Following the official Nifty 50 basket · ${setup.rows("selected").size} subscribed stocks."
@@ -52,7 +52,7 @@ import org.json.JSONObject
         if (requested || model.data("desk").text("mode") != "manual") Text("Basket changes require Manual and a disconnected feed. Held stocks remain protected by the existing workflow.", style = MaterialTheme.typography.bodySmall)
     }
     var customOpen by remember { mutableStateOf(false) }
-    TextButton({ customOpen = !customOpen }) { Text("Advanced: custom feed subscriptions") }
+    TextButton({ customOpen = !customOpen }) { Text("Advanced: choose specific stocks (optional)") }
     if (customOpen) {
         val selected = setup.rows("selected").map { it.text("symbol") }
         var selection by remember { mutableStateOf(selected.joinToString(", ")) }
@@ -72,7 +72,7 @@ import org.json.JSONObject
 
 @Composable private fun ManualBrokerToken(state: AppState, model: TraderViewModel) {
     var open by remember { mutableStateOf(false) }; var requestToken by remember { mutableStateOf("") }
-    TextButton({ open = !open }) { Text("Fallback: exchange a one-time request token") }
+    TextButton({ open = !open }) { Text("Manual sign-in fallback (advanced)") }
     if (open) {
         Field("One-time request token", requestToken, { requestToken = it }, "Use only when the automatic callback did not finish. Start the login from this app first.", secret = true)
         Action("Exchange and verify session", model.canAct() && requestToken.isNotBlank(), secondary = true) {
@@ -107,7 +107,7 @@ import org.json.JSONObject
     var open by remember { mutableStateOf("09:15") }; var close by remember { mutableStateOf("15:30") }
     var reference by remember { mutableStateOf("https://www.nseindia.com/resources/exchange-communication-holidays") }
     var reviewed by remember { mutableStateOf(false) }
-    Section("Exchange session review", "Normal hours are suggestions. They do not approve a holiday, special session or price basis.") {
+    Section("Exchange session calendar", "Record the official trading hours for each day. Normal hours are pre-filled as a starting point.") {
         Field("Session date · YYYY-MM-DD", date, { date = it })
         Field("Open · HH:MM IST", open, { open = it })
         Field("Close · HH:MM IST", close, { close = it })

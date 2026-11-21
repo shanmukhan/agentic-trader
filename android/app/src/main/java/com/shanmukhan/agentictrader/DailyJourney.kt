@@ -54,11 +54,11 @@ internal object DailyJourney {
         val job = state.data["desk"]?.obj("preparation")?.obj("job") ?: JSONObject()
         val evidence = state.data["dailyAudit"]?.obj("source_validation") ?: JSONObject()
         return when {
-            job.text("universe", "").isNotBlank() && job.text("universe") != "nifty50" -> "Your saved download covers ${universeName(job.text("universe"))}. This daily flow prepares the official Nifty 50."
-            evidence.opt("hashes_valid") == false -> "Saved source files could not be verified. Fresh source evidence is needed."
-            evidence.opt("same_ist_date") == false -> "Saved sources are from an earlier IST date. Today's sources need checking."
-            evidence.opt("coverage_valid") == false -> "Saved history is missing completed session coverage. This can happen after today's reviewed close."
-            else -> "Current Nifty 50 source and completed-history evidence is needed."
+            job.text("universe", "").isNotBlank() && job.text("universe") != "nifty50" -> "Your saved stock data covers ${universeName(job.text("universe"))}. Today's setup uses the official Nifty 50 basket."
+            evidence.opt("hashes_valid") == false -> "Saved stock data could not be verified. We need to download it fresh."
+            evidence.opt("same_ist_date") == false -> "Saved stock data is from yesterday. We need today's data."
+            evidence.opt("coverage_valid") == false -> "Stock history is incomplete for today's session. We'll check for updated data."
+            else -> "We need to verify today's Nifty 50 stock data before setup can continue."
         }
     }
     fun installed(desk: JSONObject): Boolean {
@@ -87,7 +87,7 @@ internal object DailyJourney {
     val desk = model.data("desk"); val setup = model.data("setup")
     val job = desk.obj("preparation").obj("job")
     val step = DailyJourney.step(state)
-    val labels = listOf("Access", "Data", "Review", "Trade")
+    val labels = listOf("Connect", "Data", "Setup", "Trade")
     var details by remember { mutableStateOf(false) }
     var changePolicy by remember { mutableStateOf(false) }
     Section("Your day, step by step", "Official Nifty 50 · paper trading") {
@@ -126,7 +126,7 @@ internal object DailyJourney {
                     if (!state.journeyRunning) Action("Continue this preparation", model.canAct()) { model.continueDay() }
                 } else {
                     Text(DailyJourney.dataReason(state))
-                    Text("Missing catalog details are imported automatically. A current download is reused; otherwise we prepare fresh history for this basket.", style = MaterialTheme.typography.bodyMedium)
+                    Text("Missing details are imported automatically. If today's data is already downloaded, it will be reused — no extra download needed.", style = MaterialTheme.typography.bodyMedium)
                     if (job.text("error", "").isNotBlank()) Hint("Preparation stopped: ${friendly(job.text("error"))}. Check the details before retrying.", error = true)
                     state.journeyCheckError?.let { Hint(it, error = true) }
                     if (desk.text("mode") != "manual") {
@@ -136,7 +136,7 @@ internal object DailyJourney {
                 }
             }
             step == 2 -> {
-                Text("Your data is current. One review covers the strategy, stocks, exchange sessions, eligible price-basis reviews and market-data connection.")
+                Text("Your data looks good. One review sets up the strategy, verifies the stock list and prepares the market-data connection.")
                 val policy = DailyJourney.policy(state)
                 if (policy.isBlank() || changePolicy) Choice("Decision policy · choose once", policy, listOf("rules" to "Rules only · experimental paper policy") +
                     if (desk.obj("preparation").optBoolean("ml_configured")) listOf("rules_ml" to "Rules + validated ML") else emptyList(), { model.journeyPolicy(it); changePolicy = false })

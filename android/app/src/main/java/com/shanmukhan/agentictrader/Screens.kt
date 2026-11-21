@@ -40,7 +40,7 @@ import java.time.Instant
 @Composable private fun HomeScreen(state: AppState, model: TraderViewModel) {
     val desk = model.data("desk"); val account = desk.obj("account")
     DailyJourneyCard(state, model)
-    Section("Your paper account", if (desk.text("horizon") == "long_term") "Long-term · virtual INR" else "Intraday · virtual INR") {
+    Section("Your virtual account", if (desk.text("horizon") == "long_term") "Long-term · simulated INR" else "Intraday · simulated INR") {
         Metric("Portfolio value", decimalMoney(account.text("equity")))
         HorizontalDivider(color = Line)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(18.dp)) {
@@ -184,13 +184,21 @@ import java.time.Instant
     var elapsed by remember { mutableLongStateOf(SystemClock.elapsedRealtime()) }
     LaunchedEffect(Unit) { while (true) { delay(1000); elapsed = SystemClock.elapsedRealtime() } }
     val guidance = tradeGuidance(desk)
-    Section("Your trading mode", "Current: ${friendly(desk.text("mode"))}. Feed connection alone cannot authorize trading.") {
+    Section("Your trading mode", "Current: ${friendly(desk.text("mode"))}") {
         Text(guidance.text("title"), fontWeight = FontWeight.SemiBold, color = Teal)
         val nextEntry = guidance.text("next_entry_at", "")
         if (nextEntry.isNotBlank()) Text("Next reviewed entry start: ${istTime(nextEntry)}")
         Text(guidance.text("summary"), style = MaterialTheme.typography.bodyMedium)
-        listOf("manual" to "Manual · no new strategy orders", "approval" to "Approval · review every proposal", "automatic" to "Automatic · eligible paper orders").forEach { (mode, label) ->
-            Action(label, model.canAct() && desk.text("mode") != mode, secondary = mode != "manual") { model.chooseMode(mode) }
+        listOf(
+            Triple("manual", "Paused (Manual)", "No new strategy orders. Use this to safely review or change settings."),
+            Triple("approval", "Review each trade (Approval)", "The app asks you to approve every trade proposal before it goes through. ★ Recommended for beginners."),
+            Triple("automatic", "Auto-trade (Automatic)", "Eligible paper trades run without asking each time. Use only when you understand the strategy.")
+        ).forEach { (mode, label, description) ->
+            Column {
+                Action(label, model.canAct() && desk.text("mode") != mode, secondary = mode != "manual") { model.chooseMode(mode) }
+                if (desk.text("mode") != mode) Text(description, style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = androidx.compose.ui.Modifier.padding(start = 4.dp, bottom = 4.dp))
+            }
         }
         Text(desk.text("mode_reason", ""), style = MaterialTheme.typography.bodyMedium)
     }
@@ -208,9 +216,11 @@ import java.time.Instant
         DetailCard("Per-stock signal / waiting reasons", analysis)
     }
     val decisions = desk.rows("decisions")
-    if (decisions.isEmpty()) Section("") { EmptyState("No strategy proposals yet", "The strategy waits for eligible signals, fresh prices, reviewed sessions and independent risk approval.") }
+    if (decisions.isEmpty()) Section("") { EmptyState("No trade proposals yet", "The strategy will suggest trades when conditions are ready. Complete today's setup steps on the Home screen first.") }
     decisions.forEach { decision ->
-        Section("${decision.text("side")} · ${decision.text("symbol")}", friendly(decision.text("state"))) {
+        val dSide = when (decision.text("side")) { "BUY" -> "Buy proposal"; "SELL" -> "Sell proposal"; else -> friendly(decision.text("side")) }
+        val dSymbol = decision.text("symbol").removePrefix("NSE:")
+        Section("$dSide: $dSymbol", friendly(decision.text("state"))) {
             DetailTree(JSONObject(decision.toString()).apply { remove("context"); remove("review") })
             if (decision.text("state") == "awaiting_approval") {
                 val remaining = runCatching { Duration.between(parseInstant(desk.text("observed_at")), parseInstant(decision.text("expires_at"))).seconds - (elapsed - state.receivedAtElapsed) / 1000 }.getOrDefault(0)
@@ -246,10 +256,41 @@ import java.time.Instant
 }
 
 @Composable private fun MoreScreen(state: AppState, model: TraderViewModel) {
-    Section("Plan & research") {
-        listOf(Page.DISCOVER, Page.WATCHLIST, Page.STRATEGY, Page.ANALYSIS, Page.POLICY, Page.BACKTEST).forEach { page -> Action(page.title, !state.busy, secondary = true) { model.navigate(page) } }
+    Section("Plan & research", "Find stocks, review strategy, analyse prices") {
+        val researchItems = listOf(
+            Page.DISCOVER to "Browse screened stocks to research",
+            Page.WATCHLIST to "Manage which stocks can be bought",
+            Page.STRATEGY to "Prepare and review daily strategy data",
+            Page.ANALYSIS to "View price charts and indicators",
+            Page.POLICY to "Design and save long-term investment policies",
+            Page.BACKTEST to "Run isolated historical simulations"
+        )
+        researchItems.forEach { (page, desc) ->
+            Column {
+                Action(page.title, !state.busy, secondary = true) { model.navigate(page) }
+                Text(desc, style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = androidx.compose.ui.Modifier.padding(start = 4.dp, bottom = 2.dp))
+            }
+        }
     }
-    Section("Account & controls") {
-        listOf(Page.PURCHASES, Page.HISTORY, Page.RISK, Page.BROKER, Page.SETTINGS, Page.SECURITY, Page.LEARN).forEach { page -> Action(page.title, !state.busy, secondary = true) { model.navigate(page) } }
+    Section("Account & controls", "Manage trades, settings and security") {
+        val controlItems = listOf(
+            Page.PURCHASES to "Make manual paper purchases or set up SIP plans",
+            Page.HISTORY to "View past paper trade activity and fills",
+            Page.RISK to "Emergency controls and account safeguards",
+            Page.BROKER to "Market data connection and Zerodha sign-in",
+            Page.SETTINGS to "App preferences and version info",
+            Page.SECURITY to "Manage paired phones and biometric access",
+            Page.LEARN to "Plain-language guide to how the app works"
+        )
+        controlItems.forEach { (page, desc) ->
+            Column {
+                Action(page.title, !state.busy, secondary = true) { model.navigate(page) }
+                Text(desc, style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = androidx.compose.ui.Modifier.padding(start = 4.dp, bottom = 2.dp))
+            }
+        }
     }
 }

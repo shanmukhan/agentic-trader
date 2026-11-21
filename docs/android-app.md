@@ -1,5 +1,50 @@
 # Agentic Trader for Android
 
+## Android 1.1.2 / code 13 — Mobile UX improvements (Phases 1–3)
+
+Comprehensive user-friendliness pass. All changes are string/label/composable
+additions — no financial logic, security model or backend API changes.
+
+**Pairing screen (P1-A, P1-B):** "Server operator token" replaced with "Server
+passphrase". A new inline explanation panel describes what it is (the
+`TRADING_OPERATOR_TOKEN` env var), its minimum length and that it's needed only
+once. A live character counter shows current length vs. 32-char minimum.
+
+**Navigation (P1-F):** Bottom nav `Paper` → `Trading`, `More` → `Tools`.
+Top-bar chip `Virtual funds` → `Simulated trading`.
+
+**Daily Journey (P1-D, P1-E):** Step labels `Access/Data/Review/Trade` →
+`Connect/Data/Setup/Trade`. All step body texts rewritten in plain language.
+
+**Trading screen (P2-A/B/C/D/E):** Mode buttons show one-line descriptions;
+Approval flagged as recommended. Decision headers show `Buy proposal: SYMBOL`
+instead of raw `BUY · NSE:SYMBOL · awaiting_approval`. Empty state guides users
+to the Home screen setup flow.
+
+**Home (P2-E, P3-E):** "Your paper account" → "Your virtual account".
+
+**Tools/More screen (P3-A):** Every item now has a one-line description.
+
+**Broker & data (P3-B):** Section headers renamed for clarity: `Live price feed`,
+`Zerodha sign-in`, `Stock universe`, `Exchange session calendar`.
+
+**Watchlist (P3-C):** `Permitted NSE stocks` → `Your approved stocks`; entry
+slot explanation simplified.
+
+**Portfolio (P3-D):** `Remaining basis` → `Cost basis`; `Estimated P&L` →
+`Unrealised gain/loss`; empty state improved.
+
+**Stale hint (P4-C partial):** Shortened to "Prices may be out of date — tap
+Refresh to reconnect."
+
+APK sha256: `dfc7afd18ebe71a018b33cd588d4e6893f89c8cc57ee58ff0049b5860eb7fc77`
+Certificate sha256: `f455c37a122d562f0db773dbd69ac1f0755563e2191e00cb1adf669ee14c92ea`
+
+See [mobile-ux-improvement-plan.md](mobile-ux-improvement-plan.md) for the full
+4-phase plan and remaining work (Phase 4).
+
+## Android source 1.1.1 / code 12 — Token visibility and retry usability
+
 ## Android source 1.1.0 / code 11 — Watchlist
 
 The bottom navigation now offers Watchlist; Stock Discovery remains in More and

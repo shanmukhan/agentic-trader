@@ -21,8 +21,8 @@ import org.json.JSONObject
         draft = symbols.distinct().sorted()
         model.dirty(draft != saved)
     }
-    Section("Account safety", "Cash only · no margin borrowing or short selling") {
-        Text("${safety.optInt("entries_today")} / 5 entry slots used today. Accepted entries use a slot even if cancelled; partial fills and retries of the same order do not add slots. Exits remain available.")
+    Section("Account safeguards", "Cash only · no borrowed money, no short selling") {
+        Text("${safety.optInt("entries_today")} / 5 trade opportunities used today. Each accepted buy uses one slot, even if cancelled. Sells are always available.")
         Text("Maximum order cost including buy fees: ${decimalMoney(safety.text("max_order_cost"))} (25% of current equity). Stricter risk limits still apply.")
         Text("Observed equity reference: ${decimalMoney(safety.text("peak_equity"))} · Drawdown: ${safety.text("drawdown_pct")}%")
         if (!safety.optBoolean("valuation_fresh")) Hint("Valuation is stale or incomplete. These amounts cannot authorize a trade.", error = true)
@@ -33,7 +33,7 @@ import org.json.JSONObject
         }
         Text("Unreadable or inconsistent ledger records block execution. External deposits and withdrawals are unsupported. Contributions and SIPs invest existing cash.")
     }
-    Section("Permitted NSE stocks", "Only the saved list may be bought. Holdings outside it remain exit only.") {
+    Section("Your approved stocks", "Only stocks on this list can be bought. Holdings not on the list can still be sold.") {
         Text("Checked ${istTime(value.text("observed_at"))}")
         if (state.formDirty) Hint("Unsaved watchlist edits. Review and save, or discard before leaving.")
         if (draft.isEmpty()) Hint("Empty watchlist: every new purchase is blocked.")

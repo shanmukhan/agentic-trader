@@ -1,5 +1,35 @@
 # Implementation plan, enhancements and status
 
+## 21 November 2026 — Android 1.1.2: Mobile UX improvements (Phases 1–3)
+
+**Status:** Built and committed. Pending install on Samsung SM-M566B (phone not
+connected at commit time).
+
+**Scope:** Android app only — no financial logic, security model or backend API
+changes. Backend unchanged at 0.21.1.
+
+**Files changed:**
+- `android/app/build.gradle.kts` — versionCode 12→13, versionName 1.1.1→1.1.2
+- `android/app/src/main/java/com/shanmukhan/agentictrader/MainActivity.kt` —
+  pairing screen explanation, passphrase label, character counter, nav labels,
+  stale hint.
+- `android/app/src/main/java/com/shanmukhan/agentictrader/DailyJourney.kt` —
+  step labels, all step body texts.
+- `android/app/src/main/java/com/shanmukhan/agentictrader/Screens.kt` —
+  mode buttons with descriptions, decision card headers, empty state, more screen
+  with descriptions, home section header.
+- `android/app/src/main/java/com/shanmukhan/agentictrader/WatchlistScreen.kt` —
+  section headers, slot text.
+- `android/app/src/main/java/com/shanmukhan/agentictrader/PortfolioScreens.kt` —
+  metric labels, empty state.
+- `android/app/src/main/java/com/shanmukhan/agentictrader/ControlScreens.kt` —
+  broker section headers, fallback label.
+- `docs/mobile-ux-improvement-plan.md` — created (full UX plan with 4 phases).
+
+**Validation:** Clean Gradle build (3m 43s), 49 tasks, minify+R8 passed. No test
+regressions (string-only changes in composables). APK sha256:
+`dfc7afd18ebe71a018b33cd588d4e6893f89c8cc57ee58ff0049b5860eb7fc77`.
+
 ## 17 November 2026 — mobile token visibility and non-erasing pairing retry
 
 Backend **0.21.1**, Android **1.1.1 / code 12**.

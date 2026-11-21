@@ -98,14 +98,14 @@ class MainActivity : FragmentActivity() {
                 horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 AssistChip(onClick = { model.showEnvironment(true) }, enabled = !state.busy && state.review == null,
                     label = { Text("Paper") }, trailingIcon = { Icon(Icons.Outlined.ExpandMore, "Choose trading environment") })
-                Text("Virtual funds", style = MaterialTheme.typography.labelMedium, color = Teal)
+                Text("Simulated trading", style = MaterialTheme.typography.labelMedium, color = Teal)
             }
         } },
         bottomBar = { NavigationBar(containerColor = androidx.compose.ui.graphics.Color.White) {
             bottom.forEach { (page, icon) ->
                 NavigationBarItem(selected = state.page == page, onClick = { model.navigate(page) },
                     icon = { Icon(icon, page.title) }, label = { Text(when (page) {
-                        Page.HOME -> "Home"; Page.WATCHLIST -> "Watchlist"; Page.PAPER -> "Trade"; Page.PORTFOLIO -> "Portfolio"; else -> "More"
+                        Page.HOME -> "Home"; Page.WATCHLIST -> "Watchlist"; Page.PAPER -> "Trading"; Page.PORTFOLIO -> "Portfolio"; else -> "Tools"
                     }) }, enabled = !state.busy && state.review == null)
             }
         } }) { insets ->
@@ -117,7 +117,7 @@ class MainActivity : FragmentActivity() {
                 if (state.progress.isNotBlank()) Text(state.progress, color = Teal, style = MaterialTheme.typography.bodyMedium)
                 state.error?.let { Hint(it, error = true) }
                 state.notice?.let { Hint(it, success = !BuildConfig.DEMO) }
-                if (state.stale) Hint("Displayed data may be stale. Actions wait until the server can be checked again.")
+                if (state.stale) Hint("Prices may be out of date — tap Refresh to reconnect.")
                 if (state.reconcile) {
                     Hint("A previous instruction may have completed. Inspect ${state.reconcilePage.title.lowercase()} before creating another instruction.")
                     Action("Inspect saved outcome", secondary = true, enabled = !state.busy) { model.navigate(state.reconcilePage) }
@@ -165,11 +165,36 @@ class MainActivity : FragmentActivity() {
         if (state.paired) {
             Action("Unlock with biometrics", enabled = !state.busy) { model.unlock(gate) }
             TextButton({ forget = true }, enabled = !state.busy) { Text("Pair this phone again") }
-        } else Section("Pair your Android phone") {
-            Field("Phone name", label, { label = it }, "A name you recognize in your paired-phone list.")
-            Field("Server operator token", owner, { owner = it }, "Use the server token once. It is not saved on this phone.", secret = true)
-            Action("Pair and protect this phone", enabled = !state.busy && owner.trim().length >= 32 && label.isNotBlank()) {
-                model.pair(owner, label, gate)
+        } else {
+            // ── What is a passphrase? ─────────────────────────────────────────
+            Surface(shape = MaterialTheme.shapes.medium,
+                color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.55f)) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("First-time setup — pair this phone",
+                        style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                    Text("You need a server passphrase to link your phone. This is a long secret set by whoever runs the trading server.",
+                        style = MaterialTheme.typography.bodyMedium)
+                    Text(
+                        "• It is set via the TRADING_OPERATOR_TOKEN environment variable on the server\n" +
+                        "• It is at least 32 characters long\n" +
+                        "• You only need it once — after pairing, your fingerprint unlocks the app",
+                        style = MaterialTheme.typography.bodySmall)
+                }
+            }
+            Section("Pair your phone") {
+                Field("Phone name", label, { label = it }, "A name you'll recognise in your paired-phone list.")
+                val ownerOk = owner.trim().length >= 32
+                val ownerCount = owner.trim().length
+                Field(
+                    "Server passphrase",
+                    owner, { owner = it },
+                    if (ownerOk) "✓ Length looks good ($ownerCount chars)"
+                    else "Paste the passphrase from your server. Need at least 32 characters (currently $ownerCount).",
+                    secret = true
+                )
+                Action("Pair and protect this phone", enabled = !state.busy && ownerOk && label.isNotBlank()) {
+                    model.pair(owner, label, gate)
+                }
             }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
