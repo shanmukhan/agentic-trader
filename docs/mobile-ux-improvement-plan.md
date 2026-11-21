@@ -1,7 +1,8 @@
 # Mobile UX Improvement Plan
 
-> **Status:** Active · Implementation in progress  
+> **Status:** Completed · All phases implemented (v1.1.2 Phases 1–3, v1.1.3 Phase 4)  
 > **App version at plan creation:** Android 1.1.1 (code 12)  
+> **App version after completion:** Android 1.1.3 (code 14)  
 > **Scope:** Android app only — no financial logic, security model, or backend API changes
 
 ---

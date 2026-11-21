@@ -25,7 +25,7 @@ import org.json.JSONObject
         Text("${safety.optInt("entries_today")} / 5 trade opportunities used today. Each accepted buy uses one slot, even if cancelled. Sells are always available.")
         Text("Maximum order cost including buy fees: ${decimalMoney(safety.text("max_order_cost"))} (25% of current equity). Stricter risk limits still apply.")
         Text("Observed equity reference: ${decimalMoney(safety.text("peak_equity"))} · Drawdown: ${safety.text("drawdown_pct")}%")
-        if (!safety.optBoolean("valuation_fresh")) Hint("Valuation is stale or incomplete. These amounts cannot authorize a trade.", error = true)
+        if (!safety.optBoolean("valuation_fresh")) Hint("Valuation prices are not current. Tap Refresh to check latest quotes.", error = true)
         if (safety.optBoolean("data_blocked_today")) Hint("Price integrity incident: no new purchases for the rest of this IST day, including after restart. ${safety.text("data_reason")}", error = true)
         if (safety.optBoolean("paused")) {
             Hint("25% drawdown pause is latched. Recovery or restart cannot resume entries.", error = true)

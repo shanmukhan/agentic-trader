@@ -26,7 +26,7 @@ fun stockOptions(desk: JSONObject): List<Pair<String, String>> {
             Metric("Available cash", decimalMoney(portfolio.text("available_cash")), Modifier.weight(1f))
             Metric("Holding P&L", decimalMoney(portfolio.text("net_unrealized_pnl")), Modifier.weight(1f))
         }
-        if (!portfolio.optBoolean("valuation_fresh")) Hint("Valuation is stale or incomplete. An estimate is not an executable selling price.")
+        if (!portfolio.optBoolean("valuation_fresh")) Hint("Holding valuation uses older prices. Tap Refresh to check latest quotes.")
         Action("Purchases & SIP plans", !state.busy, secondary = true) { model.navigate(Page.PURCHASES) }
     }
     val positions = portfolio.rows("positions")

@@ -1,6 +1,16 @@
 # How to use Agentic Trader
 
-## 21 November 2026 — Mobile UX improvements (Android 1.1.2)
+## 21 November 2026 — Mobile UX improvements (Android 1.1.3)
+
+### Plain-language guide and help (Tools → Learning Center)
+
+The in-app Learning Center (`Page.LEARN`) provides quick, bite-sized answers organized by topic:
+- **Setup & access**: Preparing today's session, source/calendar validation, phone biometric pairing.
+- **Trading modes & orders**: How Approval vs. Automatic modes work, manual SIP/purchases, quote freshness.
+- **Risk & safeguards**: Virtual cash and fees, emergency kill-switch controls, price basis quarantines.
+- **Research & testing**: Screening rules, investment policy drafts, isolated backtest runs.
+
+You can also access the guide directly from **Tools → Settings → How this app works**.
 
 ### Pairing your phone (first-time setup)
 

@@ -176,7 +176,7 @@ internal object DailyJourney {
                 }
             }
         }
-        TextButton({ details = !details }, Modifier.fillMaxWidth()) { Text(if (details) "Hide setup details" else "Setup details & completed checks") }
+        TextButton({ details = !details }, Modifier.fillMaxWidth()) { Text(if (details) "Hide setup details" else "Setup details & completed checks (optional)") }
         if (details) {
             Text("Access: ${if (DailyJourney.sessionReady(desk, setup)) "verified today" else "verification needed"}")
             Text("Data: ${if (DailyJourney.dataReady(state)) "sources and completed history verified" else "current evidence needed"}")

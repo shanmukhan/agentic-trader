@@ -1,5 +1,27 @@
 # Implementation plan, enhancements and status
 
+## 21 November 2026 — Android 1.1.3: Mobile UX improvements (Phase 4)
+
+**Status:** Built and verified. All 4 phases in `docs/mobile-ux-improvement-plan.md` complete.
+
+**Scope:** Android app only — no financial logic, security model or backend API changes. Backend unchanged at 0.21.1.
+
+**Files changed:**
+- `android/app/build.gradle.kts` — versionCode 13→14, versionName 1.1.2→1.1.3
+- `android/app/src/main/java/com/shanmukhan/agentictrader/ControlScreens.kt` —
+  category filtering in `LearnScreen`, shortcut link to Guide in `SettingsScreen`.
+- `android/app/src/main/java/com/shanmukhan/agentictrader/MainActivity.kt` —
+  `friendlyError` function mapping raw network errors and timeouts to user-friendly messages.
+- `android/app/src/main/java/com/shanmukhan/agentictrader/Screens.kt` —
+  stale valuation hint updated, discovery screen header refined, advanced sections labeled "(optional)".
+- `android/app/src/main/java/com/shanmukhan/agentictrader/WatchlistScreen.kt` —
+  stale valuation hint updated.
+- `android/app/src/main/java/com/shanmukhan/agentictrader/PortfolioScreens.kt` —
+  stale valuation hint updated.
+- `android/app/src/main/java/com/shanmukhan/agentictrader/DailyJourney.kt` —
+  setup details labeled "(optional)".
+- `docs/mobile-ux-improvement-plan.md` — marked completed across all phases.
+
 ## 21 November 2026 — Android 1.1.2: Mobile UX improvements (Phases 1–3)
 
 **Status:** Built and committed. Pending install on Samsung SM-M566B (phone not

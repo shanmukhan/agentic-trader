@@ -1,5 +1,28 @@
 # Change log
 
+## 21 November 2026 — Android 1.1.3: Mobile UX improvements (Phase 4 — Polish & progressive disclosure)
+
+Complete the 4th phase of the user-friendliness roadmap across the Android mobile app.
+
+- **Learning center categorization (P4-A)**: Guide topics in `LearnScreen` are now
+  categorized into 4 clear groups ("Setup & access", "Trading modes & orders",
+  "Risk & safeguards", "Research & testing") with a dropdown category filter
+  alongside real-time keyword search.
+- **Settings shortcut (P4-B)**: Added direct navigation action from Settings to
+  "How this app works (Plain-language guide)" so users can access help easily.
+- **Stale data hints (P4-C)**: Simplified valuation and pricing stale hints across
+  Overview, Watchlist, and Portfolio to clear, actionable guidance ("Prices are
+  not current. Tap Refresh to check latest quotes").
+- **Plain-language error messages (P4-D)**: Added `friendlyError` mapping in
+  `MainActivity` translating raw network failures, timeouts, and 401 session expirations
+  into clear, user-friendly recovery instructions.
+- **Clear progressive disclosure (P4-E)**: Standardized secondary technical sections
+  with an explicit "(optional)" label (e.g. "Advanced setup & sources (optional)",
+  "Advanced calendar & installation (optional)", "Setup details & completed checks (optional)")
+  to keep initial workflows clean and unintimidating for beginners.
+- **Stock Discovery clarity (P4-F)**: Screen header and description revised to
+  "Discover stocks: Browse and screen saved research stocks. Screening is not a buy signal."
+
 ## 21 November 2026 — Android 1.1.2: Mobile UX improvements (Phases 1–3)
 
 Comprehensive user-friendliness pass across the Android app. No financial logic,

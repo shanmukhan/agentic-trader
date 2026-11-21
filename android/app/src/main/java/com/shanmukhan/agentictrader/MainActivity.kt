@@ -75,6 +75,18 @@ class MainActivity : FragmentActivity() {
     }
 }
 
+internal fun friendlyError(raw: String): String = when {
+    raw.contains("Could not reach your server", true) || raw.contains("Unable to resolve host", true) || raw.contains("Failed to connect", true) ->
+        "Cannot reach the server right now. Check your network connection, then tap Refresh."
+    raw.contains("Unlock again", true) || raw.contains("401", true) ->
+        "Session expired for your privacy. Unlock again with your fingerprint."
+    raw.contains("timeout", true) || raw.contains("timed out", true) ->
+        "Server took too long to reply. Tap Refresh to verify if the action was received."
+    raw.contains("Account response is incomplete", true) ->
+        "Server is still starting up or busy. Please tap Refresh in a few seconds."
+    else -> raw
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable fun TraderApp(model: TraderViewModel, gate: BiometricGate, external: (String) -> Unit) {
     val state by model.state.collectAsStateWithLifecycle()
@@ -115,7 +127,7 @@ class MainActivity : FragmentActivity() {
                 .padding(horizontal = 18.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 if (BuildConfig.DEMO) Hint("OFFLINE DEMO · all balances, stocks and outcomes are invented. No Internet access.")
                 if (state.progress.isNotBlank()) Text(state.progress, color = Teal, style = MaterialTheme.typography.bodyMedium)
-                state.error?.let { Hint(it, error = true) }
+                state.error?.let { Hint(friendlyError(it), error = true) }
                 state.notice?.let { Hint(it, success = !BuildConfig.DEMO) }
                 if (state.stale) Hint("Prices may be out of date — tap Refresh to reconnect.")
                 if (state.reconcile) {
@@ -160,7 +172,7 @@ class MainActivity : FragmentActivity() {
         Text(if (state.paired) "Use your fingerprint to unlock this phone's encrypted access. Your biometric never leaves Android."
             else "Pair this phone once. After that, unlock with strong biometrics instead of typing a long token.",
             color = MaterialTheme.colorScheme.onSurfaceVariant)
-        state.error?.let { Hint(it, error = true) }
+        state.error?.let { Hint(friendlyError(it), error = true) }
         if (state.busy) { LinearProgressIndicator(Modifier.fillMaxWidth()); Text(state.progress) }
         if (state.paired) {
             Action("Unlock with biometrics", enabled = !state.busy) { model.unlock(gate) }

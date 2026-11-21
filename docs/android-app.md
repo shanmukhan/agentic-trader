@@ -1,5 +1,39 @@
 # Agentic Trader for Android
 
+## Android 1.1.3 / code 14 — Mobile UX improvements (Phase 4 — Polish & Progressive Disclosure)
+
+Completes all four phases in [mobile-ux-improvement-plan.md](mobile-ux-improvement-plan.md).
+All additions are UI/composable and string enhancements with no changes to financial logic,
+risk policies, or backend API contracts.
+
+**Categorized Learning Center (P4-A):** Topics in the in-app guide (`LearnScreen`)
+are now organized into four distinct categories:
+- *Setup & access* (Prepare today, Source and calendar review, Secure phone access)
+- *Trading modes & orders* (Approval and automatic modes, Manual purchases and SIP, Quote freshness and liquidity)
+- *Risk & safeguards* (Cash equity and fees, Emergency controls, Long-term price basis, Unknown results)
+- *Research & testing* (Discovery and indicators, Policy drafts, Backtesting)
+A category dropdown filter allows filtering alongside full-text search.
+
+**Settings Guide Link (P4-B):** Added a direct "How this app works (Plain-language guide)"
+action inside Settings to make documentation immediately accessible to users.
+
+**Actionable Stale Data Hints (P4-C):** Simplified valuation hints across Overview,
+Watchlist, and Portfolio to "Prices are not current. Tap Refresh to check latest quotes."
+
+**Friendly Error Translation (P4-D):** Added a `friendlyError` mapping in `MainActivity`
+that converts raw networking errors (e.g. host unreachable, timeouts) and 401 token
+expirations into clear, polite messages advising the user on network checks or fingerprint re-unlocks.
+
+**Progressive Disclosure (P4-E):** Labeled advanced and secondary sections with "(optional)"
+tags (e.g. "Advanced setup & sources (optional)", "Setup details & completed checks (optional)")
+to keep core daily workflows clear and welcoming.
+
+**Discover Stocks Header (P4-F):** Refined title and subtitle to "Discover stocks: Browse
+and screen saved research stocks. Screening is not a buy signal."
+
+APK sha256: `e448e8a33dc15a2a47eb1b2c61c7bb4d57d0ad2b524c10e88af4ee3650fdb644`  
+Certificate sha256: `f455c37a122d562f0db773dbd69ac1f0755563e2191e00cb1adf669ee14c92ea`
+
 ## Android 1.1.2 / code 13 — Mobile UX improvements (Phases 1–3)
 
 Comprehensive user-friendliness pass. All changes are string/label/composable

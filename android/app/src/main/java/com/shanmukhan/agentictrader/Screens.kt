@@ -47,7 +47,7 @@ import java.time.Instant
             Metric("Available cash", decimalMoney(account.text("available_cash")), Modifier.weight(1f))
             Metric("Today's P&L", decimalMoney(account.text("day_pnl")), Modifier.weight(1f))
         }
-        if (!account.optBoolean("valuation_fresh")) Hint("Some holding prices are stale or unavailable. Inspect valuation coverage before using this estimate.")
+        if (!account.optBoolean("valuation_fresh")) Hint("Some holding prices are not fresh. Tap Refresh or check market data before trading.")
         Text("Checked ${istTime(desk.text("observed_at", ""))}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 
@@ -74,7 +74,7 @@ import java.time.Instant
 @Composable private fun DiscoveryScreen(state: AppState, model: TraderViewModel) {
     val discovery = model.data("views").obj("discovery")
     var search by remember { mutableStateOf("") }; var filter by remember { mutableStateOf("all") }
-    Section("Find stocks to research", "Saved, reviewed research. Screening strength is not a buy signal or a profit forecast.") {
+    Section("Discover stocks", "Browse and screen saved research stocks. Screening is not a buy signal.") {
         Field("Search symbol", search, { search = it })
         Choice("Show", filter, listOf("all" to "All stocks", "eligible" to "Screen passed", "subscribed" to "Monitored execution stocks"), { filter = it })
         Text("Research as of ${istTime(discovery.text("as_of", ""))}", style = MaterialTheme.typography.labelMedium)
@@ -105,7 +105,7 @@ import java.time.Instant
     var policy by remember { mutableStateOf(if (desk.text("strategy_mode") in listOf("rules", "rules_ml")) desk.text("strategy_mode") else "") }
     DailyJourneyCard(state, model)
     var advanced by remember { mutableStateOf(false) }
-    TextButton({ advanced = !advanced }, Modifier.fillMaxWidth()) { Text(if (advanced) "Hide advanced preparation controls" else "Advanced preparation & sources") }
+    TextButton({ advanced = !advanced }, Modifier.fillMaxWidth()) { Text(if (advanced) "Hide advanced setup (optional)" else "Advanced setup & sources (optional)") }
     if (advanced) {
     Section("Today's setup", "Automatic checks and downloads stop at your review. They never activate a trading mode.") {
         Text("Kite session: " + if (requirements.optBoolean("session_verified")) "verified today" else "verification required")
@@ -157,7 +157,7 @@ import java.time.Instant
     var calendarReviewed by remember { mutableStateOf(false) }; var basis by remember { mutableStateOf(false) }; var policyReviewed by remember { mutableStateOf(false) }; var correction by remember { mutableStateOf(false) }
     val prep = model.data("desk").obj("preparation")
     Section("") {
-        TextButton({ open = !open }) { Text("Advanced calendar & separate installation") }
+        TextButton({ open = !open }) { Text("Advanced calendar & installation (optional)") }
         if (open) {
             Hint("Use only when the normal combined review needs a calendar correction. Existing used session history cannot be overwritten.")
             Field("Reviewed session calendar · CSV", calendar, { calendar = it }, multiline = true)

@@ -174,6 +174,7 @@ import org.json.JSONObject
         Action(if (state.alertsEnabled) "Turn proposal alerts off" else "Enable proposal alerts", !state.busy && !BuildConfig.DEMO, secondary = true, onClick = toggleAlerts)
         Text("Optional generic notifications while the app stays unlocked. Backgrounding locks the app and stops alerts; there is no background push service.", style = MaterialTheme.typography.bodySmall)
         Action("Phone security & pairing", !state.busy, secondary = true) { model.navigate(Page.SECURITY) }
+        Action("How this app works (Plain-language guide)", !state.busy, secondary = true) { model.navigate(Page.LEARN) }
     }
     DetailCard("Configured account policy & operational limits", model.data("views").obj("settings"), open = true)
     Hint("Account economics are read-only here. Their reviewed server configuration cannot be changed by a phone preference.")
@@ -207,27 +208,48 @@ import org.json.JSONObject
     }
 }
 
-private val learning = listOf(
-    "Prepare today" to "One action verifies the saved session, imports a missing catalog and acquires current completed history. It stops at the source/calendar/policy review. It never chooses a trading mode.",
-    "Cash, equity and fees" to "Available virtual cash excludes commitments to pending buys. Equity also includes marked holdings. Fees and unavailable or stale holding prices can materially change the result. Accepted orders are not fills.",
-    "Approval and automatic modes" to "Approval waits for your explicit review of each proposal. Automatic can submit eligible paper orders without another proposal confirmation. Neither mode guarantees a signal, a fill or profit; risk and freshness checks remain independent.",
-    "Quote freshness and liquidity" to "A connected socket can have old, empty-sided or unusable quotes. Only accepted fresh reviewed prices and usable depth can drive paper fills. No missing liquidity is invented.",
-    "Discovery and indicators" to "Discovery shows the installed prior-daily screen, not live recommendations. Indicator warmup and missing sessions matter. Short histories cannot manufacture SMA200 or certified multi-year returns. Fundamental data may be unavailable.",
-    "Source and calendar review" to "Normal hours and a holiday feed are proposals. Review special sessions, actual exchange notices and corporate-action coverage. Downloads and successful login do not approve those facts.",
-    "Policy drafts" to "A saved draft is an immutable research specification. Blank choices remain unresolved. It does not replace the installed strategy, change cash, create holdings or activate a longer-term investment engine.",
-    "Backtesting" to "Simulations use registered inputs, explicit fees and independent virtual accounts. Input origin, chronology, policy, code and isolation limits constrain interpretation. The RPi runner can be unavailable when OS isolation has not been verified.",
-    "Manual purchases and SIP" to "Each purchase needs an exact preview and confirmation. A SIP plan records explicit reviewed dates and cash caps; due occurrences still need individual preview. Missed dates stay missed. Cancellation preserves filled shares.",
-    "Long-term price basis" to "Review actions since the last accepted quote, including offline periods. An unresolved action quarantines the stock across sessions. A normal review cannot remove that quarantine; a reviewed offline action workflow is required.",
-    "Emergency controls" to "Kill stops new entries and pending buys. Queue exits requests sales but cannot force immediate fills without fresh prices and liquidity. Holdings remain open until recorded fills resolve them.",
-    "Unknown results" to "A timeout does not prove an action failed. Inspect saved state before another instruction. The app does not automatically repeat consequential POST requests. Locking cannot undo a request already received by the server.",
-    "Secure phone access" to "Pair once with the owner token. Strong biometrics release a separate device credential from Android Keystore to obtain a short-lived session. Biometrics stay on Android. Lock clears private app memory; the server and holdings continue.",
+data class GuideTopic(val title: String, val category: String, val text: String)
+
+private val learningTopics = listOf(
+    GuideTopic("Prepare today", "Setup", "One action verifies the saved session, imports a missing catalog and acquires current completed history. It stops at the source/calendar/policy review. It never chooses a trading mode."),
+    GuideTopic("Source and calendar review", "Setup", "Normal hours and a holiday feed are proposals. Review special sessions, actual exchange notices and corporate-action coverage. Downloads and successful login do not approve those facts."),
+    GuideTopic("Secure phone access", "Setup", "Pair once with the owner token. Strong biometrics release a separate device credential from Android Keystore to obtain a short-lived session. Biometrics stay on Android. Lock clears private app memory; the server and holdings continue."),
+    GuideTopic("Approval and automatic modes", "Trading", "Approval waits for your explicit review of each proposal. Automatic can submit eligible paper orders without another proposal confirmation. Neither mode guarantees a signal, a fill or profit; risk and freshness checks remain independent."),
+    GuideTopic("Manual purchases and SIP", "Trading", "Each purchase needs an exact preview and confirmation. A SIP plan records explicit reviewed dates and cash caps; due occurrences still need individual preview. Missed dates stay missed. Cancellation preserves filled shares."),
+    GuideTopic("Quote freshness and liquidity", "Trading", "A connected socket can have old, empty-sided or unusable quotes. Only accepted fresh reviewed prices and usable depth can drive paper fills. No missing liquidity is invented."),
+    GuideTopic("Cash, equity and fees", "Safeguards", "Available virtual cash excludes commitments to pending buys. Equity also includes marked holdings. Fees and unavailable or stale holding prices can materially change the result. Accepted orders are not fills."),
+    GuideTopic("Emergency controls", "Safeguards", "Kill stops new entries and pending buys. Queue exits requests sales but cannot force immediate fills without fresh prices and liquidity. Holdings remain open until recorded fills resolve them."),
+    GuideTopic("Long-term price basis", "Safeguards", "Review actions since the last accepted quote, including offline periods. An unresolved action quarantines the stock across sessions. A normal review cannot remove that quarantine; a reviewed offline action workflow is required."),
+    GuideTopic("Unknown results", "Safeguards", "A timeout does not prove an action failed. Inspect saved state before another instruction. The app does not automatically repeat consequential POST requests. Locking cannot undo a request already received by the server."),
+    GuideTopic("Discovery and indicators", "Research", "Discovery shows the installed prior-daily screen, not live recommendations. Indicator warmup and missing sessions matter. Short histories cannot manufacture SMA200 or certified multi-year returns. Fundamental data may be unavailable."),
+    GuideTopic("Policy drafts", "Research", "A saved draft is an immutable research specification. Blank choices remain unresolved. It does not replace the installed strategy, change cash, create holdings or activate a longer-term investment engine."),
+    GuideTopic("Backtesting", "Research", "Simulations use registered inputs, explicit fees and independent virtual accounts. Input origin, chronology, policy, code and isolation limits constrain interpretation. The RPi runner can be unavailable when OS isolation has not been verified.")
 )
 
 @Composable fun LearnScreen(model: TraderViewModel, external: (String) -> Unit) {
     var query by remember { mutableStateOf("") }
-    Section("A plain-language guide") { Field("Search the guide", query, { query = it }) }
-    learning.filter { (title, text) -> title.contains(query, true) || text.contains(query, true) }.forEach { (title, text) ->
-        Section(title) { Text(text, style = MaterialTheme.typography.bodyMedium) }
+    var category by remember { mutableStateOf("all") }
+    val categories = listOf(
+        "all" to "All topics",
+        "Setup" to "Setup & access",
+        "Trading" to "Trading modes & orders",
+        "Safeguards" to "Risk & safeguards",
+        "Research" to "Research & testing"
+    )
+    Section("A plain-language guide") {
+        Field("Search the guide", query, { query = it })
+        Choice("Filter by category", category, categories, { category = it })
+    }
+    val filtered = learningTopics.filter { topic ->
+        (category == "all" || topic.category == category) &&
+        (query.isBlank() || topic.title.contains(query, true) || topic.text.contains(query, true))
+    }
+    if (filtered.isEmpty()) Section("") {
+        EmptyState("No matching topics", "Try a different search term or category filter.")
+    } else {
+        filtered.forEach { topic ->
+            Section("${topic.title} · ${topic.category}") { Text(topic.text, style = MaterialTheme.typography.bodyMedium) }
+        }
     }
     DetailCard("Server research tools & limitations", model.data("views").obj("backtests"), external = external)
     Section("Official references") {
