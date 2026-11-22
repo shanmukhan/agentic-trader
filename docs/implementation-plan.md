@@ -2,7 +2,7 @@
 
 ## 21 November 2026 — Android 1.1.4: Mobile UX final polish
 
-**Status:** Built and verified. All 4 phases in `docs/mobile-ux-improvement-plan.md` complete and fully polished.
+**Status:** Deployed and verified on Samsung Galaxy SM-M566B (`RZGL30SHXRE`, user 0). Verified package dump `versionCode=15`, `versionName=1.1.4`. All 4 phases in `docs/mobile-ux-improvement-plan.md` complete, built, and installed on device.
 
 **Scope:** Android app only — no financial logic, security model or backend API changes. Backend unchanged at 0.21.1.
 

@@ -2,6 +2,9 @@
 
 ## Android 1.1.4 / code 15 — Mobile UX final polish
 
+Installed and verified on Samsung Galaxy SM-M566B (`RZGL30SHXRE`, user 0) on 22 November 2026.
+Package dump confirmed: `versionCode=15`, `versionName=1.1.4`.
+
 Polishes dialog titles, loading screen headers, and confirmation copy across
 the mobile experience:
 - **Mode Confirmation Dialogs**: Replaced raw mode keys with explicit user-friendly
