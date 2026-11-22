@@ -16,6 +16,23 @@ import org.json.JSONObject
 import java.net.URLEncoder
 import java.time.Instant
 
+internal object SessionLockPolicy {
+    const val IDLE_TIMEOUT_MS = 120_000L
+
+    fun expired(
+        unlocked: Boolean,
+        demo: Boolean,
+        lastTouchElapsed: Long,
+        nowElapsed: Long,
+        expiresAt: String,
+        nowInstant: Instant,
+    ): Boolean {
+        if (!unlocked || demo) return false
+        if (nowElapsed - lastTouchElapsed > IDLE_TIMEOUT_MS) return true
+        return expiresAt.isNotBlank() && runCatching { nowInstant >= parseInstant(expiresAt) }.getOrDefault(false)
+    }
+}
+
 class TraderViewModel @JvmOverloads constructor(application: Application, injectedTransport: Transport? = null) : AndroidViewModel(application) {
     private val vault = SecureVault(application)
     private val preferences = application.getSharedPreferences("recovery", 0)
@@ -46,6 +63,7 @@ class TraderViewModel @JvmOverloads constructor(application: Application, inject
     private var ownerAuthorization: String? = null
     private var sessionCheckDate = ""
     private var dailyAuditAttempt = ""
+    @Volatile private var foreground = true
 
     init {
         if (BuildConfig.DEMO) {
@@ -57,11 +75,10 @@ class TraderViewModel @JvmOverloads constructor(application: Application, inject
             while (true) {
                 delay(1000)
                 val value = state.value
-                if (value.unlocked && !BuildConfig.DEMO &&
-                    (SystemClock.elapsedRealtime() - lastTouch > 120_000 ||
-                     value.expiresAt.isNotBlank() && Instant.now() >= parseInstant(value.expiresAt))) {
+                if (SessionLockPolicy.expired(value.unlocked, BuildConfig.DEMO, lastTouch,
+                        SystemClock.elapsedRealtime(), value.expiresAt, Instant.now())) {
                     lock("Unlock again to keep your account private.")
-                } else if (value.unlocked && !value.busy && value.review == null && !value.environmentDialog && value.pendingPage == null &&
+                } else if (foreground && value.unlocked && !value.busy && value.review == null && !value.environmentDialog && value.pendingPage == null &&
                     SystemClock.elapsedRealtime() - lastRefresh >= 5000) {
                     refreshInBackground()
                 }
@@ -70,6 +87,26 @@ class TraderViewModel @JvmOverloads constructor(application: Application, inject
     }
 
     fun touch() { lastTouch = SystemClock.elapsedRealtime() }
+    fun onBackground() {
+        foreground = false
+        pauseQuietRead()
+    }
+    fun onForeground() {
+        foreground = true
+        val value = state.value
+        if (!value.unlocked || BuildConfig.DEMO) return
+        if (SessionLockPolicy.expired(value.unlocked, BuildConfig.DEMO, lastTouch,
+                SystemClock.elapsedRealtime(), value.expiresAt, Instant.now())) {
+            lock("Unlock again to keep your account private.")
+            return
+        }
+        touch()
+        if (preferences.getString("broker_attempt", null) != null && !value.busy && value.review == null) {
+            work("Checking Zerodha sign-in") { checkPendingBrokerLogin() }
+        } else if (!value.busy && value.review == null && !value.environmentDialog && value.pendingPage == null) {
+            refreshInBackground()
+        }
+    }
     fun alerts(enabled: Boolean) {
         preferences.edit().putBoolean("proposal_alerts", enabled).apply()
         mutable.update { it.copy(alertsEnabled = enabled, notice = if (enabled)
@@ -165,18 +202,28 @@ class TraderViewModel @JvmOverloads constructor(application: Application, inject
             reconcile = preferences.getBoolean("inspect_activity", false), reconcilePage = recoveryPage(), expiresAt = session.text("expires_at", ""),
             alertsEnabled = preferences.getBoolean("proposal_alerts", false)) }
         refreshSnapshot(checkDaily = false)
-        val attempt = preferences.getString("broker_attempt", null)
-        if (attempt != null) {
-            val outcome = api.get("/api/mobile/broker/login/$attempt")
-            if (outcome.text("state") != "waiting_for_login") preferences.edit().remove("broker_attempt").apply()
-            if (outcome.text("state") == "verified" && preferences.getBoolean("resume_prepare", false)) {
-                preferences.edit().remove("resume_prepare").apply()
-                val journey = preferences.getBoolean("resume_journey", false)
-                preferences.edit().remove("resume_journey").apply()
-                mutable.update { it.copy(journeyRunning = journey) }
-                prepareSteps(preferences.getString("resume_universe", "nifty50")!!, false, journey, true)
-                refreshSnapshot()
-            } else mutable.update { it.copy(notice = outcome.text("message")) }
+        checkPendingBrokerLogin()
+    }
+
+    private suspend fun checkPendingBrokerLogin() {
+        val attempt = preferences.getString("broker_attempt", null) ?: return
+        val outcome = try {
+            api.get("/api/mobile/broker/login/$attempt")
+        } catch (error: ApiFailure) {
+            if (error.status == 404) preferences.edit().remove("broker_attempt").apply()
+            throw error
+        }
+        if (outcome.text("state") != "waiting_for_login") preferences.edit().remove("broker_attempt").apply()
+        if (outcome.text("state") == "verified" && preferences.getBoolean("resume_prepare", false)) {
+            preferences.edit().remove("resume_prepare").apply()
+            val journey = preferences.getBoolean("resume_journey", false)
+            preferences.edit().remove("resume_journey").apply()
+            mutable.update { it.copy(journeyRunning = journey) }
+            prepareSteps(preferences.getString("resume_universe", "nifty50")!!, false, journey, true)
+            refreshSnapshot()
+        } else {
+            mutable.update { it.copy(notice = outcome.text("message")) }
+            if (outcome.text("state") == "verified") refreshSnapshot()
         }
     }
 
@@ -459,7 +506,7 @@ class TraderViewModel @JvmOverloads constructor(application: Application, inject
         val url = java.net.URI(value.getString("login_url"))
         check(url.scheme == "https" && url.host == "kite.zerodha.com") { "Unexpected broker login destination." }
         preferences.edit().putString("broker_attempt", value.getString("attempt_id")).apply()
-        mutable.update { it.copy(brokerUrl = url.toString(), notice = "Complete Zerodha login, return here and unlock to continue.") }
+        mutable.update { it.copy(brokerUrl = url.toString(), notice = "Complete Zerodha login, then return to this app to continue.") }
     }
     fun brokerLogin() = work("Opening secure Zerodha sign-in") { preferences.edit().remove("resume_prepare").apply(); startBrokerLogin() }
     fun manualExchange(token: String) = work("Exchanging the one-time broker token") {

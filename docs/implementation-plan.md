@@ -1,5 +1,30 @@
 # Implementation plan, enhancements and status
 
+## 22 November 2026 — Android 1.1.5: Preserve unlock across short app switches
+
+**Status:** Built, unit-tested, and installed/verified on Samsung Galaxy SM-M566B (`RZGL30SHXRE`, user 0; `versionCode=16`, `versionName=1.1.5`).
+
+**Scope:** Android client lifecycle and session lock timing only — no financial logic,
+backend API contract, or security-window (`FLAG_SECURE`) changes. Backend unchanged at 0.21.1.
+
+**Files changed:**
+- `android/app/build.gradle.kts` — versionCode 15→16, versionName 1.1.4→1.1.5
+- `android/app/src/main/java/com/shanmukhan/agentictrader/MainActivity.kt` —
+  replaced `model.lock()` in `onStop()` with `model.onBackground()`, added `onStart()` calling
+  `model.onForeground()` and `alerts.update(...)`.
+- `android/app/src/main/java/com/shanmukhan/agentictrader/TraderViewModel.kt` —
+  added `SessionLockPolicy`, `onBackground()`, `onForeground()`, and shared
+  `checkPendingBrokerLogin()` helper so returning from Kite browser login works both while
+  unlocked and after biometric unlock.
+- `android/app/src/main/java/com/shanmukhan/agentictrader/ControlScreens.kt` —
+  updated privacy/alerts/Kite sign-in descriptions to match app-switch behavior.
+- `android/app/src/test/java/com/shanmukhan/agentictrader/SessionLockPolicyTest.kt` —
+  added 4 JVM unit tests for idle window and server session expiry rules.
+
+**Validation:** Passed `testProductionDebugUnitTest` and `testDemoDebugUnitTest`, built signed
+production APK (`1.1.5` / code 16, SHA-256
+`f491a94d3fed75e4345f748c501347bf46ac4d77092e5b8064fc3702ef56cc35`).
+
 ## 21 November 2026 — Android 1.1.4: Mobile UX final polish
 
 **Status:** Deployed and verified on Samsung Galaxy SM-M566B (`RZGL30SHXRE`, user 0). Verified package dump `versionCode=15`, `versionName=1.1.4`. All 4 phases in `docs/mobile-ux-improvement-plan.md` complete, built, and installed on device.

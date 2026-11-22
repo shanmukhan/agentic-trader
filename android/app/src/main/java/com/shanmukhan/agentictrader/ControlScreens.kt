@@ -33,7 +33,7 @@ import org.json.JSONObject
         Text("A saved token can expire. Profile success alone does not prove history or streaming entitlement.")
         Action("Check saved broker session", model.canAct()) { model.direct("/api/setup/profile", label = "Verifying Kite session") }
         Action("Sign in to Zerodha", model.canAct() && !requested, secondary = true) { model.brokerLogin() }
-        Text("Login and 2FA happen in your system browser. The server receives and exchanges the one-time callback. Return here and unlock to continue; no API secret is placed in the browser.", style = MaterialTheme.typography.bodyMedium)
+        Text("Login and 2FA happen in your system browser. The server receives and exchanges the one-time callback. Return to the app to continue; no API secret is placed in the browser.", style = MaterialTheme.typography.bodyMedium)
         ManualBrokerToken(state, model)
     }
     BrokerCredentials(state, model, requested, external)
@@ -169,10 +169,10 @@ import org.json.JSONObject
     Section("App preferences") {
         Text("Appearance · Light", fontWeight = FontWeight.SemiBold)
         Text("Secure unlock · Strong hardware-backed biometrics")
-        Text("Privacy · Locks in the background and after two idle minutes")
+        Text("Privacy · Locks after two idle minutes or when you tap Lock")
         Text("App ${BuildConfig.VERSION_NAME} · server ${model.data("setup").text("ui_version")}")
         Action(if (state.alertsEnabled) "Turn proposal alerts off" else "Enable proposal alerts", !state.busy && !BuildConfig.DEMO, secondary = true, onClick = toggleAlerts)
-        Text("Optional generic notifications while the app stays unlocked. Backgrounding locks the app and stops alerts; there is no background push service.", style = MaterialTheme.typography.bodySmall)
+        Text("Optional generic notifications while the app stays active and unlocked. Switching away pauses alerts; there is no background push service.", style = MaterialTheme.typography.bodySmall)
         Action("Phone security & pairing", !state.busy, secondary = true) { model.navigate(Page.SECURITY) }
         Action("How this app works (Plain-language guide)", !state.busy, secondary = true) { model.navigate(Page.LEARN) }
     }

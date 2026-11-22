@@ -1,5 +1,24 @@
 # Agentic Trader for Android
 
+## Android 1.1.5 / code 16 — Stay unlocked across short app switches & resume Kite login cleanly
+
+- Removed immediate `model.lock()` from `MainActivity.onStop()` so briefly switching to
+  another mobile app (for example, checking the Kite mobile app, authenticator, OTPs, or
+  system browser for Zerodha sign-in) and returning within the 2-minute idle window keeps
+  the app unlocked.
+- Extracted `SessionLockPolicy.expired(...)` in `TraderViewModel` enforcing both the 2-minute
+  (`120_000 ms`) inactivity limit and the 15-minute server session expiry (`expires_at`),
+  rechecked immediately on `onStart()` (`model.onForeground()`).
+- Paused quiet 5-second background polling while backgrounded (`model.onBackground()`).
+- Updated `onForeground()` to automatically check pending `broker_attempt` sign-in state
+  (`checkPendingBrokerLogin()`) and resume setup or refresh status without requiring a
+  biometric re-unlock when returning from the browser within 2 minutes.
+- Retained `FLAG_SECURE` app-switcher privacy protection and the manual **Lock** button in
+  the top bar. Updated Settings and Kite sign-in wording accordingly.
+- Verified with JVM unit tests (`testProductionDebugUnitTest` and `testDemoDebugUnitTest`,
+  including `SessionLockPolicyTest`), signed production release APK build (SHA-256
+  `f491a94d3fed75e4345f748c501347bf46ac4d77092e5b8064fc3702ef56cc35`).
+
 ## Android 1.1.4 / code 15 — Mobile UX final polish
 
 Installed and verified on Samsung Galaxy SM-M566B (`RZGL30SHXRE`, user 0) on 22 November 2026.
@@ -640,7 +659,8 @@ engine milestones retain the existing server/browser limitations.
   CAs, disables backup/device transfer/screenshots/recents, rejects obscured touches
   and has no analytics or embedded browser. No remote attestation or certificate
   pinning is claimed. A compromised/rooted unlocked phone remains a risk.
-- Backgrounding or two idle minutes locks access. API sessions last fifteen minutes
+- Backgrounding pauses quiet polling and proposal alerts; two idle minutes (foreground
+  or away) or 15-minute server session expiry locks access. API sessions last fifteen minutes
   and live in memory. Lock clears private state, cancels reads and attempts logout
   without waiting; offline/process-death sessions expire on the server. A server
   restart also clears sessions. Lock does not stop the server or undo accepted actions.

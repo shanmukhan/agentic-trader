@@ -67,10 +67,15 @@ class MainActivity : FragmentActivity() {
         return super.dispatchTouchEvent(event)
     }
     override fun onUserInteraction() { super.onUserInteraction(); model.touch() }
+    override fun onStart() {
+        super.onStart()
+        model.onForeground()
+        alerts.update(model.state.value)
+    }
     override fun onStop() {
         gate.cancel()
         alerts.clear()
-        model.lock()
+        model.onBackground()
         super.onStop()
     }
 }

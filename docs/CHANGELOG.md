@@ -1,5 +1,20 @@
 # Change log
 
+## 22 November 2026 — Android 1.1.5: Preserve unlock across short app switches
+
+- Fixed immediate locking when switching to another app and returning: `MainActivity.onStop()`
+  now calls `model.onBackground()` instead of `model.lock()`, pausing background polling and
+  alerts while keeping the biometric session unlocked during short app switches.
+- `MainActivity.onStart()` calls `model.onForeground()`, which immediately locks via
+  `SessionLockPolicy.expired(...)` if more than 2 idle minutes elapsed or the server token
+  expired, and otherwise automatically checks any pending Zerodha browser login attempt
+  (`checkPendingBrokerLogin()`) and refreshes status.
+- Updated Settings privacy copy and Kite browser login copy to match the new behavior.
+- Added `SessionLockPolicyTest` JVM unit tests and ran `testProductionDebugUnitTest` and
+  `testDemoDebugUnitTest`.
+
+APK sha256: `f491a94d3fed75e4345f748c501347bf46ac4d77092e5b8064fc3702ef56cc35`
+
 ## 21 November 2026 — Android 1.1.4: Mobile UX final polish
 
 Complete final polish across modal dialogs, loading states, and guidance copy:

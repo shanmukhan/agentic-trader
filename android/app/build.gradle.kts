@@ -11,8 +11,8 @@ android {
         applicationId = "com.shanmukhan.agentictrader"
         minSdk = 30
         targetSdk = 37
-        versionCode = 15
-        versionName = "1.1.4"
+        versionCode = 16
+        versionName = "1.1.5"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     flavorDimensions += "environment"

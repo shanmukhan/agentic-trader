@@ -1,5 +1,22 @@
 # How to use Agentic Trader
 
+## 22 November 2026 — App switching, auto-lock & Kite login (Android 1.1.5)
+
+- **Switching apps while unlocked**: You can switch to another app (for example, the
+  Zerodha Kite mobile app for App Code / 2FA, an authenticator app, or your mobile browser)
+  and return within **2 minutes** without re-unlocking with biometrics. While switching apps,
+  Android's secure-window flag (`FLAG_SECURE`) continues hiding account balances from recent-app
+  previews, background polling pauses, and tapping the **Lock** icon locks immediately.
+- **Auto-lock recovery**: If you stay away or idle for more than **2 minutes** (or the
+  15-minute server session expires), the app locks automatically on return and asks for
+  biometric unlock again.
+- **Kite mobile app vs. mobile browser login**: Installing the Zerodha Kite mobile app on
+  the same phone does **not** replace browser login for Kite Connect API authentication.
+  Zerodha only issues third-party API `request_token` callbacks through the web OAuth flow at
+  `kite.zerodha.com/connect/login` in the browser (you may still switch to the Kite mobile app
+  during login to read your 2FA App Code). Once browser login finishes, return to Agentic
+  Trader — the app checks the completed login callback automatically.
+
 ## 21 November 2026 — Mobile UX improvements (Android 1.1.3)
 
 ### Plain-language guide and help (Tools → Learning Center)
